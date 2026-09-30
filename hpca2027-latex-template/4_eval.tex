@@ -1,0 +1,319 @@
+\section{Evaluation}
+
+We evaluate FourShadow using $128\times128\times K$ SGEMM kernels, where
+$K\in\{128,256,512,1024\}$. Each experiment changes one architectural
+parameter while holding the remaining configuration fixed. Speedups are
+calculated from total kernel cycles against the corresponding baseline
+configuration.
+
+\subsection{Scaling Across the SIMT Hierarchy}
+
+\subsubsection{Threads/Warp}
+Fig.~\ref{fig:threads_sweep} compares TCU SGEMM with scalar FP32 execution
+at the same thread count. Packing more low-precision elements raises
+speedup from 3.55--6.44$\times$ for TF32 to 9.53--27.46$\times$ for FP8.
+Most notably, we find that the 16-thread configuration is consistently the strongest and reaches
+27.46$\times$, while increasing to 32 threads (the established default warp-size in all modern GPU architectures) does not improve performance
+further. This shows that Tensor Core scaling is non-monotonic with warp width
+and depends significantly on tile geometry and pipeline utilization.
+
+\begin{figure} [h]
+    \centering
+    \includegraphics[width=0.9\linewidth]
+    {hpca2027-latex-template/fig/sgemm_speedup_heatmap_v3_gaplabel.pdf}
+    \caption{SGEMM speedup over scalar FP32 execution across
+    threads/warp and input precisions.}
+    \label{fig:threads_sweep}
+\end{figure}
+
+\subsubsection{Warps/Warpgroup (Issue Width)}
+Fig.~\ref{fig:iw_sweep} normalizes each configuration against an issue
+width of one. An issue width of two provides 1.21--1.48$\times$ speedup,
+while four reaches up to 1.84$\times$. Increasing to eight only peaks at 2.02$\times$, with the 8- and 16-thread designs largely saturating after
+four and the 32-thread design even regresses. This proves that wider issue provides diminishing returns once operand delivery and
+non-TCU execution become the dominant costs.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]
+    {hpca2027-latex-template/fig/iw_speedup_heatmap_blue_v1.pdf}
+    \caption{BF16 WGMMA speedup over an issue width of one across
+    threads/warp and issue-width configurations.}
+    \label{fig:iw_sweep}
+\end{figure}
+
+
+\subsubsection{Cores/Socket}
+Fig.~\ref{fig:cores_sweep} shows that the 4-thread configuration scales
+nearly linearly, reaching 7.23$\times$ with eight cores. Note-worthily, core scaling falls as
+the warp width grows, with the 32-thread configuration reaching only
+3.27--5.10$\times$, although larger $K$ values partially recover its efficiency.
+Core-level scaling therefore heavily depends on preserving enough independent
+output tiles, since wider per-core tiles reduce grid-level concurrency
+and increase the impact of workload partitioning and tail effects.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]
+    {hpca2027-latex-template/fig/cores_speedup_heatmap_green_v1.pdf}
+    \caption{FP16 WGMMA speedup over a single core as the number of
+    cores/socket is increased.}
+    \label{fig:cores_sweep}
+\end{figure}
+
+\subsubsection{Roofline Model Performance Analysis}
+Fig.~\ref{fig:roofline} shows that WMMA raises arithmetic intensity from
+0.25 to 3.61 FLOP/byte and throughput from 2.65 to 23.21 FLOP/cycle.
+Sparse WMMA further reaches 33.49 FLOP/cycle. On the other hand, while WGMMA has the highest achieved operational intensities at 5.82 and 7.11 FLOP/byte, it only reaches 2.31 and
+5.85 FLOP/cycle for dense and sparse execution respectively. This indicates that Tensor Core designs, especially with sparsity enabled are able to move fairly memory-bound kernels into the compute bound region. WGMMA seems to be improving arithmetic intensity specifically from it's larger operating tiles and shared-memory reuse, making it particularly suitable for modern ML systems inference or LLM Decode workloads that are significantly more memory-bound than compute-bound. 
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]
+    {hpca2027-latex-template/fig/roofline_128_compare.png}
+    \caption{Roofline comparison of scalar, WMMA, WGMMA, and
+    2:4 sparse execution for a $128^3$ SGEMM kernel.}
+    \label{fig:roofline}
+\end{figure}
+
+\subsection{Warp-Group Tensor Core Design Space Exploration}
+
+\subsubsection{Number of Accumulator Registers (NRC) Scaling}
+As shown in Fig.~\ref{fig:nrc_sweep}, increasing NRC from 8 to 16 reduces
+cycles by 30--32\% in both RS and SS modes. Extending SS to NRC${}=32$
+reduces cycles by approximately 49\% over NRC${}=8$. SS is only 1--4\%
+faster than RS at the same NRC, so its main advantage is mostly enabling the
+largest accumulator tile size possible. However, the gains remain sublinear because memory,
+control, and outer $K$-loop work do not shrink with accumulator capacity.
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]
+    {hpca2027-latex-template/fig/nrc_sweep_cycles_tintmode_hpca_no_mode_legend_v7.pdf}
+    \caption{WGMMA execution cycles as the number of accumulator
+    registers is increased in RS and SS modes.}
+    \label{fig:nrc_sweep}
+\end{figure}
+
+\subsubsection{K vs.\ 2K-Wide FEDP}
+Fig.~\ref{fig:fedp2k_sweep} shows that the 2K-wide FEDP is able to reduce instruction count by 31--33\% and execution cycles by 28--30\% in both
+operand-staging modes. Our evaluations also show that increasing FEDP pipeline latency from four to eight
+cycles add less than 2\% overhead. Halving the number of $K$-dimension
+micro-ops therefore considerably outweighs the deeper pipeline and extra descriptor-setup micro-op cost.
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]
+    {hpca2027-latex-template/fig/fedp2k_cycles_clustered_hpca_ylim35_v4.pdf}
+    \caption{WGMMA execution cycles with $K$-wide and $2K$-wide FEDP
+    units at four- and eight-cycle pipeline latencies.}
+    \label{fig:fedp2k_sweep}
+\end{figure}
+
+\subsubsection{TCU SRAM vs.\ Register File WGMMA Descriptor Load}
+Moving the WGMMA descriptors into TCU SRAM increases cycles by
+1.2--6.5\% relative to register-file delivery, as shown in
+Fig.~\ref{fig:wg_desc_sweep}. The penalty is largest for short SS kernels
+and decreases as more computation amortizes descriptor setup. Relieving
+the pressure of two register operands does not offset the added
+shared-memory store, synchronization, and AGU traffic. Small control
+metadata should therefore remain in the register file unless those
+registers enable a larger accumulator configuration or there is extreme register pressure.
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]
+    {hpca2027-latex-template/fig/wg_descriptor_cycles_clustered_adjacent_designs_v6.pdf}
+    \caption{WGMMA execution cycles when shared-memory descriptors are
+    stored in TCU SRAM or supplied through the register file.}
+    \label{fig:wg_desc_sweep}
+\end{figure}
+
+\subsection{Sparse Tensor Core Design Space Exploration}
+\subsubsection{Symmetric vs.\ Asymmetric Sparse Configurations}
+The underlying cycle ratios in Fig.~\ref{fig:sparse_sym_sweep} span
+1.26--3.14$\times$, with the 8-thread configuration reaching
+3.14$\times$ for FP8. The symmetric 4- and 16-thread configurations
+remain lower because reducing the number of $K$ steps requires additional
+$N$ steps and has partial FEDP utilization. The 32-thread configuration also
+trails the 8-thread design. Sparse scaling therefore depends on whether
+the compressed mapping preserves full array utilization, not only on the
+nominal 2:4 zero-skipping compute reduction.
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]
+    {hpca2027-latex-template/fig/sparse_speedup_heatmap_v3.pdf}
+    \caption{Sparse speedup across symmetric and asymmetric TCU
+    configurations. Values are globally min-max normalized to the
+    range $[1,2]$ for visual comparison.}
+    \label{fig:sparse_sym_sweep}
+\end{figure}
+
+\subsubsection{Dense vs.\ Sparse in RS and SS Modes}
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]
+    {hpca2027-latex-template/fig/sparse_wg_cycles_clustered_newdata_v3.pdf}
+    \caption{Dense and 2:4 sparse BF16 WGMMA execution cycles in
+    RS and SS operand-staging modes.}
+    \label{fig:sparse_wg_sweep}
+\end{figure}
+
+Fig.~\ref{fig:sparse_wg_sweep} shows that sparsity reduces cycles by
+54.8--57.4\% in RS mode and 54.9--56.9\% in SS mode, corresponding to
+2.21--2.35$\times$ speedup. Agreeing with the sparse wargroup MMA microbenchmarking in \cite{luo2025dissectingnvidiahopperarchitecture}, this is the only case where RS mode is faster than or equal to SS mode. 
+
+\subsection{FPGA Design Flow}
+
+We implement FourShadow on an AMD Alveo U55C with 16\,GB HBM2 and
+target a 250\,MHz clock frequency. The evaluated system contains
+one core with eight 8-thread warps, an issue width of four, and four
+8-lane Ten-Four\cite{rout2026tenfouropensourcefuseddot} blocks supporting FP16 inputs and FP32
+accumulation, WGMMA, 2K-wide FEDP, and 2:4 structured sparsity. Table.~\ref{tab:tcu-parts} shows the hierarchial utilization overhead of each FourShadow extended unit.
+
+\begin{table}
+  \centering
+  \caption{Post-synthesis resource breakdown of the fully enabled
+  FourShadow TCU.}
+  \label{tab:tcu-parts}
+  \setlength{\tabcolsep}{5pt}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{@{}lrrrr@{}}
+  \toprule
+  \textbf{Part} & \textbf{LUT} & \textbf{FF} &
+  \textbf{BRAM} & \textbf{DSP} \\
+  \midrule
+  FEDP array ($4\times$)             & 47\,533 & 14\,800 & 0  & 128 \\
+  Lane dispatch                      & 18\,665 & 6\,990  & 0  & 0   \\
+  WGMMA control                      & 17\,183 & 5\,149  & 0  & 2   \\
+  A operand buffers ($4\times$)      & 16\,476 & 4\,493  & 0  & 0   \\
+  Lane gather                        & 1\,638  & 2\,240  & 0  & 0   \\
+  AGU                                & 1\,490  & 1\,303  & 0  & 0   \\
+  2:4 sparsity metadata SRAM         & 1\,056  & 0       & 32 & 0   \\
+  B buffer, FIFOs, and glue          & 772     & 64      & 4  & 0   \\
+  \midrule
+  \textbf{TCU total}                 &
+  \textbf{104\,813} & \textbf{35\,039} &
+  \textbf{36} & \textbf{130} \\
+  \bottomrule
+  \end{tabular}
+\end{table}
+
+Fig.~\ref{fig:e2e_fpga} shows that WGMMA provides its largest gains
+when matrix operations dominate execution. It raises NeRF from
+4.72$\times$ to 26.17$\times$, Llama~2 prefill from 5.91$\times$ to
+9.15$\times$, and decode from 1.42$\times$ to 2.00$\times$, while CNN,
+attention, and FlashAttention remain nearly unchanged. Sparsity alone
+benefits NeRF and slightly improves attention, but its metadata and
+compression overhead reduce performance for CNN and both Llama~2
+phases. Combining sparsity with WGMMA reaches 16.88$\times$ for CNN
+and 26.82$\times$ for NeRF, showing that the two extensions are
+workload-dependent rather than uniformly additive.
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]
+    {hpca2027-latex-template/fig/fpga_e2e.png}
+    \caption{End-to-end FPGA speedup over the SIMT baseline on the
+    Alveo U55C at 250\,MHz.}
+    \label{fig:e2e_fpga}
+\end{figure}
+
+% Requires \usepackage{tikz}
+\definecolor{cTCU}{HTML}{2C6FB0}
+\definecolor{cISS}{HTML}{E8873A}
+\definecolor{cFPU}{HTML}{3F9E7C}
+\definecolor{cALU}{HTML}{8256A6}
+\definecolor{cMEM}{HTML}{B0752C}
+\definecolor{cLSU}{HTML}{D1495B}
+\definecolor{cSFU}{HTML}{7A7A7A}
+\definecolor{cOTH}{HTML}{BFBFBF}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \def\W{1.9}
+
+  \foreach \yo/\yt/\c in {
+      0/3.759/cTCU,
+      3.759/4.963/cISS,
+      4.963/5.929/cFPU,
+      5.929/6.356/cALU,
+      6.356/6.692/cMEM,
+      6.692/6.839/cLSU,
+      6.839/6.951/cSFU,
+      6.951/7.000/cOTH}
+    \fill[\c,draw=black!35,line width=0.3pt]
+      (0,\yo) rectangle (\W,\yt);
+
+  \draw[black!35] (0,0) rectangle (\W,7);
+
+  \foreach \p in {0,25,50,75,100}
+    \draw[black!40] (-0.08,\p*0.07) -- (0,\p*0.07)
+      node[left,font=\scriptsize,black]{\p};
+
+  \node[rotate=90,font=\footnotesize,anchor=south]
+    at (-0.75,3.5) {Core LUT area (\%)};
+
+  \node[white,font=\small\bfseries,align=center]
+    at (\W/2,1.880) {TCU\\53.7\%};
+  \node[white,font=\scriptsize\bfseries,align=center]
+    at (\W/2,4.361) {Issue \&\\front-end\\17.2\%};
+  \node[white,font=\scriptsize\bfseries,align=center]
+    at (\W/2,5.446) {FPU 13.8\%};
+
+  \foreach \ym/\yl/\txt in {
+      6.143/5.55/{ALU \textemdash{} 6.1\%},
+      6.524/6.05/{Memory (L1\,\$+LMEM) \textemdash{} 4.8\%},
+      6.766/6.55/{LSU \textemdash{} 2.1\%},
+      6.895/7.05/{SFU \textemdash{} 1.6\%},
+      6.976/7.55/{Other \textemdash{} 0.7\%}} {
+    \draw[black!45,line width=0.3pt]
+      (\W,\ym) -- (\W+0.25,\yl);
+    \node[right,font=\scriptsize,anchor=west]
+      at (\W+0.28,\yl) {\txt};
+  }
+\end{tikzpicture}
+\caption{Post-synthesis LUT-area breakdown of the fully enabled
+Vortex core.}
+\label{fig:core-area}
+\end{figure}
+
+\subsection{ASIC Design Flow}
+
+\subsubsection{ASIC Synthesis and Timing}
+
+We synthesize the standalone FourShadow TCU using Synopsys Design
+Compiler X-2025.06-SP1 with the ASAP7 7\,nm
+\texttt{asap7sc7p5t\_28} NLDM TT predictive PDK library.
+
+\subsubsection{Threads/Warp Area--Performance Tradeoff}
+Fig.~\ref{fig:pareto} combines synthesized TCU area with end-to-end application evaluation performance. Llama~2 prefill reaches 12.7$\times$ at $NT{=}16$
+and then slightly regresses at $NT{=}32$, despite the TCU area more
+than doubling. Decode shows a stronger optimum, rising to
+6.2$\times$ at $NT{=}16$ before falling to approximately 3$\times$
+at $NT{=}32$. NeRF instead continues to benefit from wider warps and
+reaches its highest speedup at $NT{=}32$. The preferred warp width is
+therefore workload-dependent, although $NT{=}16$ consistently provides the best
+area--performance ratio for both Llama~2 phases.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]
+    {hpca2027-latex-template/fig/pareto.pdf}
+    \caption{End-to-end SimX speedup over the SIMT baseline versus
+    synthesized TCU cell area across threads/warp configurations.}
+    \label{fig:pareto}
+\end{figure}
+
+\subsubsection{Issue-Width Area--Performance Tradeoff}
+Fig.~\ref{fig:iw_area_scaling} shows that TCU area scales almost
+linearly with issue width, increasing from 58.6\,k$\mu$m$^2$ at
+$IW{=}1$ to 115.6 and 230.6\,k$\mu$m$^2$ at $IW{=}2$ and $IW{=}4$.
+However, performance scales much more slowly, reaching 1.37--1.41$\times$ at
+$IW{=}2$ and 1.66--1.70$\times$ at $IW{=}4$. Doubling the area again
+to an estimated 455--462\,k$\mu$m$^2$ at $IW{=}8$ raises speedup to
+only 1.70--1.81$\times$. Thus, $IW{=}4$ forms the practical optimal on the curve, beyond which additional TCU blocks and larger warp-groups are increasingly
+limited by operand delivery and non-TCU execution rather than
+arithmetic capacity.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]
+    {hpca2027-latex-template/fig/iw_scaling_area_speedup_nt16.pdf}
+    \caption{WGMMA speedup over $IW{=}1$ versus synthesized TCU cell
+    area at $NT{=}16$. The $IW{=}8$ area is projected from the
+    measured $IW\leq4$ designs.}
+    \label{fig:iw_area_scaling}
+\end{figure}

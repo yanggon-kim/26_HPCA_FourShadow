@@ -1,0 +1,69 @@
+\documentclass[10pt,conference]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[hyphens]{url}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Ensure letter paper
+\pdfpagewidth=8.5in
+\pdfpageheight=11in
+
+\newcommand{\hpcayear}{2027}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%% -- UPDATE -- %%%%%%%%%%%%%%%
+\newcommand{\hpcasubmissionnumber}{2126}
+\title{FourSight: 
+Investigating SIMT Tensor Core Scaling Across Hierarchies of a RISC-V GPU}
+%Scaling Across Multiple RISC-V GPU Hierarchies}
+%Scaling Across RISC-V GPU Design Parameters}
+% alt: FourCast, FourSight
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% -- ONLY FOR CAMERA READY -- %%%%%%%%
+%\def\hpcacameraready{} % Uncomment to build camera-ready version
+\newcommand{\hpcapubid}{0000--0000/00\$00.00}
+\newcommand\hpcaauthors{First Author$\dagger$ and Second Author$\ddagger$}
+\newcommand\hpcaaffiliation{First Affiliation$\dagger$, Second Affiliation$\ddagger$}
+\newcommand\hpcaemail{Email(s)}
+
+%%%%% -- ARTEFACT EVALUATION RESULTS -- %%%%%%
+% Uncomment the following based on the badges that were awarded to this paper
+%\def\aeopen{}           % The artifact is publically available
+%\def\aereviewed{}     % The artefact has been reviewed
+%\def\aereproduced{} % The results have been reproduced
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{hpca-template}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% -- PAPER CONTENT STARTS -- %%%%%%%%%
+
+\input{hpca2027-latex-template/0_abstract}
+\input{hpca2027-latex-template/1_intro}
+\input{hpca2027-latex-template/3_methodology}
+\input{hpca2027-latex-template/4_eval}
+\input{hpca2027-latex-template/5_conclusion}
+
+%%%%%%% -- PAPER CONTENT ENDS -- %%%%%%%%
+
+
+%%%%%%%%% -- BIB STYLE AND FILE -- %%%%%%%%
+\bibliographystyle{IEEEtranS}
+\bibliography{refs}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{hpca2027-latex-template/8_appendix}
+
+\end{document}
