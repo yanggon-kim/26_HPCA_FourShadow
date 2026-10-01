@@ -96,6 +96,8 @@ Fig.~\ref{fig:fedp2k_sweep} shows that the 2K-wide FEDP is able to reduce instru
 operand-staging modes. Our evaluations also show that increasing FEDP pipeline latency from four to eight
 cycles add less than 2\% overhead. Halving the number of $K$-dimension
 micro-ops therefore considerably outweighs the deeper pipeline and extra descriptor-setup micro-op cost.
+% REVIEW(2026-10-01): the next sentence moved here from the design section (a measurement); its source run is not identified in the pinned branch d6426cca1 -- coauthors confirm.
+The setup micro-op that dense RS mode adds with the 2K-wide FEDP increases the end-to-end cycle count by under 1\%.
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]

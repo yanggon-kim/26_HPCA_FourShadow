@@ -13,10 +13,7 @@ Each core is a SIMT pipeline that runs $\mathit{NW}$ warps. A warp is a group of
 \subsection{Base Tensor Core}
 \label{sec:bg_tcu}
 
-As shown in Figure~\ref{fig:figure_integration}, the FourShadow Tensor Core Unit (TCU) is integrated into the Vortex GPGPU architecture as a standard functional unit alongside the ALU, FPU, LSU, and SFU within each core's execute stage. The TCU shares all essential SIMT core frontend components--- warp scheduler, scoreboard, fetch, decode --- as well as the memory hierarchy including Register Files, Shared Memory and L1 and L2 caches. Inside the TCU a grid of Fused Dot Product (FEDP) units serve as the core compute engine for the MMA instructions. Each FEDP unit computes one element of $D$ as in Equation~(\ref{eq:fedp}).
-
-\textbf{Full-configurability:}
-The FourShadow TCU is fully parameterizable by warp size (Number of Threads ($\mathit{NT}$)), as a single compile-time parameter that determines register file capacity, tile dimensions, FEDP unit count, and sub-block packing as derived in (Figure~\ref{fig:tiling_equations}). This exposes architectural exploration opportunities unavailable on fixed-warp proprietary designs. Below, we detail the matrix-to-register mapping, FEDP scheduling, and mixed-precision datapath adaptation.
+The base tensor core is the Tensor Core Unit (TCU), a functional unit in the execute stage of each core beside the ALU, FPU, LSU and SFU (Figure~\ref{fig:figure_integration}). It shares the core's front end, register file, shared memory and caches with those units, and it executes the warp-level MMA (WMMA) instruction. Its compute engine is a grid of Fused Dot Product (FEDP) units, each of which computes one element of $D$ as in Equation~(\ref{eq:fedp}). The threads per warp $\mathit{NT}$ also set the tile dimensions and the number of FEDP units, as Figure~\ref{fig:tiling_equations} derives.
 
 \begin{figure}[ht]
 \small
@@ -71,7 +68,7 @@ k_{\mathrm{steps}} = \tfrac{\mathit{xtileK}}{\mathit{tcK}} &
 \end{figure}
 
 \textbf{Matrix-Register Mapping:}
-Vortex's RV32 ISA provides 32 floating-point registers per thread. Among 32, FourShadow utilizes 24 registers equally partitioned into three groups of $\mathit{NR}{=}8$ registers for matrices $A$, $B$ and $C/D$. Each register corresponds to $\mathit{NT}$ physical 32-bit entries, so the total per-matrix capacity scales with $\mathit{NT}$. Because this register count is a hard architectural limit, the original matrix must be decomposed into tiles that fit entirely within the available register space.
+Vortex's RV32 ISA provides 32 floating-point registers per thread. The base tensor core uses 24 of them, $\mathit{NR}{=}8$ each for matrices $A$, $B$ and the accumulator $C/D$. A register holds $\mathit{NT}$ 32-bit entries, so a matrix is decomposed into tiles of $\mathit{NT}{\times}\mathit{NR}$ words. Panels (a) and (b) of Figure~\ref{fig:figure_register_mapping} show in green how the eight registers of each matrix cover the $8{\times}8{\times}8$ tile of $\mathit{NT}{=}8$ and the $8{\times}4{\times}4$ tile of $\mathit{NT}{=}4$.
 
 \begin{figure}[ht]
     \centering
@@ -80,46 +77,18 @@ Vortex's RV32 ISA provides 32 floating-point registers per thread. Among 32, Fou
     \label{fig:figure_register_mapping}
 \end{figure}
 
-Figure~\ref{fig:figure_register_mapping}(a) illustrates the resulting mapping for $\mathit{NT}{=}8$, where $\mathit{xtileM}{=}\mathit{xtileN}{=}\mathit{xtileK}{=}8$; the green-shaded regions show how \texttt{reg0}--\allowbreak\texttt{reg7} tile across the matrix dimensions for $A$, $B$, and $C$/$D$. Figure~\ref{fig:figure_register_mapping}(b) shows the $\mathit{NT}{=}4$ case, where the halved thread count shrinks the tile to $8{\times}4{\times}4$ and matrix~$B$ utilizes only half its register budget.
-
 \textbf{Thread-FEDP Mapping:}
-Each TCU core contains a $\mathit{tcM}{\times}\mathit{tcN}$ grid of $\mathit{NT}$ number of FEDP unit instantiations, each producing one element of~$D$.
+The TCU holds a $\mathit{tcM}{\times}\mathit{tcN}$ grid of $\mathit{NT}$ FEDP units, and one micro-op computes one $\mathit{tcM}{\times}\mathit{tcN}{\times}\mathit{tcK}$ block. A configuration is \emph{asymmetric} when a block of $B$ occupies half a register, so that two adjacent blocks pack into one register ($\mathit{NT}{\in}\{2,\allowbreak 8,\allowbreak 32\}$; panel (a)), and \emph{symmetric} when a block of $B$ fills a whole register ($\mathit{NT}{\in}\{4,16\}$; panel (b)). The micro-ops cover the tile with $n$ innermost, $m$ in the middle and $k$ outermost (Figure~\ref{fig:tiling_equations}): 32 micro-ops for $\mathit{NT}{=}8$ and 16 for $\mathit{NT}{=}4$.
 
-In Figure~\ref{fig:figure_register_mapping}(a) with $\mathit{NT}{=}8$, the green-shaded block within \texttt{reg0} of matrix~$B$ occupies only half the register width---this is an \emph{asymmetric} configuration where two adjacent $B$ blocks pack into one register. In contrast, Figure~\ref{fig:figure_register_mapping}(b) with $\mathit{NT}{=}4$ shows the \emph{symmetric} case: the green-shaded $B$ block fills \texttt{reg0} entirely, yielding a one-to-one register-to-block correspondence. Among the supported thread counts, $\mathit{NT}{\in}\{2,\allowbreak 8,\allowbreak 32\}$ produce asymmetric configurations, while $\mathit{NT}{\in}\{4,16\}$ produce symmetric ones.
+% REVIEW(2026-10-01): the 14-cycle commit and the 6-cycle stall are not measured in the pinned branch d6426cca1 (action item III-3) -- coauthors confirm.
+The product $m_{\mathrm{steps}}{\times}n_{\mathrm{steps}}$ is 8 for every $\mathit{NT}$, so an accumulator register is read again 8 micro-ops after it is written, at the next $k$ iteration. The TCU commits a result after 14 cycles, so the scoreboard stalls that read for about 6 cycles at every $k$ boundary (Figure~\ref{fig:figure_register_mapping}(c)).
 
-The full tile is covered by iterating micro-ops in the order shown in Figure~\ref{fig:tiling_equations}: $n$ innermost, $m$ middle, $k$ outermost. As annotated in Figure~\ref{fig:figure_register_mapping}, the $\mathit{NT}{=}8$ tile totals $4{\times}2{\times}4{=}32$ micro-ops, while the $\mathit{NT}{=}4$ tile totals $2{\times}4{\times}2{=}16$. 
+% REVIEW(2026-10-01): the pinned branch permutes register offsets in VX_tcu_uops.sv; it does not relocate B to f21..f28 (action item I-4). The unverified ``24 percentage points'' was removed -- coauthors confirm the mechanism.
+Each micro-op reads three source registers, one each for $A$, $B$ and $C/D$, from a register file divided into four banks. The registers of matrix $B$ are relocated so that the three sources fall in different banks and are read in the same cycle.
 
-Some micro-architectural implications that FourShadow can explore are discussed as follows.
-Figure~\ref{fig:tiling_equations} shows that m\_steps*n\_steps is fixed
-as 8 regardless of NT. This fixed product of eight determines the
-accumulator reuse distance: each $(m,n)$ accumulator register is
-re-read exactly $m\_steps \times n\_steps = 8$ micro-instructions after
-it was written, at the next $k$-iteration. However, the TCU pipeline
-commits the result after 14 cycles, so the scoreboard stalls the
-dependent read for approximately $14{-}8{=}6$ cycles at every
-$k$-loop boundary---a structural RAW
-hazard(Figure~\ref{fig:figure_register_mapping}(c)) that FourShadow's
-multi-warp scheduler can partially hide by interleaving independent
-warps into the gap.
+\textbf{FEDP Microarchitecture \& Datatypes:}\label{para:datatypes-fedp} The FEDP unit is Ten-Four~\cite{rout2026tenfouropensourcefuseddot}, a four-stage, four-cycle design (multiply, align, accumulate, normalize and round) with a configurable dot-product length. It multiplies TF32, FP16, BF16, FP8 (E4M3), BF8 (E5M2), INT8 and INT4 inputs and accumulates in FP32 or INT32; each input format is enabled or disabled at compile time.
 
-A second class of pipeline stall arises from the register file itself.
-At each tensor-core micro-op, the operand-collection unit concurrently
-fetches three source registers---one each from matrices $A$, $B$, and
-$C/D$---from a physical register file partitioned into four banks
-indexed by the low two bits of the register number. The naive placement
-($C/D$ at \texttt{f0..f7}, $A$ at \texttt{f10..f17}, $B$ at
-\texttt{f24..f31}) leaves $B$ and $C/D$ on the same cyclic bank
-residue, forcing a one-cycle stall whenever their register offsets
-match modulo four. We eliminate this by relocating $B$ from
-\texttt{f24..f31} to \texttt{f21..f28}, shifting its bank pattern by
-one position so that $A$, $B$, and $C/D$ each occupy a distinct cyclic
-shift modulo four and all three operands are served in a single cycle.
-This reduces register-file bank-conflict stalls by up to 24~percentage
-points.
-
-\textbf{FEDP Microarchitecture \& Datatypes:}\label{para:datatypes-fedp} The FourShadow TCU is realized using the highly configurable 4-cycle latency Ten-Four~\cite{rout2026tenfouropensourcefuseddot} mixed-precision FEDP microarchitecture. It consists of four pipeline stages: multiply $\rightarrow$ align $\rightarrow$ accumulate $\rightarrow$ normalize-and-round, producing a fully fused result without intermediate rounding. We support low-precision multiplication in TF32, FP16, BF16, FP8(E4M3), BF8(E5M2), INT8, and INT4 with higher-precision accumulation in FP32 and INT32 respectively. Ten-Four's RTL can be configured at compile-time to selectively enable or disable individual input formats, and FourShadow inherits this configurability directly. For example, a researcher studying mixed-precision training schemes combining BF16 forward passes with FP8 gradient accumulation can enable exactly those two formats only, producing a leaner datapath tuned to the workload.
-
-The effective reduction length of each FEDP invocation scales with the bitwidth of the active input format, since narrower types pack more elements into each 32-bit register slot. For a tile of fixed logical dimension \texttt{tileK}, FP16 and BF16 pack two elements per 32-bit slot, doubling the reduction length to $2 \times \texttt{tileK}$; FP8, BF8, and INT8 pack four elements, yielding $4 \times \texttt{tileK}$. For instance, when $NT=32$ the WMMA core dimensions are \texttt{8x4x4} in the baseline 32-bit (and TF32) case, \texttt{8x4x8} for FP16/BF16, and \texttt{8x4x16} for FP8/BF8/INT8. This register-packing scheme reduces memory bandwidth and footprint alongside compute density.
+Narrower input types pack more elements into each 32-bit register entry, so a tile covers $\mathit{tileK}=\mathit{xtileK}\times 4/\mathrm{sizeof}(\texttt{input\_dtype})$ elements of $K$ (Figure~\ref{fig:tiling_equations}). For $\mathit{NT}{=}32$, one micro-op computes an $8{\times}4{\times}4$ block for 32-bit inputs and TF32, $8{\times}4{\times}8$ for FP16 and BF16, and $8{\times}4{\times}16$ for FP8, BF8 and INT8.
 
 \subsection{Issue Width and Warpgroups}
 \label{sec:bg_issue}
