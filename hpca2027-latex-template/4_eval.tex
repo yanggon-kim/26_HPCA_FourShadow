@@ -124,7 +124,11 @@ registers enable a larger accumulator configuration or there is extreme register
 \end{figure}
 
 \subsection{Sparse Tensor Core Design Space Exploration}\label{sec:eval_sparse}
+
+The first two parts of this section explore the sparse design space of FourShadow: the symmetric and asymmetric layouts of warp-level MMA, and the two operand-staging modes of warp-group MMA. The last two parts (Sections~\ref{sec:eval_sparse_halves} and~\ref{sec:eval_sparse_meta}) measure warp-level MMA with 2:4 sparsity on FourShadow and on an NVIDIA RTX 5080 under the configuration of Section~\ref{sec:methodology} and compare the two platforms. This comparison is how the causes that Section~\ref{sec:mot_causes} finds undocumented are obtained for sparsity.
+
 \subsubsection{Symmetric vs.\ Asymmetric Sparse Configurations}
+% REVIEW(2026-10-01): configuration behind these numbers not yet reconciled with Sec. C.3 (max 1.78x whole-processor, 1.75x in-kernel region, measured for warp-level MMA + SP); see rebuttal_plan.md
 The underlying cycle ratios in Fig.~\ref{fig:sparse_sym_sweep} span
 1.26--3.14$\times$, with the 8-thread configuration reaching
 3.14$\times$ for FP8. The symmetric 4- and 16-thread configurations
@@ -153,9 +157,39 @@ nominal 2:4 zero-skipping compute reduction.
     \label{fig:sparse_wg_sweep}
 \end{figure}
 
+% REVIEW(2026-10-01): configuration behind these numbers not yet reconciled with Sec. C.3 (max 1.78x whole-processor, 1.75x in-kernel region, measured for warp-level MMA + SP); see rebuttal_plan.md
 Fig.~\ref{fig:sparse_wg_sweep} shows that sparsity reduces cycles by
 54.8--57.4\% in RS mode and 54.9--56.9\% in SS mode, corresponding to
 2.21--2.35$\times$ speedup. Agreeing with the sparse wargroup MMA microbenchmarking in \cite{luo2025dissectingnvidiahopperarchitecture}, this is the only case where RS mode is faster than or equal to SS mode. 
+
+\subsubsection{Only Part of the Sparse Cost Halves}\label{sec:eval_sparse_halves}
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]
+    {hpca2027-latex-template/fig/paper_sparse_nvidia_compare.pdf}
+    \caption{Warp-level MMA with 2:4 sparsity on FourShadow and on an
+    NVIDIA RTX 5080, both timed over the in-kernel region.
+    (a)~Dense-over-sparse speedup of a $64{\times}64{\times}K$ FP16 GEMM;
+    each dashed line is the bound $1/(1-f/2)$ of the platform of the same colour.
+    (b)~Halvable share $f$ of the per-$K$ cost per data type, from the
+    $64{\times}64{\times}K$ fits (INT8 fits use $K\geq64$); the bar labels give
+    the bound.
+    (c)~Cycles that one metadata reload adds per iteration against the number
+    of filler operations before the sparse MMA, FP16; FourShadow runs one CTA
+    with one active warp.}
+    \label{fig:sparse_nvidia}
+\end{figure*}
+
+The dense-over-sparse speedup grows with $K$ and settles below 2$\times$ on both platforms. Fig.~\ref{fig:sparse_nvidia}(a) plots it for a $64{\times}64{\times}K$ FP16 GEMM: on the RTX 5080 it is 1.16$\times$ at $K{=}32$ and 1.50$\times$ at $K{=}512$, and on FourShadow at 32 threads per warp it is 1.07$\times$ and 1.56$\times$, both under the 2$\times$ line of the analytic model of Fig.~\ref{fig:sparse_analytic}. Sparsity is faster on both platforms in each of the 17 shapes measured on both, and the two speedups differ by a median of 6.2\% at 32 threads and 9.0\% at 8 threads. The comparison uses the asymmetric 8- and 32-thread layouts; the symmetric 4- and 16-thread layouts are those of Fig.~\ref{fig:sparse_sym_sweep}. At $128{\times}128{\times}1024$ the platforms diverge, which we leave unexplained: the RTX 5080 speedup is 1.40$\times$, against 1.51$\times$ and 1.65$\times$ on FourShadow at 8 and 32 threads.
+
+The bound follows from a fit in which sparsity halves only part of the cost per unit of $K$. We fit the cycles of each $K$ sweep as $C_{\mathrm{dense}} = c + (a+d)K$ and $C_{\mathrm{sparse}} = c' + (a/2+d)K$, where $a$ is the per-$K$ cost that 2:4 sparsity halves, $d$ is the per-$K$ cost that it leaves unchanged, and $c$ and $c'$ do not depend on $K$. As $K$ grows the speedup approaches $1/(1-f/2)$, where $f = a/(a+d)$ is the halvable share. For FP16, $f$ is 69.7\% on the RTX 5080 and 78.5\% on FourShadow at 32 threads, which gives the dashed lines of Fig.~\ref{fig:sparse_nvidia}(a) at 1.53$\times$ and 1.65$\times$. In the terms of Fig.~\ref{fig:sparse_analytic}, $a$ contains $\mathit{TC}$ and the $A$ load, and $d$ contains the $B$ load and the metadata; the fit separates $a$ from $d$ but not $\mathit{TC}$ from the $A$ load, because both halve together. The model approaches its 2$\times$ ceiling only as $d$ approaches zero.
+
+On the RTX 5080 the halvable share falls as the data type narrows. The grey bars of Fig.~\ref{fig:sparse_nvidia}(b) step down from 90.1\% for TF32 through the 69.7\% of FP16 to 50.5\% for INT8, which lowers the bound from 1.82$\times$ to 1.34$\times$; the $128{\times}128{\times}K$ family gives the same order. One sparse MMA instruction on the RTX 5080 covers twice the $K$ of a dense one and costs 1.10, 1.30 and 1.50 times its cycles for the three data types. FourShadow shows the order at 32 threads (86.9\%, 78.5\% and 64.4\%) and not at 8 threads (72.9\%, 50.7\% and 72.9\%), with four or five values of $K$ per fit, so we report the precision dependence as a property of the RTX 5080 and not as an agreement between the platforms. We state two candidate causes as hypotheses. In the first, loads overlap with compute, so that an MMA step costs about the longer of its compute and its operand delivery: on the RTX 5080 the halvable cost of a dense step falls from 5.11 cycles per output element for TF32 to 1.94 for INT8 while the cost that does not halve rises from 0.56 to 1.91, and the metadata load of Section~\ref{sec:eval_sparse_meta} follows the same maximum-or-sum behaviour; this support comes from the RTX 5080 alone. In the second, the selection of operands by the metadata widens with the elements per instruction, 64 positions of $K$ for a sparse INT8 instruction against 16 for TF32.
+
+\subsubsection{Metadata Is Hidden by Scheduling or Kept Short}\label{sec:eval_sparse_meta}
+On the RTX 5080 the cost of a metadata load depends on where the kernel places it. The experiment runs 64 iterations of a sparse FP16 MMA, each preceded by 0 to 64 filler operations, and reloads the metadata in every iteration either before the filler (early) or after it (late). Fig.~\ref{fig:sparse_nvidia}(c) plots the cycles that one reload adds over a kernel that keeps the metadata resident: the late line stays flat while the early line falls. Loaded late, the reload adds 1,435 to 1,443 cycles at every filler distance. Loaded early, it adds 1,289 cycles with no filler and 2.5 cycles with 64 filler operations, because the filler executes while the load is outstanding. Two rules without a fitted constant reproduce the cycles of six data formats within 0.8\%: an early load costs the maximum of the load and the filler, and a late load costs their sum.
+
+On FourShadow the same reload adds 9 cycles wherever it is placed. FourShadow loads metadata with a dedicated instruction into a per-warp metadata memory (Section~\ref{sec:design_sparse}), and the early and late schedules give identical cycles at every filler distance, at 8 and 32 threads; the sum rule fits exactly and the maximum rule misses by 1.4\% to 8.9\%. The scope of this measurement is one CTA with one active warp in simulation, and the absolute cycles of the two platforms are not compared. The contrast identifies two properties of the commercial design, both inferred from timing. A warp on the RTX 5080 continues to issue instructions past a pending load, and only the instruction that reads the loaded register waits. Its metadata is an ordinary register operand of \texttt{mma.sp} filled by an ordinary load, so a kernel hides the cost by scheduling the load early. FourShadow instead keeps the cost independent of placement with a short dedicated load.
 
 \subsection{FPGA Design Flow}
 

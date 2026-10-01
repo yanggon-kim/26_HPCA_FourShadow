@@ -138,6 +138,109 @@ A kernel fills shared memory from global memory either with ordinary per-thread 
 \section{Motivation}
 \label{sec:motivation}
 
+\begin{table*}[t]
+\centering
+\caption{Comparison of GPU tensor-core architectures, simulators and related research.}
+\label{tab:related_work_comparison}
+\renewcommand{\arraystretch}{0.9}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{2.4cm} p{2.4cm} p{3.6cm} p{2.6cm} p{2.2cm} p{1.5cm} c c}
+\toprule
+\textbf{Paper} &
+\textbf{Simulation} &
+\textbf{Data Types} &
+\textbf{Thread Config.} &
+\textbf{Sparsity} &
+\textbf{TC Style} &
+\makecell{\textbf{Low Latency}\\\textbf{Dot Product}} &
+\makecell{\textbf{Open}\\\textbf{Source}} \\
+\midrule
+\rowcolor{blue!8}
+\textbf{FourShadow (Ours)}
+  & Cycle-sim, RTL
+  & TF32, FP16/8, BF16/8, \newline INT8/4
+  & 2, 4, 8, 16, 32
+  & 2:4 structured
+  & SIMT
+  & Fused (RTL)
+  & \cyes \\
+\midrule
+\textbf{Virgo}~\cite{kim2025virgo}
+  & Cycle-sim, RTL
+  & INT8/32
+  & Fixed 32
+  & \cno
+  & Systolic
+  & Discrete
+  & \cyes \\
+\midrule
+\textbf{CoopWarp}~\cite{nada2025cooperative}
+  & Cycle-sim
+  & FP8, FP16, BF16, FP32
+  & 4, 8, 16, 32
+  & \cno
+  & SIMT
+  & Discrete
+  & \cyes \\
+\midrule
+\textbf{RM-STC}~\cite{huang2023rmstc}
+  & Cycle-sim
+  & FP16, INT8
+  & Fixed 32
+  & Any degree
+  & SIMT
+  & Discrete
+  & \cno \\
+\midrule
+\textbf{VEGETA}~\cite{jeong2023vegeta}
+  & Cycle-sim, RTL
+  & BF16, FP32
+  & No SIMT
+  & N:M flexible
+  & Systolic
+  & Discrete
+  & \cno \\
+\midrule
+\textbf{SIMD$^2$}~\cite{zhang2022simd2}
+  & HW emulation
+  & FP16, INT8
+  & Fixed 32
+  & \cno
+  & SIMT
+  & Discrete
+  & \cno \\
+\midrule
+\textbf{Accel-Sim}~\cite{accel-sim}
+  & Cycle-sim
+  & FP16
+  & Fixed 32
+  & \cno
+  & SIMT
+  & Fused (Sim)
+  & \cyes \\
+\midrule
+\textbf{Sparse TC}~\cite{zhu2019sparsetensorcore}
+  & Cycle-sim
+  & FP16, INT8
+  & Fixed 32
+  & Vector N:M
+  & SIMT
+  & Discrete
+  & \cno \\
+\midrule
+\textbf{GPGPU-Sim}~\cite{raihan2019modeling}
+  & Cycle-sim
+  & FP16/32
+  & Fixed 32
+  & \cno
+  & Modeled
+  & Fused (Sim)
+  & \cyes \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
 Two facts about what is public on tensor cores motivate this work: their features are documented without their causes, which existing simulation frameworks cannot supply either (Section~\ref{sec:mot_causes}), and a commercial GPU exposes one design point (Section~\ref{sec:mot_point}).
 
 \subsection{Tensor-Core Features Are Documented Without Their Causes}
@@ -149,11 +252,11 @@ Warp-group MMA shows the same pattern. The instruction takes matrix $A$ either f
 
 These sources give the outcome and leave its microarchitectural cause open. The study that measures the two modes suggests that the doubled shared-memory access demand of the sparse SS mode may be the reason~\cite{luo2025dissectingnvidiahopperarchitecture}. On a commercial GPU the operand path, the metadata path and the tensor-core array are neither observable nor changeable one at a time, so such an explanation cannot be tested there.
 
-Existing simulation frameworks cannot supply the cause either, because they abstract the tensor core. Accel-Sim~\cite{accel-sim} gives every tensor-core instruction one latency and one initiation interval, both read from a single configuration option. A tensor-core instruction is thus represented by two numbers. Its micro-op sequence, the delivery of its operands from registers or shared memory, and its sparsity metadata are below the resolution of such a model, so the model cannot attribute a measured outcome to any one of them.
+Existing simulation frameworks cannot supply the cause either, because they abstract the tensor core. Accel-Sim~\cite{accel-sim} gives every tensor-core instruction one latency and one initiation interval, both read from a single configuration option. A tensor-core instruction is thus represented by two numbers. Its micro-op sequence, the delivery of its operands from registers or shared memory, and its sparsity metadata are below the resolution of such a model, so the model cannot attribute a measured outcome to any one of them. GPGPU-Sim~\cite{raihan2019modeling} also models the tensor core inside a cycle-level simulator; the Accel-Sim and GPGPU-Sim rows of Table~\ref{tab:related_work_comparison} show both with the warp fixed at 32 threads and without sparsity.
 
 \subsection{A Commercial GPU Exposes One Design Point}
 \label{sec:mot_point}
 
-A commercial GPU ships one point of the tensor-core design space: 32 threads per warp and four warps per warp group on NVIDIA GPUs~\cite{luo2025dissectingnvidiahopperarchitecture}. Microbenchmarking studies measure that point across GPU generations, instruction shapes and data types~\cite{jia2018dissectingnvidiavoltagpu, jia2019dissectingnvidiaturingt4, 9931992, luo2025dissectingnvidiahopperarchitecture}. The threads per warp and the issue width are fixed in silicon, so their interaction cannot be measured on any shipped part: the return of a wider issue width at 32 threads per warp against 16 or 4 threads per warp is one such interaction. A simulation framework can change the parameters that silicon fixes, but a model that represents a tensor-core instruction by one latency and one initiation interval (Section~\ref{sec:mot_causes}) has no tensor-core organization to vary together with the threads per warp and the issue width. The design points around the commercial one are therefore unmeasured, and the headroom they hold is unexplored.
+A commercial GPU ships one point of the tensor-core design space: 32 threads per warp and four warps per warp group on NVIDIA GPUs~\cite{luo2025dissectingnvidiahopperarchitecture}. Microbenchmarking studies measure that point across GPU generations, instruction shapes and data types~\cite{jia2018dissectingnvidiavoltagpu, jia2019dissectingnvidiaturingt4, 9931992, luo2025dissectingnvidiahopperarchitecture}. The threads per warp and the issue width are fixed in silicon, so their interaction cannot be measured on any shipped part: the return of a wider issue width at 32 threads per warp against 16 or 4 threads per warp is one such interaction. Research platforms mostly keep this point: in the thread-configuration column of Table~\ref{tab:related_work_comparison}, every GPU platform except CoopWarp~\cite{nada2025cooperative} fixes the warp at 32 threads. A simulation framework can change the parameters that silicon fixes, but a model that represents a tensor-core instruction by one latency and one initiation interval (Section~\ref{sec:mot_causes}) has no tensor-core organization to vary together with the threads per warp and the issue width. The design points around the commercial one are therefore unmeasured, and the headroom they hold is unexplored.
 
-\textbf{Positioning and roadmap.} FourShadow is an open, synthesizable and reconfigurable tensor-core microarchitecture on a RISC-V GPU. It obtains the causes by design-space exploration, changing one microarchitectural parameter at a time, and it is released as a framework for further tensor-core studies. For the design points of Section~\ref{sec:mot_point}, Section~\ref{sec:eval_hierarchy} scales the threads per warp, the issue width and the cores per cluster. For the causes of Section~\ref{sec:mot_causes}, the warp-group tensor core is designed in Section~\ref{sec:design_wgmma} and explored in Section~\ref{sec:eval_wgmma}, and the sparse tensor core is designed in Section~\ref{sec:design_sparse} and explored in Section~\ref{sec:eval_sparse}. Section~\ref{sec:methodology} describes how these measurements are compared with those of a commercial GPU.
+\textbf{Positioning and roadmap.} FourShadow is an open, synthesizable and reconfigurable tensor-core microarchitecture on a RISC-V GPU. It obtains the causes by design-space exploration, changing one microarchitectural parameter at a time, and it is released as a framework for further tensor-core studies. No prior platform listed in Table~\ref{tab:related_work_comparison} combines configurable thread counts, the listed data types, 2:4 structured sparsity and an open RTL implementation. For the design points of Section~\ref{sec:mot_point}, Section~\ref{sec:eval_hierarchy} scales the threads per warp, the issue width and the cores per cluster. For the causes of Section~\ref{sec:mot_causes}, the warp-group tensor core is designed in Section~\ref{sec:design_wgmma} and explored in Section~\ref{sec:eval_wgmma}, and the sparse tensor core is designed in Section~\ref{sec:design_sparse} and explored in Section~\ref{sec:eval_sparse}; its causes are obtained by the comparison with a commercial GPU in Sections~\ref{sec:eval_sparse_halves} and~\ref{sec:eval_sparse_meta}. Section~\ref{sec:methodology} describes how these measurements are compared with those of a commercial GPU.
