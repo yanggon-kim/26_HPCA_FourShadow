@@ -12,7 +12,7 @@
     \label{fig:figure_integration}
 \end{figure*}
 
-FourShadow adds two components to the base tensor core of Section~\ref{sec:bg_tcu}, the warp-group tensor core and the sparse tensor core; these are the extensions that the rest of this section describes, and Figure~\ref{fig:figure_integration} shows the complete datapath with both. The warp-group tensor core (Section~\ref{sec:design_wgmma}) makes the warps of a warpgroup execute one matrix operation, one tensor block per warp, with operands read from shared memory through the Warp-Group Tile Buffer Subsystem: one private $A$ buffer per tensor block and one $B$ buffer shared by all blocks. The sparse tensor core (Section~\ref{sec:design_sparse}) adds 2:4 structured sparsity: a metadata SRAM in every tensor block and a Selection Mux Array that picks the $B$ elements matching the retained $A$ elements. Section~\ref{sec:design_pm} describes the programming model that selects among warp-level MMA, warp-group MMA and their sparse forms at compile time.
+FourShadow adds two components to the base tensor core of Section~\ref{sec:bg_tcu}, the warp-group tensor core (Section~\ref{sec:design_wgmma}), which reads its operands from shared memory through the Warp-Group Tile Buffer Subsystem, and the sparse tensor core (Section~\ref{sec:design_sparse}), which adds 2:4 structured sparsity; Figure~\ref{fig:figure_integration} shows the complete datapath with both. Section~\ref{sec:design_pm} describes the programming model that selects among warp-level MMA, warp-group MMA and their sparse forms at compile time.
 
 \subsection{Warp-group Tensor Core}\label{sec:design_wgmma}
 
@@ -79,43 +79,18 @@ $\rho=\tfrac{4}{\mathrm{sizeof}(\texttt{input\_dtype})}$\par
  = 2\mathit{tcK}\rho &
 \end{flalign}
  
-\noindent
-\textbf{\textsc{Warp indexing and tile ownership}}
-\begin{flalign}
-&0 \leq w < \mathit{IW} & \\
-&M_w = M_{\mathrm{CTA}} + w\mathit{xtileM}_{\mathrm{wg}} & \\
-&N_w = N_{\mathrm{CTA}},\quad
-K_w = K_{\mathrm{tile}} & \\
-&A^{(w)}
- = A[M_w:M_w+\mathit{xtileM}_{\mathrm{wg}},\,
-     K_w:K_w+\mathit{tileK}_{\mathrm{wg}}] & \\
-&B^{(\mathrm{wg})}
- = B[K_w:K_w+\mathit{tileK}_{\mathrm{wg}},\,
-     N_w:N_w+\mathit{xtileN}_{\mathrm{wg}}] & \\
-&C^{(w)}
- = C[M_w:M_w+\mathit{xtileM}_{\mathrm{wg}},\,
-     N_w:N_w+\mathit{xtileN}_{\mathrm{wg}}] &
-\end{flalign} 
 \hrule
  
-\caption{Warp-group MMA tiling, micro-op order and tile ownership for an issue
+\caption{Warp-group MMA tiling and micro-op order for an issue
 width of \(\mathit{IW}\). Every warp runs the same sequence of \((k,n,m)\)
 micro-ops on its own tensor block; warp \(w\) supplies its own rows of $A$ and
 all warps consume the same $B$ tile.}
 \label{fig:wgmma_tiling_equations}
 \end{figure}
 
-\textbf{Warpgroup and tensor blocks.} The warp-group tensor core executes the warp-group MMA (WGMMA) instruction, with which the warps of a warpgroup compute one matrix product, each warp on its own tensor block. The core has one tensor block per issue slot, $\mathit{IW}$ blocks for an issue width of $\mathit{IW}$, and a warp runs on the block selected by its warp index modulo $\mathit{IW}$. Software forms the warpgroup: the kernel launches a cooperative thread array (CTA) of $\mathit{IW}$ warps, and warp $w$ of the CTA owns the $2\,\mathit{tcM}$ output rows that start at row $2w\,\mathit{tcM}$. All warps read the same $B$ tile, so a warpgroup extends the operation in the $M$ dimension only (Figure~\ref{fig:wgmma_tiling_equations}, tile ownership: $A^{(w)}$ and $C^{(w)}$ depend on $w$, $B^{(\mathrm{wg})}$ does not). With $\mathit{NT}{=}32$ and $\mathit{IW}{=}4$, four $8{\times}4$ blocks compute a 64-row tile.
+\textbf{Warpgroup and tensor blocks.} The warp-group tensor core executes the warp-group MMA (WGMMA) instruction, with which the warps of a warpgroup compute one matrix product, each warp on its own tensor block. The core has one tensor block per issue slot, $\mathit{IW}$ blocks for an issue width of $\mathit{IW}$, and a warp runs on the block selected by its warp index modulo $\mathit{IW}$. Software forms the warpgroup: the kernel launches a cooperative thread array (CTA) of $\mathit{IW}$ warps, and warp $w$ of the CTA owns the $2\,\mathit{tcM}$ output rows that start at row $2w\,\mathit{tcM}$. All warps read the same $B$ tile, so a warpgroup extends the operation in the $M$ dimension only (Figure~\ref{fig:wgmma_tiling_equations}, warp-group tile: only $\mathit{wgTileM}$ grows with $\mathit{IW}$). With $\mathit{NT}{=}32$ and $\mathit{IW}{=}4$, four $8{\times}4$ blocks compute a 64-row tile.
 
-\textbf{Tile and micro-ops.} Each warp's sequencer expands its WGMMA instruction into micro-ops, and one micro-op computes one $\mathit{tcM}{\times}\mathit{tcN}$ block of the output. The per-warp tile is two blocks deep in $M$ and two in $K$; the number of accumulator registers, $\mathit{NRC}\in\{8,16,32\}$, sets its extent in $N$ to $n_{\mathrm{steps}}=\mathit{NRC}/2$ blocks. $\mathit{NRC}{=}8$ is the accumulator count of the base tensor core. The micro-ops run with $k$ outermost, then $n$, then $m$ innermost, and micro-op $(m,n)$ accumulates into register \texttt{f}$(2n{+}m)$. For $\mathit{NT}{=}32$, $\mathit{IW}{=}4$ and FP16 inputs:
-\[
-\begin{array}{c|c|c}
-\mathit{NRC} & \text{warpgroup tile } (M{\times}N{\times}K) & \text{micro-ops per warp} \\ \hline
-8  & 64\times16\times16 & 16\\
-16 & 64\times32\times16 & 32\\
-32 & 64\times64\times16 & 64
-\end{array}
-\]
+\textbf{Tile and micro-ops.} Each warp's sequencer expands its WGMMA instruction into micro-ops, and one micro-op computes one $\mathit{tcM}{\times}\mathit{tcN}$ block of the output. The per-warp tile is two blocks deep in $M$ and two in $K$; the number of accumulator registers, $\mathit{NRC}\in\{8,16,32\}$, sets its extent in $N$ to $n_{\mathrm{steps}}=\mathit{NRC}/2$ blocks. $\mathit{NRC}{=}8$ is the accumulator count of the base tensor core. The micro-ops run with $k$ outermost, then $n$, then $m$ innermost, and micro-op $(m,n)$ accumulates into register \texttt{f}$(2n{+}m)$. For $\mathit{NT}{=}32$, $\mathit{IW}{=}4$ and FP16 inputs, the warpgroup tile ($M{\times}N{\times}K$) is $64{\times}16{\times}16$ with 16 micro-ops per warp at $\mathit{NRC}{=}8$, and $64{\times}64{\times}16$ with 64 at $\mathit{NRC}{=}32$.
 
 \textbf{Operands and descriptors.} Operand $B$ always comes from shared memory. Operand $A$ comes from shared memory in shared-memory/shared-memory (SS) mode and from four registers, \texttt{f24}--\texttt{f27}, in register/shared-memory (RS) mode. A shared-memory operand is named by a 32-bit descriptor: a 16-bit byte offset from the base of shared memory and a 16-bit row stride. A stride of zero selects the block-major layout, in which the tile is stored as the blocks that the micro-ops consume; a non-zero stride selects a row-major layout for $A$ and a K-major layout for $B$, from which the tile buffer gathers a block row by row. Software places the two descriptors in integer registers \texttt{x10} and \texttt{x11}, and each tensor block latches them at the first compute micro-op of the instruction. The accumulators occupy \texttt{f0} to \texttt{f}$(\mathit{NRC}{-}1)$, so $\mathit{NRC}{=}32$ fills the floating-point register file and is available in SS mode only; RS mode supports $\mathit{NRC}\le 16$. The kernel stages the tiles into shared memory with ordinary loads and stores or with DXA (Section~\ref{sec:bg_smem}), whose row-major output the non-zero-stride layout reads.
 
@@ -127,7 +102,7 @@ all warps consume the same $B$ tile.}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\linewidth]{hpca2027-latex-template/fig/fedp2k.pdf}
+    \includegraphics[width=0.4\linewidth]{hpca2027-latex-template/fig/fedp2k.pdf}
     \caption{Logical K vs 2K-Wide FEDP}
     \label{fig:fedp2k_blocks}
 \end{figure}
@@ -178,7 +153,7 @@ s_{\text{eff}} = 1 - \tfrac{1}{2} + \mathit{MO}
 
 \textbf{Sparse FEDP Selection.} The compressed $A$ values are sent directly to the FEDP inputs; the hardware does not reconstruct a dense vector by inserting zeros. Instead, the row-specific metadata drives the Selection Mux Array as a gather network on the $B$ side, selecting the two $B$ elements that match the two retained $A$ positions for each group of four. This selector is replicated across the FEDP grid because metadata is row-dependent: different $A$ rows can retain different positions even though the underlying $B$ candidates are shared. A sparse micro-operation still performs eight nonzero products per output element, but those products now cover sixteen logical $K$ positions instead of eight, so sparse execution needs only half as many $k\_steps$ as dense execution for the same tile.
 
-\textbf{Asymmetric vs.\ Symmetric Configurations.} Enabling 2:4 sparsity halves matrix~$A$'s $K$ dimension, reducing both load volume and MMA micro-ops ($k\_steps$ halved) at the cost of metadata. The $B$ operand preparation, however, differs fundamentally between asymmetric and symmetric configurations, and the performance benefit applies only to the asymmetric group ($\mathit{NT}{\in}\{2,8,32\}$).
+\textbf{Asymmetric vs.\ Symmetric Configurations.} The $B$ operand preparation differs between the asymmetric and symmetric configurations of Section~\ref{sec:bg_tcu}, and the performance benefit applies only to the asymmetric group ($\mathit{NT}{\in}\{2,8,32\}$).
 
 Figure~\ref{fig:figure_register_mapping}(a) shows the asymmetric case of Section~\ref{sec:bg_tcu} for $\mathit{NT}{=}8$. With sparsity enabled (red), each compressed $A$ row must pair with two candidate $B$ columns for metadata-driven selection, changing the $B$ layout to vertical column pairs (``$\times$2 col candidates''). Because a dense $B$ block occupies half of each register, this rearrangement fits within the existing width. As shown in the red annotations, $\mathit{xtileK}$ halves from 8 to 4, reducing $k\_steps$ from 4 to 2 while all FEDP units remain fully active.
 
@@ -193,16 +168,10 @@ In the symmetric case, Figure~\ref{fig:figure_register_mapping}(b) with $\mathit
 \end{figure}
 \label{sec:sw_integrationv4}\label{sec:design_pm}
 
-FourShadow exposes WMMA, WGMMA, and 2:4 structured sparsity as composable primitives selected almost entirely at compile time. Input/output format, NRC, and RS-versus-SS mode are all template parameters on \texttt{wgmma\_config\_t} and \texttt{wgmma\_context} (Figure~\ref{fig:sw_integrationv4}), so the same kernel source compiles down to dense WMMA, dense WGMMA, or sparse WGMMA execution depending on how it is instantiated.
+FourShadow exposes WMMA, WGMMA, and 2:4 structured sparsity as composable primitives selected almost entirely at compile time. Input/output format (\texttt{ITYPE}/\texttt{OTYPE}), NRC, and RS-versus-SS mode (Section~\ref{sec:design_wgmma}) are all template parameters on \texttt{wgmma\_config\_t} and \texttt{wgmma\_context} (Figure~\ref{fig:sw_integrationv4}), so the same kernel source compiles down to dense WMMA, dense WGMMA, or sparse WGMMA execution depending on how it is instantiated.
 
-\subsubsection{Host-Side Data Preparation}
+\textbf{Metadata packing.} On the host, \texttt{pack\_metadata\_wg} repacks the 2:4 mask produced by pruning/compression into the per-thread SRAM bank layout that the \texttt{TCU\_LD} AGU and the metadata SRAM expect (Section~\ref{sec:design_sparse}); the layout is dimensioned against the \emph{WMMA}-config per-warp depth, since that shared hardware is sized for WMMA.
 
-\textbf{Metadata Packing.} The 2:4 mask produced by pruning/compression is not uploaded as-is; \texttt{pack\_metadata\_wg} repacks it into the per-thread SRAM bank layout that the \texttt{TCU\_LD} AGU and the metadata SRAM expect (Section~\ref{sec:design_sparse}). That layout is dimensioned against the \emph{WMMA}-config per-warp depth since the \texttt{TCU\_LD} path and metadata SRAM are shared hardware sized for WMMA.
-
-\textbf{Compile-Time Mode Selection.} The RS and SS modes and their $\mathit{NRC}$ ranges are those of Section~\ref{sec:design_wgmma}. Both RS/SS and format (\texttt{ITYPE}/\texttt{OTYPE}) are template parameters, fixed at build time.
-
-\subsubsection{Kernel-Side Orchestration}
+\textbf{Operand and metadata delivery.} In the kernel, \texttt{load\_sp\_metadata} loads the packed mask in both RS and SS mode (Section~\ref{sec:design_sparse}), and $A$ reaches the instruction as Section~\ref{sec:design_wgmma} describes, through \texttt{load\_matrix\_sync} in RS mode and through a descriptor built by \texttt{vx\_make\_smem\_desc} in SS mode; both modes call the same \texttt{wgmma\_sync} entry point.
 
 \textbf{Tile Stride.} Each warp's private $A$ section is padded to the shared-memory bank-row width ($\mathit{NT}\times\mathrm{XLEN}/8$ bytes) so warp $w{+}1$'s stripe always starts on a fresh bank row. Without this, the $A$ buffer's single-row fetch can walk into the previous warp's region.
-
-\textbf{Sparse Metadata and Descriptor Dispatch.} Unlike $A$ and $B$, the packed sparse mask bypasses shared memory entirely: \texttt{load\_sp\_metadata} reads it straight from global memory into the TCU's metadata SRAM before dispatch, in both RS and SS mode. The two modes then diverge only in how $A$ reaches the instruction, register fragment via \texttt{load\_matrix\_sync} for RS, shared-memory descriptor via \texttt{vx\_make\_smem\_desc} for SS, but both call the same \texttt{wgmma\_sync} entry point. Sparsity itself is selected once, at compile time, by instantiating \texttt{wgmma\_context} with its sparse flag set, not by a differently named sparse instruction per launch.

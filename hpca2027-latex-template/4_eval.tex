@@ -127,15 +127,14 @@ registers enable a larger accumulator configuration or there is extreme register
 
 \subsection{Sparse Tensor Core Design Space Exploration}\label{sec:eval_sparse}
 
-The first two parts of this section explore the sparse design space of FourShadow: the symmetric and asymmetric layouts of warp-level MMA, and the two operand-staging modes of warp-group MMA. The last two parts (Sections~\ref{sec:eval_sparse_halves} and~\ref{sec:eval_sparse_meta}) measure warp-level MMA with 2:4 sparsity on FourShadow and on an NVIDIA RTX 5080 under the configuration of Section~\ref{sec:methodology} and compare the two platforms. This comparison is how the causes that Section~\ref{sec:mot_causes} finds undocumented are obtained for sparsity.
+The first two parts of this section explore the sparse design space of FourShadow: the symmetric and asymmetric layouts of warp-level MMA, and the two operand-staging modes of warp-group MMA. The last two parts (Sections~\ref{sec:eval_sparse_halves} and~\ref{sec:eval_sparse_meta}) measure warp-level MMA with 2:4 sparsity on FourShadow and on an NVIDIA RTX 5080 under the configuration of Section~\ref{sec:methodology} and compare the two platforms.
 
 \subsubsection{Symmetric vs.\ Asymmetric Sparse Configurations}
 % REVIEW(2026-10-01): configuration behind these numbers not yet reconciled with Sec. C.3 (max 1.78x whole-processor, 1.75x in-kernel region, measured for warp-level MMA + SP); see rebuttal_plan.md
 The underlying cycle ratios in Fig.~\ref{fig:sparse_sym_sweep} span
 1.26--3.14$\times$, with the 8-thread configuration reaching
 3.14$\times$ for FP8. The symmetric 4- and 16-thread configurations
-remain lower because reducing the number of $K$ steps requires additional
-$N$ steps and has partial FEDP utilization. The 32-thread configuration also
+remain lower, for the reason given in Section~\ref{sec:design_sparse}. The 32-thread configuration also
 trails the 8-thread design. Sparse scaling therefore depends on whether
 the compressed mapping preserves full array utilization, not only on the
 nominal 2:4 zero-skipping compute reduction.
@@ -177,12 +176,11 @@ Fig.~\ref{fig:sparse_wg_sweep} shows that sparsity reduces cycles by
     $64{\times}64{\times}K$ fits (INT8 fits use $K\geq64$); the bar labels give
     the bound.
     (c)~Cycles that one metadata reload adds per iteration against the number
-    of filler operations before the sparse MMA, FP16; FourShadow runs one CTA
-    with one active warp.}
+    of filler operations before the sparse MMA, FP16.}
     \label{fig:sparse_nvidia}
 \end{figure*}
 
-The dense-over-sparse speedup grows with $K$ and settles below 2$\times$ on both platforms. Fig.~\ref{fig:sparse_nvidia}(a) plots it for a $64{\times}64{\times}K$ FP16 GEMM: on the RTX 5080 it is 1.16$\times$ at $K{=}32$ and 1.50$\times$ at $K{=}512$, and on FourShadow at 32 threads per warp it is 1.07$\times$ and 1.56$\times$, both under the 2$\times$ line of the analytic model of Fig.~\ref{fig:sparse_analytic}. Sparsity is faster on both platforms in each of the 17 shapes measured on both, and the two speedups differ by a median of 6.2\% at 32 threads and 9.0\% at 8 threads. The comparison uses the asymmetric 8- and 32-thread layouts; the symmetric 4- and 16-thread layouts are those of Fig.~\ref{fig:sparse_sym_sweep}. At $128{\times}128{\times}1024$ the platforms diverge, which we leave unexplained: the RTX 5080 speedup is 1.40$\times$, against 1.51$\times$ and 1.65$\times$ on FourShadow at 8 and 32 threads.
+The dense-over-sparse speedup grows with $K$ and settles below 2$\times$ on both platforms. Fig.~\ref{fig:sparse_nvidia}(a) plots it for a $64{\times}64{\times}K$ FP16 GEMM: on the RTX 5080 it is 1.16$\times$ at $K{=}32$ and 1.50$\times$ at $K{=}512$, and on FourShadow at 32 threads per warp it is 1.07$\times$ and 1.56$\times$, both under the 2$\times$ line of the analytic model of Fig.~\ref{fig:sparse_analytic}. Sparsity is faster on both platforms in each of the 17 shapes measured on both, and the two speedups differ by a median of 6.2\% at 32 threads and 9.0\% at 8 threads. At $128{\times}128{\times}1024$ the platforms diverge, which we leave unexplained: the RTX 5080 speedup is 1.40$\times$, against 1.51$\times$ and 1.65$\times$ on FourShadow at 8 and 32 threads.
 
 The bound follows from a fit in which sparsity halves only part of the cost per unit of $K$. We fit the cycles of each $K$ sweep as $C_{\mathrm{dense}} = c + (a+d)K$ and $C_{\mathrm{sparse}} = c' + (a/2+d)K$, where $a$ is the per-$K$ cost that 2:4 sparsity halves, $d$ is the per-$K$ cost that it leaves unchanged, and $c$ and $c'$ do not depend on $K$. As $K$ grows the speedup approaches $1/(1-f/2)$, where $f = a/(a+d)$ is the halvable share. For FP16, $f$ is 69.7\% on the RTX 5080 and 78.5\% on FourShadow at 32 threads, which gives the dashed lines of Fig.~\ref{fig:sparse_nvidia}(a) at 1.53$\times$ and 1.65$\times$. In the terms of Fig.~\ref{fig:sparse_analytic}, $a$ contains $\mathit{TC}$ and the $A$ load, and $d$ contains the $B$ load and the metadata; the fit separates $a$ from $d$ but not $\mathit{TC}$ from the $A$ load, because both halve together. The model approaches its 2$\times$ ceiling only as $d$ approaches zero.
 
@@ -200,6 +198,10 @@ target a 250\,MHz clock frequency. The evaluated system contains
 one core with eight 8-thread warps, an issue width of four, and four
 8-lane Ten-Four\cite{rout2026tenfouropensourcefuseddot} blocks supporting FP16 inputs and FP32
 accumulation, WGMMA, 2K-wide FEDP, and 2:4 structured sparsity. Table.~\ref{tab:tcu-parts} shows the hierarchial utilization overhead of each FourShadow extended unit.
+Of the post-synthesis LUT area of the fully enabled Vortex core, the TCU
+takes 53.7\%, the issue stage and front end 17.2\%, the FPU 13.8\%, the ALU
+6.1\%, memory (first-level caches and local memory) 4.8\%, the LSU 2.1\%,
+the SFU 1.6\% and the remainder 0.7\%.
 
 \begin{table}
   \centering
@@ -246,66 +248,6 @@ workload-dependent rather than uniformly additive.
     \caption{End-to-end FPGA speedup over the SIMT baseline on the
     Alveo U55C at 250\,MHz.}
     \label{fig:e2e_fpga}
-\end{figure}
-
-% Requires \usepackage{tikz}
-\definecolor{cTCU}{HTML}{2C6FB0}
-\definecolor{cISS}{HTML}{E8873A}
-\definecolor{cFPU}{HTML}{3F9E7C}
-\definecolor{cALU}{HTML}{8256A6}
-\definecolor{cMEM}{HTML}{B0752C}
-\definecolor{cLSU}{HTML}{D1495B}
-\definecolor{cSFU}{HTML}{7A7A7A}
-\definecolor{cOTH}{HTML}{BFBFBF}
-
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[x=1cm,y=1cm]
-  \def\W{1.9}
-
-  \foreach \yo/\yt/\c in {
-      0/3.759/cTCU,
-      3.759/4.963/cISS,
-      4.963/5.929/cFPU,
-      5.929/6.356/cALU,
-      6.356/6.692/cMEM,
-      6.692/6.839/cLSU,
-      6.839/6.951/cSFU,
-      6.951/7.000/cOTH}
-    \fill[\c,draw=black!35,line width=0.3pt]
-      (0,\yo) rectangle (\W,\yt);
-
-  \draw[black!35] (0,0) rectangle (\W,7);
-
-  \foreach \p in {0,25,50,75,100}
-    \draw[black!40] (-0.08,\p*0.07) -- (0,\p*0.07)
-      node[left,font=\scriptsize,black]{\p};
-
-  \node[rotate=90,font=\footnotesize,anchor=south]
-    at (-0.75,3.5) {Core LUT area (\%)};
-
-  \node[white,font=\small\bfseries,align=center]
-    at (\W/2,1.880) {TCU\\53.7\%};
-  \node[white,font=\scriptsize\bfseries,align=center]
-    at (\W/2,4.361) {Issue \&\\front-end\\17.2\%};
-  \node[white,font=\scriptsize\bfseries,align=center]
-    at (\W/2,5.446) {FPU 13.8\%};
-
-  \foreach \ym/\yl/\txt in {
-      6.143/5.55/{ALU \textemdash{} 6.1\%},
-      6.524/6.05/{Memory (L1\,\$+LMEM) \textemdash{} 4.8\%},
-      6.766/6.55/{LSU \textemdash{} 2.1\%},
-      6.895/7.05/{SFU \textemdash{} 1.6\%},
-      6.976/7.55/{Other \textemdash{} 0.7\%}} {
-    \draw[black!45,line width=0.3pt]
-      (\W,\ym) -- (\W+0.25,\yl);
-    \node[right,font=\scriptsize,anchor=west]
-      at (\W+0.28,\yl) {\txt};
-  }
-\end{tikzpicture}
-\caption{Post-synthesis LUT-area breakdown of the fully enabled
-Vortex core.}
-\label{fig:core-area}
 \end{figure}
 
 \subsection{ASIC Design Flow}
