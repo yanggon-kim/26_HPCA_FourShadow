@@ -1,12 +1,12 @@
 \section{Background}
 \label{sec:background}
 
-This section describes the baseline GPU that FourShadow extends: its SIMT hierarchy (Section~\ref{sec:bg_hierarchy}), its base tensor core (Section~\ref{sec:bg_tcu}), its issue width and warpgroups (Section~\ref{sec:bg_issue}), and its shared memory with the engine that fills it (Section~\ref{sec:bg_smem}).
+This section describes the base tensor core that FourShadow extends (Section~\ref{sec:bg_tcu}) and the concepts it depends on: the SIMT hierarchy and the threads per warp (Section~\ref{sec:bg_hierarchy}), the issue width and warpgroups (Section~\ref{sec:bg_issue}), and shared memory with DXA, the engine that fills it (Section~\ref{sec:bg_smem}).
 
-\subsection{SIMT Hierarchy of the Baseline GPU}
+\subsection{SIMT Hierarchy and Threads per Warp}
 \label{sec:bg_hierarchy}
 
-The baseline is Vortex~\cite{vortex}, an open-source RISC-V GPU. A Vortex processor is organized as clusters of cores; inside a cluster, a socket groups the cores that share first-level caches. The number of clusters, the cores per cluster and the cores per socket are compile-time parameters.
+The base tensor core is built into Vortex~\cite{vortex}, an open-source RISC-V GPU. A Vortex processor is organized as clusters of cores; inside a cluster, a socket groups the cores that share first-level caches. The number of clusters, the cores per cluster and the cores per socket are compile-time parameters.
 
 Each core is a SIMT pipeline that runs $\mathit{NW}$ warps. A warp is a group of $\mathit{NT}$ threads that execute the same instruction on $\mathit{NT}$ lanes of the datapath, so the threads per warp ($\mathit{NT}$) set the width of every per-thread structure: the register file holds $\mathit{NT}$ entries per architectural register, and the load/store unit has $\mathit{NT}$ lanes. Both $\mathit{NW}$ and $\mathit{NT}$ are compile-time parameters.
 
@@ -133,12 +133,12 @@ The tensor core scales with the issue width: the core instantiates one tensor bl
 
 Shared memory is a scratchpad private to each core and shared by the warps that run on it. It is divided into $\mathit{NT}$ banks, one per thread of a warp, and consecutive words fall into consecutive banks, so the $\mathit{NT}$ threads of a warp read or write $\mathit{NT}$ consecutive words through $\mathit{NT}$ different banks. Each bank holds 2\,KB with a floor of 8\,KB for the whole memory, which gives 8, 16, 32 and 64\,KB for $\mathit{NT}$ of 4, 8, 16 and 32.
 
-A kernel fills shared memory from global memory either with ordinary per-thread loads and stores or through DXA. DXA is the baseline GPU's counterpart of the Tensor Memory Accelerator of NVIDIA Hopper~\cite{nvidia2022hopper}: a warp issues one instruction that names a pre-programmed descriptor of a tile, and an engine shared by the cores of a socket copies that tile from global memory into shared memory asynchronously while the warp continues with other work. The warp-group tensor core of Section~\ref{sec:design_wgmma} reads its operands from shared memory.
+A kernel fills shared memory from global memory either with ordinary per-thread loads and stores or through DXA. DXA is Vortex's counterpart of the Tensor Memory Accelerator of NVIDIA Hopper~\cite{nvidia2022hopper}: a warp issues one instruction that names a pre-programmed descriptor of a tile, and an engine shared by the cores of a socket copies that tile from global memory into shared memory asynchronously while the warp continues with other work. The warp-group tensor core of Section~\ref{sec:design_wgmma} reads its operands from shared memory.
 
 \section{Motivation}
 \label{sec:motivation}
 
-Three facts about what is public on tensor cores motivate this work: their features are documented without their causes (Section~\ref{sec:mot_causes}), a commercial GPU exposes one design point (Section~\ref{sec:mot_point}), and existing simulation frameworks model the tensor core as a fixed latency (Section~\ref{sec:mot_frameworks}).
+Two facts about what is public on tensor cores motivate this work: their features are documented without their causes, which existing simulation frameworks cannot supply either (Section~\ref{sec:mot_causes}), and a commercial GPU exposes one design point (Section~\ref{sec:mot_point}).
 
 \subsection{Tensor-Core Features Are Documented Without Their Causes}
 \label{sec:mot_causes}
@@ -149,14 +149,11 @@ Warp-group MMA shows the same pattern. The instruction takes matrix $A$ either f
 
 These sources give the outcome and leave its microarchitectural cause open. The study that measures the two modes suggests that the doubled shared-memory access demand of the sparse SS mode may be the reason~\cite{luo2025dissectingnvidiahopperarchitecture}. On a commercial GPU the operand path, the metadata path and the tensor-core array are neither observable nor changeable one at a time, so such an explanation cannot be tested there.
 
+Existing simulation frameworks cannot supply the cause either, because they abstract the tensor core. Accel-Sim~\cite{accel-sim} gives every tensor-core instruction one latency and one initiation interval, both read from a single configuration option. A tensor-core instruction is thus represented by two numbers. Its micro-op sequence, the delivery of its operands from registers or shared memory, and its sparsity metadata are below the resolution of such a model, so the model cannot attribute a measured outcome to any one of them.
+
 \subsection{A Commercial GPU Exposes One Design Point}
 \label{sec:mot_point}
 
-A commercial GPU ships one point of the tensor-core design space: 32 threads per warp and four warps per warp group on NVIDIA GPUs~\cite{luo2025dissectingnvidiahopperarchitecture}. Microbenchmarking studies measure that point across GPU generations, instruction shapes and data types~\cite{jia2018dissectingnvidiavoltagpu, jia2019dissectingnvidiaturingt4, 9931992, luo2025dissectingnvidiahopperarchitecture}. The threads per warp and the issue width are fixed in silicon, so their interaction cannot be measured on any shipped part: the return of a wider issue width at 32 threads per warp against 16 or 4 threads per warp is one such interaction. The design points around the commercial one are therefore unmeasured, and the headroom they hold is unexplored.
+A commercial GPU ships one point of the tensor-core design space: 32 threads per warp and four warps per warp group on NVIDIA GPUs~\cite{luo2025dissectingnvidiahopperarchitecture}. Microbenchmarking studies measure that point across GPU generations, instruction shapes and data types~\cite{jia2018dissectingnvidiavoltagpu, jia2019dissectingnvidiaturingt4, 9931992, luo2025dissectingnvidiahopperarchitecture}. The threads per warp and the issue width are fixed in silicon, so their interaction cannot be measured on any shipped part: the return of a wider issue width at 32 threads per warp against 16 or 4 threads per warp is one such interaction. A simulation framework can change the parameters that silicon fixes, but a model that represents a tensor-core instruction by one latency and one initiation interval (Section~\ref{sec:mot_causes}) has no tensor-core organization to vary together with the threads per warp and the issue width. The design points around the commercial one are therefore unmeasured, and the headroom they hold is unexplored.
 
-\subsection{Existing Frameworks Model the Tensor Core as a Fixed Latency}
-\label{sec:mot_frameworks}
-
-A simulation framework can change the parameters that silicon fixes, but the existing ones abstract the tensor core. Accel-Sim~\cite{accel-sim} gives every tensor-core instruction one latency and one initiation interval, both read from a single configuration option. A tensor-core instruction is thus represented by two numbers. Its micro-op sequence, the delivery of its operands from registers or shared memory, and its sparsity metadata are below the resolution of such a model, so the model can neither attribute a measured outcome to one of them nor vary the tensor-core organization together with the threads per warp and the issue width.
-
-\textbf{Positioning and roadmap.} FourShadow is an open, synthesizable and reconfigurable tensor-core microarchitecture on a RISC-V GPU. It obtains the causes by design-space exploration, changing one microarchitectural parameter at a time, and it is released as a framework for further tensor-core studies. For the design points of Section~\ref{sec:mot_point}, Section~\ref{sec:eval_hierarchy} scales the threads per warp, the issue width and the cores per cluster. For the causes of Section~\ref{sec:mot_causes}, the warp-group tensor core is designed in Section~\ref{sec:design_wgmma} and explored in Section~\ref{sec:eval_wgmma}, and the sparse tensor core is designed in Section~\ref{sec:design_sparse} and explored in Section~\ref{sec:eval_sparse}.
+\textbf{Positioning and roadmap.} FourShadow is an open, synthesizable and reconfigurable tensor-core microarchitecture on a RISC-V GPU. It obtains the causes by design-space exploration, changing one microarchitectural parameter at a time, and it is released as a framework for further tensor-core studies. For the design points of Section~\ref{sec:mot_point}, Section~\ref{sec:eval_hierarchy} scales the threads per warp, the issue width and the cores per cluster. For the causes of Section~\ref{sec:mot_causes}, the warp-group tensor core is designed in Section~\ref{sec:design_wgmma} and explored in Section~\ref{sec:eval_wgmma}, and the sparse tensor core is designed in Section~\ref{sec:design_sparse} and explored in Section~\ref{sec:eval_sparse}. Section~\ref{sec:methodology} describes how these measurements are compared with those of a commercial GPU.

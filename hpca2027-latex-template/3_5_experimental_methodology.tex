@@ -1,0 +1,6 @@
+\section{Methodology}
+\label{sec:methodology}
+
+FourShadow is implemented in Vortex~\cite{vortex}, the open-source RISC-V GPU, and its performance is measured there: in processor cycles on SimX, the Vortex cycle-level simulator, and end to end on an FPGA. The corresponding tensor-core features are measured on a commercial GPU, an NVIDIA RTX 5080, and the two sets of measurements are compared. The commercial GPU reports the outcome of a feature, whereas FourShadow exposes the microarchitecture that produces the outcome and changes one parameter of it at a time. Comparing the two therefore explains the behaviour of the commercial design and places that design among the design points around it, which are the two theses of Section~\ref{sec:motivation}.
+
+% TODO: baseline table, configuration table
