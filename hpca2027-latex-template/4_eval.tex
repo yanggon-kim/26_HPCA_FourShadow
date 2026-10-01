@@ -6,7 +6,7 @@ parameter while holding the remaining configuration fixed. Speedups are
 calculated from total kernel cycles against the corresponding baseline
 configuration.
 
-\subsection{Scaling Across the SIMT Hierarchy}
+\subsection{Scaling Across the SIMT Hierarchy}\label{sec:eval_hierarchy}
 
 \subsubsection{Threads/Warp}
 Fig.~\ref{fig:threads_sweep} compares TCU SGEMM with scalar FP32 execution
@@ -73,7 +73,7 @@ Sparse WMMA further reaches 33.49 FLOP/cycle. On the other hand, while WGMMA has
     \label{fig:roofline}
 \end{figure}
 
-\subsection{Warp-Group Tensor Core Design Space Exploration}
+\subsection{Warp-Group Tensor Core Design Space Exploration}\label{sec:eval_wgmma}
 
 \subsubsection{Number of Accumulator Registers (NRC) Scaling}
 As shown in Fig.~\ref{fig:nrc_sweep}, increasing NRC from 8 to 16 reduces
@@ -123,7 +123,7 @@ registers enable a larger accumulator configuration or there is extreme register
     \label{fig:wg_desc_sweep}
 \end{figure}
 
-\subsection{Sparse Tensor Core Design Space Exploration}
+\subsection{Sparse Tensor Core Design Space Exploration}\label{sec:eval_sparse}
 \subsubsection{Symmetric vs.\ Asymmetric Sparse Configurations}
 The underlying cycle ratios in Fig.~\ref{fig:sparse_sym_sweep} span
 1.26--3.14$\times$, with the 8-thread configuration reaching

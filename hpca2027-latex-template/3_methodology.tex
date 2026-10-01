@@ -1,119 +1,20 @@
 
 \section{FourShadow Microarchitecture}
+\label{sec:design}
 
-\subsection{Baseline Tensor Core Unit}
+\subsection{Overview of the Extensions}
+\label{sec:design_overview}
 
 \begin{figure*}[ht]
     \centering
     \includegraphics[width=\textwidth]{hpca2027-latex-template/fig/fourshadow_uarch.pdf}
-    \caption{FourShadow's complete datapath highligthing it's Warp-Group and Sparse Tensor Core Unit Extension to a baseline Vortex GPGPU SIMT Core}
+    \caption{FourShadow's complete datapath highlighting its Warp-Group and Sparse Tensor Core Unit Extensions to a baseline Vortex GPGPU SIMT Core.}
     \label{fig:figure_integration}
 \end{figure*}
 
-As shown in Figure~\ref{fig:figure_integration}, the FourShadow Tensor Core Unit (TCU) is integrated into the Vortex GPGPU architecture as a standard functional unit alongside the ALU, FPU, LSU, and SFU within each core's execute stage. The TCU shares all essential SIMT core frontend components--- warp scheduler, scoreboard, fetch, decode --- as well as the memory hierarchy including Register Files, Shared Memory and L1 and L2 caches. Inside the TCU a grid of Fused Dot Product (FEDP) units serve as the core compute engine for the MMA instructions.
+FourShadow adds two extensions to the base tensor core of Section~\ref{sec:bg_tcu}; Figure~\ref{fig:figure_integration} shows the complete datapath with both. The warp-group tensor core (Section~\ref{sec:design_wgmma}) makes the warps of a warpgroup execute one matrix operation, one tensor block per warp, with operands read from shared memory through the Warp-Group Tile Buffer Subsystem: one private $A$ buffer per tensor block and one $B$ buffer shared by all blocks. The sparse tensor core (Section~\ref{sec:design_sparse}) adds 2:4 structured sparsity: a metadata SRAM in every tensor block and a Selection Mux Array that picks the $B$ elements matching the retained $A$ elements. Section~\ref{sec:design_pm} describes the programming model that selects among warp-level MMA, warp-group MMA and their sparse forms at compile time.
 
-
-
-\textbf{Full-configurability:}
-The FourShadow TCU is fully parameterizable by warp size (Number of Threads ($\mathit{NT}$)), as a single compile-time parameter that determines register file capacity, tile dimensions, FEDP unit count, and sub-block packing as derived in (Figure~\ref{fig:tiling_equations}). This exposes architectural exploration opportunities unavailable on fixed-warp proprietary designs. Below, we detail the matrix-to-register mapping, FEDP scheduling, and mixed-precision datapath adaptation.
-
-\begin{figure}[ht]
-\small
-\hrule
-\vspace{3pt}
-{\raggedright\textit{Given:}\ $M,\,N,\,K$} \\
-{\raggedright $\mathit{Number of Threads (NT)=\{2, 4, 8, 16, 32\}}$ } \\ 
-{\raggedright $\mathit{Number of Registers (NR)}{=}8$\par}
-\centering\textbf{\textsc{Tile (per-warp work chunk)}}
-\begin{flalign}
-&\mathit{tile\_cap} = \mathit{NT} \!\times\! \mathit{NR},\quad
-\ell_g = \lfloor\log_2(\mathit{tile\_cap})\rfloor & \\
-&\mathit{xtileM} = 2^{\,\ell_g - \lfloor\ell_g/2\rfloor},\quad
-\mathit{xtileN} = 2^{\,\lfloor\ell_g/2\rfloor} & \\
-&\mathit{xtileK} = \tfrac{\mathit{tile\_cap}}{\max(\mathit{xtileM},\,\mathit{xtileN})} & \\
-&\mathit{tileK} = \mathit{xtileK}\!\times\!\tfrac{4}{\mathrm{sizeof}(\texttt{input\_dtype})} &
-\end{flalign}
-\noindent\textbf{\textsc{Block (one micro-op)}}
-\begin{flalign}
-&\mathit{block\_cap} = \mathit{NT},\quad
-\ell_b = \lfloor\log_2(\mathit{block\_cap})\rfloor & \\
-&\mathit{tcM} = 2^{\,\ell_b - \lfloor\ell_b/2\rfloor},\;\;
-\mathit{tcN} = 2^{\,\lfloor\ell_b/2\rfloor},\;\;
-\mathit{tcK} = \tfrac{\mathit{block\_cap}}{\max(\mathit{tcM},\,\mathit{tcN})} &
-\end{flalign}
-\hrule
-\vspace{3pt}
-\noindent\textbf{\textsc{Steps (micro-ops per tile)}}
-\begin{flalign}
-&m_{\mathrm{steps}} = \tfrac{\mathit{xtileM}}{\mathit{tcM}},\quad
-n_{\mathrm{steps}} = \tfrac{\mathit{xtileN}}{\mathit{tcN}},\quad
-k_{\mathrm{steps}} = \tfrac{\mathit{xtileK}}{\mathit{tcK}} &
-\end{flalign}
-\noindent\textbf{\textsc{Grid (tiles covering full matrix)}}
-\begin{flalign}
-&\mathit{num\_tiles}_M = \left\lceil\tfrac{M}{\mathit{xtileM}}\right\rceil,\quad
-\mathit{num\_tiles}_N = \left\lceil\tfrac{N}{\mathit{xtileN}}\right\rceil & \\
-&\mathit{num\_tiles}_K = \left\lceil\tfrac{K}{\mathit{tileK}}\right\rceil &
-\end{flalign}
-\hrule
-\vspace{3pt}
-{\centering\textbf{\textsc{micro-ops per \texttt{mma\_sync}}}\par}
-{\raggedright
-\noindent\hspace{0.5em}\textbf{for} $\;0$ \textbf{to} $k_{\mathrm{steps}}{-}1$:\\
-\hspace{2em}\textbf{for} $\;0$ \textbf{to} $m_{\mathrm{steps}}{-}1$:\\
-\hspace{3.5em}\textbf{for} $\;0$ \textbf{to} $n_{\mathrm{steps}}{-}1$:\\
-\hspace{5em}one micro-op: $\mathit{tcM}{\times}\mathit{tcN}{\times}\mathit{tcK}$ dot-product
-\par}
-\hrule
-\caption{Tensor-core tiling and micro-op decomposition derived from thread count~$\mathit{NT}$ and register budget~$\mathit{NR}$.}
-\label{fig:tiling_equations}
-\end{figure}
-
-\textbf{Matrix-Register Mapping:}
-Vortex's RV32 ISA provides 32 floating-point registers per thread. Among 32, FourShadow utilizes 24 registers equally partitioned into three groups of $\mathit{NR}{=}8$ registers for matrices $A$, $B$ and $C/D$. Each register corresponds to $\mathit{NT}$ physical 32-bit entries, so the total per-matrix capacity scales with $\mathit{NT}$. Because this register count is a hard architectural limit, the original matrix must be decomposed into tiles that fit entirely within the available register space.
-
-Figure~\ref{fig:figure_register_mapping}(a) illustrates the resulting mapping for $\mathit{NT}{=}8$, where $\mathit{xtileM}{=}\mathit{xtileN}{=}\mathit{xtileK}{=}8$; the green-shaded regions show how \texttt{reg0}--\allowbreak\texttt{reg7} tile across the matrix dimensions for $A$, $B$, and $C$/$D$. Figure~\ref{fig:figure_register_mapping}(b) shows the $\mathit{NT}{=}4$ case, where the halved thread count shrinks the tile to $8{\times}4{\times}4$ and matrix~$B$ utilizes only half its register budget.
-
-\textbf{Thread-FEDP Mapping:}
-Each TCU core contains a $\mathit{tcM x txN}$ grid of $\mathit{NT}$ number of FEDP unit instantiations, each producing one element of~$D$.
-
-In Figure~\ref{fig:figure_register_mapping}(a) with $\mathit{NT}{=}8$, the green-shaded block within \texttt{reg0} of matrix~$B$ occupies only half the register width---this is an \emph{asymmetric} configuration where two adjacent $B$ blocks pack into one register. In contrast, Figure~\ref{fig:figure_register_mapping}(b) with $\mathit{NT}{=}4$ shows the \emph{symmetric} case: the green-shaded $B$ block fills \texttt{reg0} entirely, yielding a one-to-one register-to-block correspondence. Among the supported thread counts, $\mathit{NT}{\in}\{2,\allowbreak 8,\allowbreak 32\}$ produce asymmetric configurations, while $\mathit{NT}{\in}\{4,16\}$ produce symmetric ones.
-
-The full tile is covered by iterating micro-ops in the order shown in Figure~\ref{fig:tiling_equations}: $n$ innermost, $m$ middle, $k$ outermost. As annotated in Figure~\ref{fig:figure_register_mapping}, the $\mathit{NT}{=}8$ tile totals $4{\times}2{\times}4{=}32$ micro-ops, while the $\mathit{NT}{=}4$ tile totals $2{\times}4{\times}2{=}16$. 
-
-Some micro-architectural implications that FourShadow can explore are discussed as follows.
-Figure~\ref{fig:tiling_equations} shows that m\_steps*n\_steps is fixed
-as 8 regardless of NT. This fixed product of eight determines the
-accumulator reuse distance: each $(m,n)$ accumulator register is
-re-read exactly $m\_steps \times n\_steps = 8$ micro-instructions after
-it was written, at the next $k$-iteration. However, the TCU pipeline
-commits the result after 14 cycles, so the scoreboard stalls the
-dependent read for approximately $14{-}8{=}6$ cycles at every
-$k$-loop boundary---a structural RAW
-hazard(Figure~\ref{fig:figure_register_mapping}(c)) that FourShadow's
-multi-warp scheduler can partially hide by interleaving independent
-warps into the gap.
-
-A second class of pipeline stall arises from the register file itself.
-At each tensor-core micro-op, the operand-collection unit concurrently
-fetches three source registers---one each from matrices $A$, $B$, and
-$C/D$---from a physical register file partitioned into four banks
-indexed by the low two bits of the register number. The naive placement
-($C/D$ at \texttt{f0..f7}, $A$ at \texttt{f10..f17}, $B$ at
-\texttt{f24..f31}) leaves $B$ and $C/D$ on the same cyclic bank
-residue, forcing a one-cycle stall whenever their register offsets
-match modulo four. We eliminate this by relocating $B$ from
-\texttt{f24..f31} to \texttt{f21..f28}, shifting its bank pattern by
-one position so that $A$, $B$, and $C/D$ each occupy a distinct cyclic
-shift modulo four and all three operands are served in a single cycle.
-This reduces register-file bank-conflict stalls by up to 24~percentage
-points.
-
-\textbf{FEDP Microarchitecture \& Datatypes:}\label{para:datatypes-fedp} The FourShadow TCU is realized using the highly configurable 4-cycle latency Ten-Four~\cite{rout2026tenfouropensourcefuseddot} mixed-precision FEDP microarchitecture. It consists of four pipeline stages: multiply $\rightarrow$ align $\rightarrow$ accumulate $\rightarrow$ normalize-and-round, producing a fully fused result without intermediate rounding. We support low-precision multiplication in TF32, FP16, BF16, FP8(E4M3), BF8(E5M2), INT8, and INT4 with higher-precision accumulation in FP32 and INT32 respectively. Ten-Four's RTL can be configured at compile-time to selectively enable or disable individual input formats, and FourShadow inherits this configurability directly. For example, a researcher studying mixed-precision training schemes combining BF16 forward passes with FP8 gradient accumulation can enable exactly those two formats only, producing a leaner datapath tuned to the workload.
-
-The effective reduction length of each FEDP invocation scales with the bitwidth of the active input format, since narrower types pack more elements into each 32-bit register slot. For a tile of fixed logical dimension \texttt{tileK}, FP16 and BF16 pack two elements per 32-bit slot, doubling the reduction length to $2 \times \texttt{tileK}$; FP8, BF8, and INT8 pack four elements, yielding $4 \times \texttt{tileK}$. For instance, when $NT=32$ the WMMA core dimensions are \texttt{8x4x4} in the baseline 32-bit (and TF32) case, \texttt{8x4x8} for FP16/BF16, and \texttt{8x4x16} for FP8/BF8/INT8. This register-packing scheme reduces memory bandwidth and footprint alongside compute density.
-
-\subsection{Warp-group Tensor Core Extension:}\label{para:wgmma}
+\subsection{Warp-group Tensor Core Extension}\label{para:wgmma}\label{sec:design_wgmma}
 \subsubsection{Microarchitecture Design}
 
 \begin{figure}
@@ -201,7 +102,7 @@ B tile.}
 
 \textbf{Warp-group formation.} WGMMA groups a fixed number of warps, set by the configured issue width, into one cooperative unit. Each warp is indexed along the M-dimension of the warp-group tile. With $\mathit{NW}$ warps per warp-group, $\mathit{NW}$ A-tiles of size $M{\times}K$ are loaded, one per warp, and all warps share a single B-tile of size $WK{\times}N$. Each WGMMA instruction produces one $WM{\times}N$ output C tile. Raising the number of accumulator registers (NRC) to 2x (16) or 4x (32) extends the number of uop iterations in the N-dimension, producing a $WK{\times}2N$ or $WK{\times}4N$ output tile instead. The full set of tiling, indexing, and micro-op equations for the WGMMA-extended TCU is given in Fig.~\ref{fig:wgmma_tiling_equations}.
 
-\textbf{Tensor block organization.} With $NT=32$ and $\mathrm{ISSUE\_WIDTH}=4$, the core instantiates four tensor blocks, each built from the same 32-cell, $8\times4$ FEDP array used in the baseline TCU as illustrated in Fig.~\ref{fig:figure_integration} shows the corresponding microarchitecture: the Warp-Group Tile Buffer Subsystem adds four private A buffers and one shared B row buffer alongside the existing FEDP arrays. Issue width sets how many of these blocks exist, and therefore how many warps of the warp-group can be serviced in parallel; the FEDP count per block does not change. Each block accepts one micro-op from one warp. The four blocks do not split a single warp's operation between them: each processes one full warp from the group, all four consuming the same B tile while operating on disjoint A row stripes. This extends the matrix operation in the M dimension only. The row/column/depth mapping and the resulting dot product performed by cell $(i,j)$ in block $b$ are given in Fig.~\ref{fig:wgmma_tiling_equations}. Because every block needs the same K coordinates to compute its own output row from the shared B columns, warp-group formation extends M from 16 rows per warp to 64 rows per warp-group without changing $m_{\mathrm{steps}}=2$ or $k_{\mathrm{steps}}=2$: four parallel row stripes are added, not the depth needed to cover a $K=16$ tile.
+\textbf{Tensor block organization.} With $NT=32$ and $\mathrm{ISSUE\_WIDTH}=4$, the core instantiates four tensor blocks, each built from the same 32-cell, $8\times4$ FEDP array used in the baseline TCU. Fig.~\ref{fig:figure_integration} shows the corresponding microarchitecture: the Warp-Group Tile Buffer Subsystem adds four private A buffers and one shared B row buffer alongside the existing FEDP arrays. Issue width sets how many of these blocks exist, and therefore how many warps of the warp-group can be serviced in parallel; the FEDP count per block does not change. Each block accepts one micro-op from one warp. The four blocks do not split a single warp's operation between them: each processes one full warp from the group, all four consuming the same B tile while operating on disjoint A row stripes. This extends the matrix operation in the M dimension only. The row/column/depth mapping and the resulting dot product performed by cell $(i,j)$ in block $b$ are given in Fig.~\ref{fig:wgmma_tiling_equations}. Because every block needs the same K coordinates to compute its own output row from the shared B columns, warp-group formation extends M from 16 rows per warp to 64 rows per warp-group without changing $m_{\mathrm{steps}}=2$ or $k_{\mathrm{steps}}=2$: four parallel row stripes are added, not the depth needed to cover a $K=16$ tile.
 
 \textbf{Number of accumulator registers (NRC).} Each WGMMA instruction expands into an ordered sequence of tensor micro-ops, with $m$ changing fastest, then $n$, then $k$ (Fig.~\ref{fig:wgmma_tiling_equations}). The two $m$ coordinates are issued back to back because both consume the same $B(k,n)$ block; only the private A row selection changes between them. NRC sets the number of 4-column tensor blocks covered in the N dimension, so $n_{\mathrm{steps}}=\mathrm{NRC}/2$:
 \[
@@ -218,7 +119,7 @@ When all four warp-group members progress together these become 16, 32, or 64 is
 
 \textbf{Descriptor capture and RS/SS modes.} WGMMA reaches shared-memory operands through compact descriptors carrying a tile base and layout stride, captured either by an explicit setup op or by the first compute micro-op. A zero stride is a block-major layout, where an operand block lines up directly with a shared-memory bank row; a nonzero stride is row-major or K-major and forces the refill logic to gather rows into the internal tensor layout. The first compute micro-op always forces a fresh residency check and refill, even if its descriptor numerically matches the preceding instruction, because the kernel can overwrite the same shared-memory addresses between outer-K iterations; descriptor equality alone cannot guarantee the buffered data is current. In shared-memory/shared-memory (SS) mode, both A and B come from shared memory. In register/shared-memory (RS) mode, A comes from a fixed register fragment and bypasses the A-tile buffers, while B still uses the shared buffer. The FEDP array sees the same internal vector representation either way; only the source feeding A changes.
 
-\textbf{Shared-memory tile buffering.} The kernel stages global-memory tiles into shared memory over the normal SIMT path, and CTA synchronization makes the writes visible to the tensor reads. Rather than issuing 32 independent lane loads per micro-op, the tensor subsystem uses a dedicated bank-parallel local-memory port (Fig.~2) that pulls a full bank row into an operand buffer per request; nonzero-stride layouts may need multiple requests to gather and reorder rows. This port shares physical banks with ordinary local-memory traffic through the same arbitration fabric. Five clients contend for it: four private A buffers, one per tensor block, and one shared B buffer, arbitrated five-to-one, each retaining independent residency state. Each private A buffer holds the current K stripe for its warp and both $m$ blocks, so the two $m$ micro-ops read different halves of the resident tile without a new shared-memory access; a refill is only needed when $k$, the descriptor, or the freshness state changes. The shared B buffer holds the current $B(k,n)$ block and broadcasts it structurally to all four blocks; its key excludes $m$ since both $m$ micro-ops need the same B data, so one $B(k,n)$ refill serves eight physical tensor operations, two $m$ coordinates across four warps. This is why B lives in one shared buffer instead of four private copies.
+\textbf{Shared-memory tile buffering.} The kernel stages global-memory tiles into shared memory over the normal SIMT path, and CTA synchronization makes the writes visible to the tensor reads. Rather than issuing 32 independent lane loads per micro-op, the tensor subsystem uses a dedicated bank-parallel local-memory port (Fig.~\ref{fig:figure_integration}) that pulls a full bank row into an operand buffer per request; nonzero-stride layouts may need multiple requests to gather and reorder rows. This port shares physical banks with ordinary local-memory traffic through the same arbitration fabric. Five clients contend for it: four private A buffers, one per tensor block, and one shared B buffer, arbitrated five-to-one, each retaining independent residency state. Each private A buffer holds the current K stripe for its warp and both $m$ blocks, so the two $m$ micro-ops read different halves of the resident tile without a new shared-memory access; a refill is only needed when $k$, the descriptor, or the freshness state changes. The shared B buffer holds the current $B(k,n)$ block and broadcasts it structurally to all four blocks; its key excludes $m$ since both $m$ micro-ops need the same B data, so one $B(k,n)$ refill serves eight physical tensor operations, two $m$ coordinates across four warps. This is why B lives in one shared buffer instead of four private copies.
 
 \textbf{Feeding the FEDP array.} Once operands are resident, the A buffer supplies eight row vectors for the current $m$, one per FEDP-array row, and the B buffer supplies four column vectors for the current $n$, one per FEDP-array column; the Cartesian product of these feeds all 32 FEDP cells. Each 32-bit operand word packs two FP16 elements, so four packed words supply the eight scalar elements needed for one 8-deep dot product. The accumulator read and write for each micro-op is selected by $2n+m$. Operand vectors, accumulator values, arithmetic format, and instruction identity move through the pipeline together, and a result-tracking queue carries warp, destination, lane, and instruction metadata through the arithmetic latency so backpressure cannot mismatch a result with the wrong micro-op. Each of the four tensor blocks has its own completion path back to the register file, even though all four share the B operand subsystem.
 
@@ -249,7 +150,7 @@ In SS mode this change was straightforward: the Ten-Four FEDP microarchitecture 
  
 \textbf{Descriptor Load Location.} Another experiment we perform moves WGMMA's A/B shared-memory descriptors out of the instruction's register operands and into a per-warp TCU SRAM, using the same transport path as sparsity metadata. Each warp first writes its 32-bit descriptors to shared memory, synchronizes, and issues one or two TCU\_LD instructions targeting the reserved f24/f25 slots. A TCU-side AGU then fetches those values through the LSU and deposits them into the warp's TCU SRAM space; subsequent WGMMA compute-uop expansion reads descriptors from there instead of the current x10/x11 integer registers. The goal is to relieve register-file pressure, especially with 2K-Wide FEDP enabled. The tradeoff is that descriptor setup in TCU SRAM now costs a shared-memory store, a CTA barrier, LSU traffic, scoreboard/writeback activity, and serialized AGU transactions, all before any matrix work begins, for just one or two 32-bit values.
 
-\subsection{Sparse Tensor Core Extension}
+\subsection{Sparse Tensor Core Extension}\label{sec:design_sparse}
 
 \textbf{Analytic Speedup Model.}
 Figure~\ref{fig:sparse_analytic} captures an analytic model of the speedup derived from adding a 2:4 structure sparsity subsystem to the TCU. The dense cost is normalized to~1 and sparsity halves the compute term~$\mathit{TC}$ but adds metadata overhead $\mathit{MO}$ that grows linearly as the input datatype narrows.
@@ -283,41 +184,34 @@ s_{\text{eff}} = 1 - \tfrac{1}{2} + \mathit{MO}
 \end{figure}
 
 
-\textbf{Sparse Metadata Flow.} One of the main modification to the TCU microarchitecture here is the addition of the metadata operand inputs. Metadata has different lifetime and reuse properties than $A$ and $B$, so it moves through a separate path. Before sparse execution, the kernel issues \texttt{load\_sp\_metadata}: each participating lane contributes one 32-bit metadata word, and a warp-level address generator forms the load as an ordinary load/store-scheduler request rather than a tensor tile-buffer fetch, so metadata can live in either global or local memory. The returned lane words are assembled into a warp metadata record and written identically into every tensor block's metadata SRAM, indexed by warp identity with subregions selected by the current $m$ and $k$ coordinates. Replication means any issue path can run that warp's sparse micro-ops, rather than tying the warp to whichever block happened to complete its metadata load. A scoreboard dependency orders the two operations: the metadata load produces a reserved token, and sparse execution consumes it, so sparse micro-ops cannot issue until the load returns and its SRAM write completes. This removes the need for a separate software-visible metadata fence.
+\textbf{Sparse Metadata Flow.} One of the main modifications to the TCU microarchitecture here is the addition of the metadata operand inputs. Metadata has different lifetime and reuse properties than $A$ and $B$, so it moves through a separate path. Before sparse execution, the kernel issues \texttt{load\_sp\_metadata}: each participating lane contributes one 32-bit metadata word, and a warp-level address generator forms the load as an ordinary load/store-scheduler request rather than a tensor tile-buffer fetch, so metadata can live in either global or local memory. The returned lane words are assembled into a warp metadata record and written identically into every tensor block's metadata SRAM, indexed by warp identity with subregions selected by the current $m$ and $k$ coordinates. Replication means any issue path can run that warp's sparse micro-ops, rather than tying the warp to whichever block happened to complete its metadata load. A scoreboard dependency orders the two operations: the metadata load produces a reserved token, and sparse execution consumes it, so sparse micro-ops cannot issue until the load returns and its SRAM write completes. This removes the need for a separate software-visible metadata fence.
 
 \textbf{Sparse FEDP Selection.} The compressed $A$ values are sent directly to the FEDP inputs; the hardware does not reconstruct a dense vector by inserting zeros. Instead, the row-specific metadata drives the Selection Mux Array as a gather network on the $B$ side, selecting the two $B$ elements that match the two retained $A$ positions for each group of four. This selector is replicated across the FEDP grid because metadata is row-dependent: different $A$ rows can retain different positions even though the underlying $B$ candidates are shared. A sparse micro-operation still performs eight nonzero products per output element, but those products now cover sixteen logical $K$ positions instead of eight, so sparse execution needs only half as many $k\_steps$ as dense execution for the same tile.
 
 \textbf{Asymmetric vs.\ Symmetric Configurations.} Enabling 2:4 sparsity halves matrix~$A$'s $K$ dimension, reducing both load volume and MMA micro-ops ($k\_steps$ halved) at the cost of metadata. The $B$ operand preparation, however, differs fundamentally between asymmetric and symmetric configurations, and the performance benefit applies only to the asymmetric group ($\mathit{NT}{\in}\{2,8,32\}$).
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=\columnwidth]{fig/tcu_matrix_register_mapping_sparse_v4.pdf}
-    \caption{Matrix-to-register mapping and tiling for (a) 8-thread.(b) 4-thread configurations. (green : dense, red : sparse) (c) RAW hazard within the micro-ops} 
-    \label{fig:figure_register_mapping}
-\end{figure}
-
 Figure~\ref{fig:figure_register_mapping}(a) shows the $\mathit{NT}{=}8$ case. In the dense baseline (green), \texttt{reg0} of matrix~$B$ holds two horizontally packed sub-blocks, each filling half the register. With sparsity enabled (red), each compressed $A$ row must pair with two candidate $B$ columns for metadata-driven selection, changing the $B$ layout to vertical column pairs (``$\times$2 col candidates''). Because the asymmetric layout already half-utilizes each register, this rearrangement fits naturally within the existing width. As shown in the red annotations, $\mathit{xtileK}$ halves from 8 to 4, reducing $k\_steps$ from 4 to 2 while all FEDP units remain fully active.
 
 The symmetric case in Figure~\ref{fig:figure_register_mapping}(b) with $\mathit{NT}{=}4$ faces a structural constraint. In the dense baseline (green), each $B$ block of $\mathit{tcK}{\times}\mathit{tcN} = 2{\times}2 = 4$ already fills the entire \texttt{reg0}. Doubling the $B$ columns for sparsity would require a fifth source operand, but FourShadow's datapath, inherited from Vortex's R4-type \texttt{fmadd} path, supplies exactly four register fields, all occupied by the micro-op encoding for $A$, $B$, $C$, and $D$. Instead, as shown in the red annotations, we halve $\mathit{tcN}$ from 2 to 1, doubling $n\_steps$ from 2 to 4. Although $k\_steps$ halves from 2 to 1, the total micro-op count remains 16, with only half the FEDP units active per micro-op, alternating via thread masks. Consequently, the symmetric group achieves barely any speedup from sparsity, but FourShadow preserves full configurability across all thread counts.
 
-\section{FourShadow Programming Model}
+\subsection{Programming Model}
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{hpca2027-latex-template/fig/sw_integrationv4.pdf}
     \caption{FourShadow Programming Model}
     \label{fig:sw_integrationv4}
 \end{figure}
-\label{sec:sw_integrationv4}
+\label{sec:sw_integrationv4}\label{sec:design_pm}
 
 FourShadow exposes WMMA, WGMMA, and 2:4 structured sparsity as composable primitives selected almost entirely at compile time. Input/output format, NRC, and RS-versus-SS mode are all template parameters on \texttt{wgmma\_config\_t} and \texttt{wgmma\_context} (Figure~\ref{fig:sw_integrationv4}), so the same kernel source compiles down to dense WMMA, dense WGMMA, or sparse WGMMA execution depending on how it is instantiated.
 
-\subsection{Host-Side Data Preparation}
+\subsubsection{Host-Side Data Preparation}
 
 \textbf{Metadata Packing.} The 2:4 mask produced by pruning/compression is not uploaded as-is; \texttt{pack\_metadata\_wg} repacks it into the per-thread SRAM bank layout the TCU\_LD AGU and metadata SRAM expect. That layout is dimensioned against the \emph{WMMA}-config per-warp depth since the TCU\_LD path and metadata SRAM are shared hardware sized for WMMA.
 
 \textbf{Compile-Time Mode Selection.} RS keeps $A$ in a register fragment and supports NRC $\le 16$, since the register budget is shared with the $A$ fragment; SS sources both $A$ and $B$ from shared-memory descriptors and supports the full NRC $\in\{8,16,32\}$ range. Both RS/SS and format (\texttt{ITYPE}/\texttt{OTYPE}) are template parameters, fixed at build time.
 
-\subsection{Kernel-Side Orchestration}
+\subsubsection{Kernel-Side Orchestration}
 
 \textbf{Tile Stride.} Each warp's private $A$ section is padded to the SMEM bank-row width ($\mathit{NT}\times\mathrm{XLEN}/8$ bytes) so warp $w{+}1$'s stripe always starts on a fresh bank row. Without this, the $A$ buffer's single-row fetch can walk into the previous warp's region.
 
