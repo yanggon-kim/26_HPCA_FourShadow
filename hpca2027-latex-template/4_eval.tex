@@ -109,21 +109,12 @@ The setup micro-op that dense RS mode adds with the 2K-wide FEDP increases the e
 
 \subsubsection{TCU SRAM vs.\ Register File WGMMA Descriptor Load}
 Moving the WGMMA descriptors into TCU SRAM increases cycles by
-1.2--6.5\% relative to register-file delivery, as shown in
-Fig.~\ref{fig:wg_desc_sweep}. The penalty is largest for short SS kernels
+1.2--6.5\% relative to register-file delivery. The penalty is largest for short SS kernels
 and decreases as more computation amortizes descriptor setup. Relieving
 the pressure of two register operands does not offset the added
 shared-memory store, synchronization, and AGU traffic. Small control
 metadata should therefore remain in the register file unless those
 registers enable a larger accumulator configuration or there is extreme register pressure.
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\linewidth]
-    {hpca2027-latex-template/fig/wg_descriptor_cycles_clustered_adjacent_designs_v6.pdf}
-    \caption{WGMMA execution cycles when shared-memory descriptors are
-    stored in TCU SRAM or supplied through the register file.}
-    \label{fig:wg_desc_sweep}
-\end{figure}
 
 \subsection{Sparse Tensor Core Design Space Exploration}\label{sec:eval_sparse}
 

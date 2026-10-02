@@ -98,14 +98,7 @@ all warps consume the same $B$ tile.}
 
 \textbf{Consistency without a barrier.} The warps of a warpgroup are not synchronized cycle by cycle: each warp's sequencer advances independently, and three checks keep the shared state consistent. \emph{(i)~Issue-slot lock.} The first micro-op of an instruction locks its issue slot and the last releases it, so only that warp issues on the slot in between. \emph{(ii)~Single-CTA gate} (the Lockstep block of Figure~\ref{fig:figure_integration}). Each tensor block records the CTA of the instruction it executes from the first to the last compute micro-op, and a WGMMA micro-op waits while another block is inside an instruction of a different CTA. \emph{(iii)~$B$-key match.} The lowest-indexed active block sets the key of the shared $B$ buffer: the offset of the $B$ descriptor, $k$, $n$ and $\mathit{NRC}$. A block whose key differs stalls until the keys agree, and an idle block matches any key, so a CTA with fewer than $\mathit{IW}$ active warps runs unchanged. Each tensor block carries its results through its own result queue to commit.
 
-\textbf{2K-wide FEDP.} The 2K-wide FEDP doubles the dot-product length from $\mathit{tcK}$ to $2\,\mathit{tcK}$ words, so one micro-op consumes both $K$ blocks of the tile and the dense $K$ steps go from two to one (Figure~\ref{fig:fedp2k_blocks}: the $K$ extent of the block doubles for every input format).
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.8\linewidth]{hpca2027-latex-template/fig/fedp2k.pdf}
-    \caption{The block of operands that one micro-op consumes with the K-wide FEDP (left of each panel, two $K$ steps per tile) and with the 2K-wide FEDP (right of each panel, one $K$ step per tile). The panels are TF32 (top left), FP16/BF16 (bottom left) and FP8/BF8 (right); $M$, $N$ and $K$ mark the three extents of a block.}
-    \label{fig:fedp2k_blocks}
-\end{figure}
+\textbf{2K-wide FEDP.} The 2K-wide FEDP doubles the dot-product length from $\mathit{tcK}$ to $2\,\mathit{tcK}$ words for every input format, so one micro-op consumes both $K$ blocks of the tile and the dense $K$ steps go from two to one.
 
 In SS mode both halves come from the tile buffers. In dense RS mode a compute micro-op needs two $A$ registers, and its second source field carries the upper half of $A$ in place of the $B$ descriptor; one setup micro-op therefore delivers the $B$ descriptor first, and the compute micro-op for block $m$ reads the lower half of $A$ from \texttt{f}$(24{+}2m)$ and the upper half from \texttt{f}$(25{+}2m)$. The upper half of both operands is zero for WMMA and for sparse WGMMA, which takes one $K$ step with or without the 2K-wide FEDP, so both instructions execute unchanged. We stop at 2K: a wider FEDP makes every unit more expensive and adds fanout across the datapath, and its upper part is idle for every WMMA and sparse instruction.
 
