@@ -106,109 +106,6 @@ A kernel fills shared memory from global memory either with ordinary per-thread 
 \section{Motivation}
 \label{sec:motivation}
 
-\begin{table*}[t]
-\centering
-\caption{Comparison of GPU tensor-core architectures, simulators and related research.}
-\label{tab:related_work_comparison}
-\renewcommand{\arraystretch}{0.9}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{p{2.4cm} p{2.4cm} p{3.6cm} p{2.6cm} p{2.2cm} p{1.5cm} c c}
-\toprule
-\textbf{Paper} &
-\textbf{Simulation} &
-\textbf{Data Types} &
-\textbf{Thread Config.} &
-\textbf{Sparsity} &
-\textbf{TC Style} &
-\makecell{\textbf{Low Latency}\\\textbf{Dot Product}} &
-\makecell{\textbf{Open}\\\textbf{Source}} \\
-\midrule
-\rowcolor{blue!8}
-\textbf{FourShadow (Ours)}
-  & Cycle-sim, RTL
-  & TF32, FP16/8, BF16/8, \newline INT8/4
-  & 2, 4, 8, 16, 32
-  & 2:4 structured
-  & SIMT
-  & Fused (RTL)
-  & \cyes \\
-\midrule
-\textbf{Virgo}~\cite{kim2025virgo}
-  & Cycle-sim, RTL
-  & INT8/32
-  & Fixed 32
-  & \cno
-  & Systolic
-  & Discrete
-  & \cyes \\
-\midrule
-\textbf{CoopWarp}~\cite{nada2025cooperative}
-  & Cycle-sim
-  & FP8, FP16, BF16, FP32
-  & 4, 8, 16, 32
-  & \cno
-  & SIMT
-  & Discrete
-  & \cyes \\
-\midrule
-\textbf{RM-STC}~\cite{huang2023rmstc}
-  & Cycle-sim
-  & FP16, INT8
-  & Fixed 32
-  & Any degree
-  & SIMT
-  & Discrete
-  & \cno \\
-\midrule
-\textbf{VEGETA}~\cite{jeong2023vegeta}
-  & Cycle-sim, RTL
-  & BF16, FP32
-  & No SIMT
-  & N:M flexible
-  & Systolic
-  & Discrete
-  & \cno \\
-\midrule
-\textbf{SIMD$^2$}~\cite{zhang2022simd2}
-  & HW emulation
-  & FP16, INT8
-  & Fixed 32
-  & \cno
-  & SIMT
-  & Discrete
-  & \cno \\
-\midrule
-\textbf{Accel-Sim}~\cite{accel-sim}
-  & Cycle-sim
-  & FP16
-  & Fixed 32
-  & \cno
-  & SIMT
-  & Fused (Sim)
-  & \cyes \\
-\midrule
-\textbf{Sparse TC}~\cite{zhu2019sparsetensorcore}
-  & Cycle-sim
-  & FP16, INT8
-  & Fixed 32
-  & Vector N:M
-  & SIMT
-  & Discrete
-  & \cno \\
-\midrule
-\textbf{GPGPU-Sim}~\cite{raihan2019modeling}
-  & Cycle-sim
-  & FP16/32
-  & Fixed 32
-  & \cno
-  & Modeled
-  & Fused (Sim)
-  & \cyes \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
 A commercial tensor core cannot be opened; only its behavior can be measured from outside. FourShadow is its \emph{white-box counterpart}: an open design that implements the same features with internals that can be read and changed. Like a shadow, it outlines an object that cannot be inspected, in four components: the base tensor core, the warp-group tensor core, the sparse tensor core and the programming model. Two questions motivate it.
 
 \subsection{Q1: What Is the Microarchitectural Behavior Behind NVIDIA's Tensor-Core Features?}
@@ -220,7 +117,7 @@ Warp-group MMA shows the same pattern. The instruction takes matrix $A$ either f
 
 These sources give the outcome and leave the internal mechanism open. The study of the two modes suggests that the doubled shared-memory access demand of the sparse SS mode may be the reason~\cite{luo2025dissectingnvidiahopperarchitecture}. On a commercial GPU the operand path, the metadata path and the tensor-core array are neither observable nor changeable one at a time, so such an explanation cannot be tested there.
 
-Simulation frameworks cannot supply the mechanism either, because they abstract the tensor core. Accel-Sim~\cite{accel-sim} gives every tensor-core instruction one latency and one initiation interval, both read from a single configuration option. Its micro-op sequence, the delivery of its operands from registers or shared memory, and its sparsity metadata are below the resolution of such a model, which cannot attribute a measured outcome to any one of them. GPGPU-Sim~\cite{raihan2019modeling} also models the tensor core inside a cycle-level simulator. Table~\ref{tab:related_work_comparison} places both among related platforms: every GPU platform except CoopWarp~\cite{nada2025cooperative} fixes the warp at 32 threads, the Accel-Sim and GPGPU-Sim rows have no sparsity, and no prior platform combines the configurable thread counts, the data types, the 2:4 structured sparsity and the open RTL implementation of the FourShadow row.
+Simulation frameworks cannot supply the mechanism either, because they abstract the tensor core. Accel-Sim~\cite{accel-sim} gives every tensor-core instruction one latency and one initiation interval, both read from a single configuration option. Its micro-op sequence, the delivery of its operands from registers or shared memory, and its sparsity metadata are below the resolution of such a model, which cannot attribute a measured outcome to any one of them. GPGPU-Sim~\cite{raihan2019modeling} also models the tensor core inside a cycle-level simulator. Table~\ref{tab:related_work_comparison} places both among related platforms: every GPU platform except CoopWarp~\cite{nada2025cooperative} fixes the warp at 32 threads, Accel-Sim and GPGPU-Sim have no sparsity, Accel-Sim models warp-group MMA only as a latency, and no prior platform combines FourShadow's configurable thread counts, data types, 2:4 sparsity, warp-group MMA and open RTL.
 
 \subsection{Q2: How Does a Tensor Core Behave as Its Architectural Parameters Change?}
 \label{sec:mot_point}
