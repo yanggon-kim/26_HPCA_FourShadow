@@ -121,21 +121,26 @@ registers enable a larger accumulator configuration or there is extreme register
 This subsection answers Q1, the internal mechanisms behind tensor-core sparsity (Section~\ref{sec:mot_causes}). The first two parts explore the sparse design space of FourShadow: the symmetric and asymmetric layouts of warp-level MMA, and the two operand-staging modes of warp-group MMA. The last two parts give the answers by comparing warp-level MMA with 2:4 sparsity on FourShadow and on an NVIDIA RTX 5080 (Sections~\ref{sec:eval_sparse_halves} and~\ref{sec:eval_sparse_meta}, configuration in Section~\ref{sec:methodology}).
 
 \subsubsection{Symmetric vs.\ Asymmetric Sparse Configurations}
-% REVIEW(2026-10-01): configuration behind these numbers not yet reconciled with Sec. C.3 (max 1.78x whole-processor, 1.75x in-kernel region, measured for warp-level MMA + SP); see rebuttal_plan.md
-The underlying cycle ratios in Fig.~\ref{fig:sparse_sym_sweep} span
-1.26--3.14$\times$, with the 8-thread configuration reaching
-3.14$\times$ for FP8. The symmetric 4- and 16-thread configurations
-remain lower, for the reason given in Section~\ref{sec:design_sparse}. The 32-thread configuration also
-trails the 8-thread design. Sparse scaling therefore depends on whether
-the compressed mapping preserves full array utilization, not only on the
-nominal 2:4 zero-skipping compute reduction.
+Sparsity speeds up the asymmetric layouts in every cell of
+Fig.~\ref{fig:sparse_sym_sweep} and the symmetric layouts less. The 8- and
+32-thread cells span 1.24--1.78$\times$, with the maximum for TF32 at
+$K{=}1024$ and 8 threads, and both symmetric cells sit below both
+asymmetric cells in 11 of 12 rows (the exception: TF32 at $K{=}256$,
+1.45$\times$ at 16 threads against 1.37$\times$ at 8). At 4 threads
+sparsity loses in nine of 12 cells (0.71--0.83$\times$); at 16 threads
+it gains modestly, 0.91--1.45$\times$ and above 1 in 11 of 12 cells. The
+ordering follows Section~\ref{sec:design_sparse}: only the asymmetric
+layouts halve the micro-ops of a sparse WMMA. The symmetric layouts keep
+the dense micro-op count, which therefore explains neither the 4-thread
+loss nor the 16-thread gain; their source is not isolated.
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.9\linewidth]
-    {hpca2027-latex-template/fig/sparse_speedup_heatmap_v3.pdf}
-    \caption{Sparse speedup across symmetric and asymmetric TCU
-    configurations. Values are globally min-max normalized to the
-    range $[1,2]$ for visual comparison.}
+    {hpca2027-latex-template/fig/sparse_sym_asym_iw1_nw4.pdf}
+    \caption{Dense-over-sparse speedup of a $128{\times}128{\times}K$ GEMM
+    with warp-level MMA at (IW-1, NW-4), from total kernel cycles on SimX.
+    Each cell prints the speedup; cells below 1 (sparse slower than dense)
+    are grey with bold values.}
     \label{fig:sparse_sym_sweep}
 \end{figure}
 
