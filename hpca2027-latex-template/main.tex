@@ -23,6 +23,11 @@
 \newcommand{\cyes}{\ding{51}~\textbf{Yes}}
 \newcommand{\cno}{\ding{55}~No}
 
+% Highlighted answer / takeaway box: full column width, light-grey fill, thin frame,
+% bold label, italic text. Usage: \answerbox{Answer \#1 for Q1}{One sentence.}
+\newcommand{\answerbox}[2]{\par\vspace{3pt}\noindent
+  \fcolorbox{black}{gray!15}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\textbf{#1:} \textit{#2}}}\par\vspace{3pt}}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%% -- UPDATE -- %%%%%%%%%%%%%%%
