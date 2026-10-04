@@ -1,10 +1,12 @@
 \section{Evaluation}
 
-We evaluate FourShadow using $128\times128\times K$ SGEMM kernels, where
-$K\in\{128,256,512,1024\}$. Each experiment changes one architectural
-parameter while holding the remaining configuration fixed. Speedups are
-calculated from total kernel cycles against the corresponding baseline
-configuration.
+We measure FourShadow in two settings. The design-space sweeps run $128\times128\times K$ SGEMM kernels, where
+$K\in\{128,256,512,1024\}$, change one architectural parameter while holding
+the rest of the configuration fixed, and compute speedups from total kernel
+cycles against the baseline configuration each part states. The comparisons
+with NVIDIA GPUs count the cycles of instruction-level kernels in an in-kernel
+region (Section~\ref{sec:methodology}). Each part that fixes a FourShadow
+configuration names it in the (IW-N, NW-M) form.
 
 \subsection{Scaling Across the SIMT Hierarchy}\label{sec:eval_hierarchy}
 
@@ -269,7 +271,7 @@ Only the FP16 fits are valid on the RTX 5080: the TF32 fit has a negative dense 
 
 \answerbox{Answer \#4 for Q1}{2:4 sparsity halves only part of the per-$K$ cost of a warp-level tensor-core GEMM, so its speedup stays below 2$\times$ and depends on the size of that halvable part: for FP16 it is 69.7\% on the RTX 5080 (bound 1.53$\times$) and 54.4\% on the H100 (1.37$\times$).}
 
-\subsubsection{One RTX 5080 Warp Hides Its Metadata Load; FourShadow Needs Several}\label{sec:eval_sparse_meta}
+\subsubsection{One NVIDIA Warp Hides Its Metadata Load; FourShadow Needs Several}\label{sec:eval_sparse_meta}
 On the RTX 5080, one CTA of one warp reloads the metadata, an ordinary register operand of \texttt{mma.sp}, in each of 256 iterations of a sparse FP16 MMA, before (early) or after (late) 0 to 64 filler operations (Fig.~\ref{fig:sparse_nvidia}(c)). The late reload adds 363.1 to 364.2 cycles per iteration at every filler distance; the early reload adds 326.2 cycles with no filler and 0.3 cycles with 64 filler operations. An early load thus costs the maximum of the load and the filler, and a late load their sum: the two rules, without a fitted constant, reproduce the cycles within 0.13\% for FP16 and within 0.72\% over six data formats. With 16 filler operations the profiled long-scoreboard stall share is 26.8\% early and 55.2\% late, at the same 11,858 instructions and 269 load requests.
 
 An H100 follows the same two rules. One warp's late reload adds 293.9 to 295.1 cycles per iteration, and its early reload falls from 246.1 cycles with no filler to 2.1 cycles with 64 filler operations; the rules reproduce these cycles within 0.45\%. One warpgroup issuing sparse warp-group MMA behaves alike: its late reload adds 233 to 287 cycles, and its early reload 189 to 239 cycles with no filler and $-$3 to 3 cycles with 64 filler operations, with the maximum rule within 1.9\% and the sum rule within 0.14\%.
