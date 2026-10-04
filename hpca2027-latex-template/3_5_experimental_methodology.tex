@@ -1,10 +1,38 @@
 \section{Methodology}
 \label{sec:methodology}
 
-FourShadow is implemented in Vortex~\cite{vortex}, the open-source RISC-V GPU, and its performance is measured there: in processor cycles on SimX, the Vortex cycle-level simulator, and end to end on an FPGA. Warp-level MMA with 2:4 sparsity is also measured on a commercial GPU, an NVIDIA RTX 5080, and the two sets of measurements are compared, for the reasons given in Section~\ref{sec:motivation}. We name a FourShadow configuration by its issue width (IW, the warps issued per cycle) and its number of warps per core (NW): (IW-1, NW-4) issues from one warp per cycle on a core of four warps.
+FourShadow is implemented in Vortex~\cite{vortex}, the open-source RISC-V GPU, and its performance is measured there: in processor cycles on SimX, the Vortex cycle-level simulator, and end to end on an FPGA. It is compared with two NVIDIA GPUs, an RTX 5080 and an H100, for the reasons given in Section~\ref{sec:motivation}. Because the NVIDIA GPUs run different toolkits and FourShadow counts simulated cycles, the platforms are compared only by ratios and trends, never by absolute cycles.
 
-\textbf{Comparison with the RTX 5080.} The feature compared is warp-level MMA with 2:4 structured sparsity. Section~\ref{sec:eval_sparse} runs warp-level MMA on FourShadow with the dense kernel \texttt{sgemm\_tcu} and the sparse kernel \texttt{sgemm\_tcu\_sp} on SimX with one core, by default at (IW-1, NW-4); the comparison uses 8 or 32 threads per warp and in-kernel region cycles. We compare at (IW-1, NW-4) because the FP16 speedups of the two platforms, over the 17 shapes measured on both and in-kernel region against \texttt{clock64} region, differ there by a median of 9.0\% at 8 threads and 6.2\% at 32 threads; the median is 20.5\% and 17.0\% at (IW-2, NW-4) and 27.8\% and 17.0\% at (IW-4, NW-4). On the RTX 5080, under CUDA~13.0, one CTA of four warps executes the PTX instructions \texttt{mma} (dense) and \texttt{mma.sp} (sparse), and the cycles are read with \texttt{clock64} around eight repetitions of the GEMM. The TF32 sparse fixture of the RTX 5080 uses the 1:2 pattern. Sections~\ref{sec:eval_sparse_halves} and~\ref{sec:eval_sparse_meta} report the results.
+\subsection{Hardware Configuration}\label{sec:method_hw}
 
-\textbf{Comparison with the H100.} Warp-group MMA, dense and with 2:4 sparsity, and warp-level MMA are also measured on an NVIDIA H100 SXM under CUDA~12.4.131 for \texttt{sm\_90a}. The kernels execute the PTX instructions \texttt{wgmma} and \texttt{wgmma.sp} (warp-group) and \texttt{mma} and \texttt{mma.sp} (warp-level), and the cycles are read with \texttt{clock64} around an in-kernel region. The warp-level kernels are those of the RTX 5080, except that CUDA~12.4 rejects the \texttt{ordered\_metadata} qualifier of \texttt{mma.sp} used under CUDA~13.0; the plain form assembles to the same SASS instruction. Because the two NVIDIA GPUs run different toolkits and FourShadow counts simulated cycles, the platforms are compared only by ratios and trends, never by absolute cycles. The matched FourShadow configuration is (IW-4, NW-4) at 32 threads per warp: its warp-group tile, $64{\times}(2\,\mathit{NRC}){\times}16$, equals the tile of the H100 instruction \texttt{wgmma.m64nNk16}, so $\mathit{NRC}$ of 8, 16 and 32 corresponds to $N$ of 16, 32 and 64. Sections~\ref{sec:eval_wg_delivery} and~\ref{sec:eval_sparse_wg} to~\ref{sec:eval_sparse_meta} report the results.
+\begin{table}[t]
+\centering
+\caption{Configurations of FourShadow and the NVIDIA GPUs (--: not applicable).}
+\label{tab:config}
+\footnotesize
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular}{@{}l l l l@{}}
+\toprule
+ & \textbf{FourShadow} & \textbf{RTX 5080} & \textbf{H100 SXM} \\
+\midrule
+Threads/warp (NT) & 4, 8, 16, 32 (\ref{sec:eval_threads}) & 32 & 32 \\
+Warps/core (NW) & \textbf{4}, 16 & 4 per CTA & 4 per CTA \\
+Issue width (IW) & 1, 2, 4, 8 (\ref{sec:eval_iw}) & -- & 4 (warpgroup) \\
+Accum.\ regs.\ ($\mathit{NRC}$) & 8, 16, 32 (\ref{sec:eval_nrc}) & -- & $N$ = 16, 32, 64 \\
+FEDP width & $K$, $2K$ (\ref{sec:eval_fedp2k}) & not visible & not visible \\
+Cores / SMs used & 1 & 1 of 84 & 1 of 132 \\
+Warp-level MMA & TCU, dense, 2:4 & \texttt{mma(.sp)} & \texttt{mma(.sp)} \\
+Warp-group MMA & WGMMA, RS, SS & -- & \texttt{wgmma(.sp)} \\
+Shared-mem.\ copy & DXA & not used & not used \\
+Toolchain & SimX & \makecell[l]{CUDA 13.0,\\\texttt{sm\_120a}} & \makecell[l]{CUDA 12.4.131,\\\texttt{sm\_90a}} \\
+Cycles & simulated & \texttt{clock64} & \texttt{clock64} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-% TODO: baseline table, configuration table
+Table~\ref{tab:config} lists the configuration of each platform. FourShadow's entries are Vortex build options, with the tensor core, warp-group MMA and DXA enabled; only the accumulator count $\mathit{NRC}$ is a kernel parameter; parentheses name the part of Section~\ref{sec:eval} that sweeps a value, and bold marks the default (an issue width cannot exceed NW). We name a FourShadow configuration by its issue width (IW, the warps issued per cycle) and its number of warps per core (NW): (IW-1, NW-4) issues from one warp per cycle on a core of four warps. The configuration matched to the H100 is (IW-4, NW-4) at 32 threads per warp, whose warp-group tile, $64{\times}(2\,\mathit{NRC}){\times}16$, equals that of the H100 instruction \texttt{wgmma.m64nNk16}.
+
+\subsection{Software Configuration}\label{sec:method_sw}
+
+The design-space sweeps run $128\times128\times K$ SGEMM kernels, where $K\in\{128,256,512,1024\}$, change one architectural parameter while holding the rest of the configuration fixed, and compute speedups from total kernel cycles against the baseline configuration each part names in the (IW-N, NW-M) form. The comparisons with the NVIDIA GPUs run instruction-level kernels and count cycles over an in-kernel region. Warp-level MMA is compared at (IW-1, NW-4) with 8 or 32 threads per warp, because there the FP16 sparse speedups of FourShadow and the RTX 5080, over the 17 shapes measured on both, differ by a median of 9.0\% at 8 threads and 6.2\% at 32 threads, less than at issue widths of 2 and 4.

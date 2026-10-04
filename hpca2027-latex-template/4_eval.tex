@@ -1,12 +1,4 @@
-\section{Evaluation}
-
-We measure FourShadow in two settings. The design-space sweeps run $128\times128\times K$ SGEMM kernels, where
-$K\in\{128,256,512,1024\}$, change one architectural parameter while holding
-the rest of the configuration fixed, and compute speedups from total kernel
-cycles against the baseline configuration each part states. The comparisons
-with NVIDIA GPUs count the cycles of instruction-level kernels in an in-kernel
-region (Section~\ref{sec:methodology}). Each part that fixes a FourShadow
-configuration names it in the (IW-N, NW-M) form.
+\section{Evaluation}\label{sec:eval}
 
 \subsection{Scaling Across the SIMT Hierarchy}\label{sec:eval_hierarchy}
 
@@ -81,7 +73,7 @@ Sparse WMMA further reaches 33.49 FLOP/cycle. On the other hand, while WGMMA has
 
 The first three parts explore FourShadow's warp-group design space; Section~\ref{sec:eval_wg_delivery} answers Q1 (Section~\ref{sec:mot_causes}) by comparing it with an NVIDIA H100 (configuration in Section~\ref{sec:methodology}).
 
-\subsubsection{Number of Accumulator Registers (NRC) Scaling}
+\subsubsection{Number of Accumulator Registers (NRC) Scaling}\label{sec:eval_nrc}
 As shown in Fig.~\ref{fig:nrc_sweep}, at (IW-2, NW-4) and 32 threads per warp, increasing NRC from 8 to 16 reduces
 cycles by 30--32\% in both RS and SS modes, and extending SS to NRC${}=32$
 reduces cycles by approximately 49\% over NRC${}=8$; at (IW-4, NW-4) the two reductions are 39.7--40.0\% and 59.6--60.1\%. One H100 SM computing the same GEMM saves 19--50\% from $N{=}16$ to 32 and 41--65\% from 16 to 64, which brackets the FourShadow values. In these GEMM kernels SS is only 1--4\%
@@ -97,7 +89,7 @@ control, and outer $K$-loop work do not shrink with accumulator capacity.
     \label{fig:nrc_sweep}
 \end{figure}
 
-\subsubsection{K vs.\ 2K-Wide FEDP}
+\subsubsection{K vs.\ 2K-Wide FEDP}\label{sec:eval_fedp2k}
 Fig.~\ref{fig:fedp2k_sweep} shows that the 2K-wide FEDP is able to reduce instruction count by 31--33\% and execution cycles by 28--30\% in both
 operand-staging modes. Our evaluations also show that increasing FEDP pipeline latency from four to eight
 cycles adds at most 3.1\% overhead. Halving the number of $K$-dimension
@@ -140,7 +132,7 @@ registers enable a larger accumulator configuration or there is extreme register
     \label{fig:h100_ss_delivery}
 \end{figure}
 
-On the H100, a warp-group MMA that takes $A$ from shared memory is limited by operand delivery. Fig.~\ref{fig:h100_ss_delivery}(a) plots the issue interval of a $64{\times}N{\times}16$ instruction: with $A$ in registers it is 13 cycles at $N{=}16$ and 32 at $N{=}64$; with $A$ in shared memory it is 20 and 32. Every SS interval, dense and sparse, equals the larger of the math time, $N/2$ cycles, and the operand bytes divided by 128 bytes per cycle. Our H100 runs reproduce all 24 published values of the H800 study~\cite{luo2025dissectingnvidiahopperarchitecture} within 0.006 cycles, including the 128 and 144 cycles of sparse RS and SS at $N{=}256$ cited in Section~\ref{sec:mot_causes}, and the rule accounts for them: the 16 extra cycles of SS are the 2\,KB compressed $A$ crossing the same path. Shared-memory loads from 1 to 12 other warps slow SS by at most 4.4\%, so the limit is the tensor core's own operand path. FourShadow shows the same SS penalty (Fig.~\ref{fig:h100_ss_delivery}(b): 1.43$\times$ and 1.26$\times$ at $\mathit{NRC}$ 8 and 16, against 1.54$\times$ and 1.50$\times$ on the H100), and its cause is visible: one cycle per 64-byte tile-buffer line. The two differ in how the costs combine. FourShadow adds the line cycles to the math, within 0.8--5.4\%, so SS stays behind RS at every $\mathit{NRC}$ where both run; the H100 takes the larger of the two, which implies that it fetches the next operands while the current math runs.
+On the H100, a warp-group MMA that takes $A$ from shared memory is limited by operand delivery: every SS issue interval of a $64{\times}N{\times}16$ instruction, dense and sparse, equals the larger of the math time, $N/2$ cycles, and the operand bytes divided by 128 bytes per cycle, so dense SS matches RS only at $N{\geq}64$ (Fig.~\ref{fig:h100_ss_delivery}(a)). Our H100 runs reproduce all 24 published values of the H800 study~\cite{luo2025dissectingnvidiahopperarchitecture}, and the rule accounts for them, including the 128 and 144 cycles of sparse RS and SS at $N{=}256$ cited in Section~\ref{sec:mot_causes}. FourShadow shows the same SS penalty (Fig.~\ref{fig:h100_ss_delivery}(b): 1.43$\times$ and 1.26$\times$ at $\mathit{NRC}$ 8 and 16, against 1.54$\times$ and 1.50$\times$ on the H100), and its cause is visible: one cycle per 64-byte tile-buffer line. The two differ in how the costs combine. FourShadow adds the line cycles to the math, so SS stays behind RS at every $\mathit{NRC}$ where both run; the H100 takes the larger of the two, which implies that it fetches the next operands while the current math runs.
 
 \answerbox{Answer \#1 for Q1}{A warp-group MMA with operands in shared memory is bounded by delivering them at 128 bytes per cycle, and the H100 overlaps that delivery with the math where FourShadow adds it to the math, so on the H100 SS matches RS once the tile is wide enough to hide the delivery ($N{\geq}64$).}
 
@@ -201,9 +193,9 @@ loss nor the 16-thread gain; their source is not isolated.
     \label{fig:sparse_nvidia}
 \end{figure*}
 
-The pinned dense and sparse warp-group GEMM kernels reproduce the ratio of Fig.~\ref{fig:sparse_wg_sweep}, 2.22--2.35$\times$ in whole-kernel cycles for $K$ from 128 to 1024, at (IW-4, NW-4), 8 threads per warp and $\mathit{NRC}{=}8$. The ratio exceeds 2$\times$ because the two kernels do unequal work per $K$ step. The warp-group MMA itself shortens from 64 to 46 cycles in RS mode and from 76 to 44 in SS mode, 2.2--2.7\% of the dense loop step and 3.5\% of the sparse one; the rest of the step is staging, in which the dense kernel copies its $A$ and $B$ tiles through block-major index arithmetic and the sparse kernel copies half as many $A$ elements with a row-major index and $B$ with a plain $K$-major index. With the dense $A$ staged in the sparse kernel's layout, sparsity gains 1.60--1.72$\times$ in RS mode and 1.55--1.66$\times$ in SS mode; the $A$ copy and the $B$ indexing of the two kernels still differ. On the H100, with equal dense and sparse staging, the $128{\times}128{\times}K$ GEMM on one SM gains 1.00--1.55$\times$.
+The pinned dense and sparse warp-group GEMM kernels reproduce the ratio of Fig.~\ref{fig:sparse_wg_sweep}, 2.22--2.35$\times$ in whole-kernel cycles for $K$ from 128 to 1024, at (IW-4, NW-4), 8 threads per warp and $\mathit{NRC}{=}8$. The ratio exceeds 2$\times$ because the two kernels do unequal work per $K$ step: the warp-group MMA is 2.2--2.7\% of the dense loop step, and the rest is the staging of the $A$ and $B$ tiles, which differs between the kernels in element count and index arithmetic. With the dense $A$ staged in the sparse kernel's layout, sparsity gains 1.60--1.72$\times$ in RS mode and 1.55--1.66$\times$ in SS mode; the $A$ copy and the $B$ indexing still differ. On the H100, with equal dense and sparse staging, the $128{\times}128{\times}K$ GEMM on one SM gains 1.00--1.55$\times$.
 
-On the H100 the warp-group instruction itself reaches 2$\times$ in one setting. For one CTA and a $64{\times}64$ tile, sparse warp-group MMA costs half the dense per-$K$ cycles with $A$ in registers (2.00$\times$) and gains 1.33$\times$ with $A$ in shared memory, while sparse warp-level MMA gains 1.51$\times$ with register operands and 1.10$\times$ fed from shared memory. With $A$ in registers the gain grows with the tile, 1.44$\times$, 1.78$\times$ and 2.00$\times$ at $N$ of 16, 32 and 64, and no warp-group speedup on the H100 exceeds 2.00$\times$. A sparse instruction covers twice the $K$ of a dense one with the same $A$ bytes and twice the $B$ bytes, so per $K$ it halves the math and the $A$ bytes but not the $B$ bytes. With $A$ in registers and a wide tile, the $B$ delivery fits under the halved math (the rule behind Answer~\#1 for Q1, Section~\ref{sec:eval_wg_delivery}) and the whole per-$K$ cost halves; with $A$ in shared memory the 2\,KB compressed $A$ is added to every instruction's delivery, which then sets the time.
+The H100 warp-group instruction itself halves its per-$K$ cost with $A$ in registers and a wide tile: for one CTA and a $64{\times}64$ tile, sparse warp-group MMA gains 2.00$\times$ with $A$ in registers and 1.33$\times$ with $A$ in shared memory, and no warp-group speedup on the H100 exceeds 2.00$\times$. A sparse instruction covers twice the $K$ of a dense one with the same $A$ bytes and twice the $B$ bytes, so per $K$ it halves the math and the $A$ bytes but not the $B$ bytes. With $A$ in registers and a wide tile, the $B$ delivery fits under the halved math (Section~\ref{sec:eval_wg_delivery}); with $A$ in shared memory the 2\,KB compressed $A$ is added to every instruction's delivery, which then sets the time.
 
 \answerbox{Answer \#2 for Q1}{2:4 sparsity halves a warp-group MMA's per-$K$ math and $A$ bytes but not its $B$ bytes, so the instruction reaches the nominal 2$\times$ only when $A$ sits in registers and the tile is wide enough for the $B$ delivery to fit under the halved math: on the H100, 2.00$\times$ at $N{=}64$ with $A$ in registers against 1.33$\times$ with $A$ in shared memory.}
 
