@@ -1,0 +1,146 @@
+% Revision cover page (HPCA 2027, paper #2126) -- first draft, 2026-10-04.
+% Committee rules: first page of the PDF; changes and how they answer the reviewers;
+% paper margins, line spacing and fonts; no title or banner; anonymous; no external links.
+% Input from main.tex through \AddToHook{begindocument/end}, so it is typeset before the
+% \maketitle of hpca-template.tex (DO NOT MODIFY). The page has no number; \pagenumbering
+% restarts the paper at page 1 on the title page.
+% Every number below is printed in the paper (sources: 00_doc/vortex-wgdxa2k/results/
+% paper_numbers.json via the paper text). Every section, figure and table is a \ref.
+%
+% NOT CLAIMED (not in the paper yet; never printed on this page):
+%   B1      artifact release commitment, repository plan, reproduction steps
+%   B2/D1/E1 packed-SIMT baseline; abstract 9.6x/2.1x "over the baseline TCU" vs body
+%           9.15x/2.00x over SIMT; gains over the baseline TCU (D Q1, E Q1)
+%   D2      Fig. 8 per-width scalar normalization; fixed-precision cycles across widths (D Q1)
+%   B6/D3/D4 workload definitions, model sizes, precision, SIMT-baseline provenance of the
+%           end-to-end figure; sparse-input provenance, output quality, timing boundary (D Q2)
+%   C Q2    WGMMA / sparsity / 2K-FEDP breakdown of the CNN 16.88x and NeRF 26.82x
+%   B6/C Q1 ASIC frequency, power, energy per MMA; FLOP/area vs H100 / MI300
+%   B Q5    NT = 64 sweep or a larger register file (the 24-register budget question)
+%   D5/E    rectangular or skinny GEMM beyond the 128x128 output
+%   E3      stall breakdown (FEDP busy, RAW, bank conflicts, refill waits, non-TCU), beyond item 6
+%   B4      AMD (CDNA) validation; prior DSE tools beyond Table I (gem5-SALAM, MAERI/SIGMA, ...)
+%   B3      an explicit statement of what the roofline counts per mode (item 7 explains the order only)
+%   C       non-SGEMM and sparse workloads beyond the existing end-to-end set
+%   F       remaining typos ("hierarchial", "Note-worthily", "it's"), small fonts, Fig. 13
+%           grouping, bandwidth scaling with cores, matrix sizes, RF capacity question
+%   --      registered title ends "RISC-V GPGPU"; main.tex says "RISC-V GPU"
+% Questions omitted from the answer block for that reason: B (1), B (2), C (1), C (2),
+% D (1), D (2), E (1).
+\thispagestyle{empty}
+\pagenumbering{Alph}
+
+\noindent We thank the reviewers for their careful reviews. The revision organizes the paper around
+two questions, measures FourShadow beside two NVIDIA GPUs,
+re-measures and explains the sparsity results, and states seven findings. Numbers refer to the
+revised paper; [A]--[F] name the reviews.
+
+\vspace{2pt}
+\noindent\textbf{1. Two questions organize the paper.} A new Motivation
+(Section~\ref{sec:motivation}) poses Q1, the microarchitectural behavior behind NVIDIA's
+tensor-core features (\ref{sec:mot_causes}), and Q2, the behavior of a tensor core as its
+architectural parameters change (\ref{sec:mot_point}). FourShadow is the white-box counterpart of
+a commercial tensor core: where the two agree, the mechanism visible in FourShadow is a candidate
+explanation; where they differ, the difference excludes one. The Evaluation answers Q2 in
+Section~\ref{sec:eval_hierarchy} and Q1 in Sections~\ref{sec:eval_wgmma}
+and~\ref{sec:eval_sparse}. [A][B][C][F]
+
+\vspace{2pt}
+\noindent\textbf{2. Inherited and new parts are separated.} A new Background
+(Section~\ref{sec:background}) describes what FourShadow inherits: the Vortex SIMT hierarchy, the
+base tensor core with its Ten-Four FEDP units, the issue width with its warpgroups, and shared
+memory with DXA. Section~\ref{sec:design_overview} names the two components FourShadow adds, the
+warp-group tensor core (\ref{sec:design_wgmma}) and the sparse tensor core
+(\ref{sec:design_sparse}), with their programming model in \ref{sec:design_pm}. A new
+Table~\ref{tab:related_work_comparison} places FourShadow among prior platforms, Accel-Sim and
+GPGPU-Sim included. [B][C]
+
+\vspace{2pt}
+\noindent\textbf{3. FourShadow is measured beside two NVIDIA GPUs.} A new Methodology
+(Section~\ref{sec:methodology}) adds an RTX 5080 for warp-level MMA with 2:4 sparsity and an H100
+for warp-group and warp-level MMA, dense and sparse, all timed over an in-kernel region and
+compared with FourShadow by ratios and trends. Over the 17 shapes measured on both,
+FourShadow's FP16 sparse speedup differs from the RTX 5080's by a median of 6.2\% at 32 threads
+per warp and 9.0\% at 8 threads (\ref{sec:eval_sparse_halves}), more at issue widths of 2 and 4
+(Section~\ref{sec:methodology}). The differences are reported as
+findings: the H100 overlaps operand delivery with the math where FourShadow adds the two
+(\ref{sec:eval_wg_delivery}), and its byte rule reads $B$ once per warp-group instruction,
+FourShadow's simulated kernels once per warp (\ref{sec:eval_wg_bread}). [B][C]
+
+\vspace{2pt}
+\noindent\textbf{4. Seven findings answer the two questions,} each stated in a box after its
+evidence. [A][B][F]
+\par\noindent\hangindent=1em\hangafter=1 Q2 \#1 (\ref{sec:eval_threads}): per-lane warp-group MMA
+throughput peaks at 16 threads per warp; NVIDIA's 32-thread point sits on that plateau (level in RS
+mode, 7--15\% behind in SS mode).
+\par\noindent\hangindent=1em\hangafter=1 Q2 \#2 (\ref{sec:eval_iw}): a wider warpgroup gives
+diminishing gains and a smaller sparse speedup.
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_wg_delivery}): shared-memory
+operands bound warp-group MMA at 128 bytes per cycle; the H100 hides that delivery under the math
+once the tile is wide enough.
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#2 (\ref{sec:eval_wg_bread}): NVIDIA's warp-group MMA
+owes its lead over warp-level MMA to one read of $B$ for four warps.
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#3 (\ref{sec:eval_sparse_wg}): sparse warp-group MMA
+reaches the nominal 2$\times$ only with $A$ in registers and a wide tile; on the H100, 2.00$\times$
+against 1.33$\times$ with $A$ in shared memory.
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#4 (\ref{sec:eval_sparse_halves}): 2:4 sparsity halves
+only part of the per-$K$ cost, so the warp-level speedup stays below 2$\times$.
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#5 (\ref{sec:eval_sparse_meta}): one NVIDIA warp hides
+an early metadata load behind its own work; FourShadow (four warps on one issue lane, 32 threads
+per warp) hides it only behind the others.\par
+
+\vspace{2pt}
+\noindent\textbf{5. Sparsity results are re-measured, plotted raw and explained.} The
+symmetric/asymmetric heatmap (Fig.~\ref{fig:sparse_sym_sweep}) prints raw speedups from total
+kernel cycles at a stated configuration instead of min--max-normalized
+values: the asymmetric layouts gain 1.24--1.78$\times$, and both symmetric layouts sit below both
+asymmetric ones in 11 of 12 rows. The sparse warp-group ratios above 2$\times$ are traced to
+unequal work per $K$ step in the dense and sparse kernels: the warp-group MMA is 2.2--2.7\% of the
+dense loop step, and with the dense $A$ staged in the sparse kernel's layout, sparsity gains
+1.60--1.72$\times$ in RS mode and 1.55--1.66$\times$ in SS mode (\ref{sec:eval_sparse_wg}).
+Section~\ref{sec:eval_sparse_halves} splits the per-$K$ cost into a part that sparsity halves and
+a part it leaves unchanged, mapped to the terms of the analytic model of
+Fig.~\ref{fig:sparse_analytic}. FourShadow's warp-level speedup peaks at 1.92$\times$ over the
+configurations measured, and no warp-group speedup on the H100 exceeds 2.00$\times$. [B][D][E]
+
+\vspace{2pt}
+\noindent\textbf{6. Attributions rest on the cycles of a step.} A FourShadow warp-group step
+costs a fixed micro-op sequence plus about one cycle per 64-byte operand line
+(\ref{sec:eval_threads}, \ref{sec:eval_wg_delivery}). This composition accounts for the 16-thread
+optimum of warp-group MMA (from 16 to 32 threads only $M$ doubles, which adds $A$-operand lines in
+SS mode),
+for the falling return of issue width ($\times$1.71, then $\times$1.58 in RS mode), and for the
+falling sparse speedup (sparsity shortens only the fixed part, 72 to 53 cycles in RS mode)
+(\ref{sec:eval_iw}). The accumulator sweep (Fig.~\ref{fig:nrc_sweep}) now states its
+configuration, adds a second one, and is bracketed by one H100 SM on the same GEMM. [B][D][E][F]
+
+\vspace{2pt}
+\noindent\textbf{7. The roofline is reconciled.} In FourShadow's simulated kernels every warp
+fetches $B$ itself, 4.00 times per SS step, so WGMMA saves no $B$ traffic and sits below WMMA in
+Fig.~\ref{fig:roofline}. On the H100 the order reverses: warp-level MMA fed from
+shared memory costs 1.75--2.54$\times$ as much per output as warp-group MMA in SS mode
+(\ref{sec:eval_wg_bread}). [B]
+
+\vspace{2pt}
+\noindent\textbf{8. Presentation.} Section~\ref{sec:background} defines $M$, $N$, $K$ and
+$A$--$D$ (Eq.~\ref{eq:fedp}), the tile, block and micro-op steps, the symmetric and asymmetric
+layouts, and the issue width (\ref{sec:bg_issue}) before their use. Section~\ref{sec:design}
+describes the design only; its trade-off studies are in Section~\ref{sec:eval_wgmma}, and
+Section~\ref{sec:design_sparse} opens with a definition of 2:4 sparsity. The Introduction's
+unresolved figure reference now points to Fig.~\ref{fig:figure_integration}; three submitted
+figures (Figs.~4, 14 and~18) are replaced by text; the latency of the metadata load is measured in
+Section~\ref{sec:eval_sparse_meta}. [B][D][F]
+
+\vspace{2pt}
+% Partly answered, stated on this page only as far as done: B (3) explains the order, not what the
+% roofline counts per mode; B (4) NVIDIA only, no AMD; B (5) the mechanism for warp-group MMA, no
+% NT = 64 or larger-register sweep; E (3) and D5 a step-cost composition, not a stall breakdown.
+% Not listed (not answered yet): B (1), B (2), C (1), C (2), D (1), D (2), E (1).
+\noindent\textbf{Answers to the reviewers' questions.} A, new or counter-intuitive insights:
+items 4, 1. B (3), roofline: item 7. B (4), validation against NVIDIA with the error
+disclosed: item 3. B (5), the 16-thread optimum: item 6, its mechanism for warp-group
+MMA. E (2), raw sparse speedups and ratios above 2$\times$: item 5. E (3), cycle-level support
+for the attributions: item 6. F, a contribution beyond the infrastructure: items 1, 4.
+
+\clearpage
+\pagenumbering{arabic}

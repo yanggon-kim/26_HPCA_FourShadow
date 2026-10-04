@@ -56,6 +56,11 @@ Investigating SIMT Tensor Core Scaling Across Hierarchies of a RISC-V GPU}
 %\def\aereproduced{} % The results have been reproduced
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Revision cover page: the first page of the PDF. hpca-template.tex (DO NOT MODIFY) opens the
+% document and calls \maketitle, so the cover is typeset from the begin-document hook, before
+% the title page; it ends with \clearpage and restarts the page numbers at 1.
+\AddToHook{begindocument/end}{\input{hpca2027-latex-template/00_cover}}
+
 \input{hpca-template}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
