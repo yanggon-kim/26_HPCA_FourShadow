@@ -44,6 +44,7 @@ The 16-thread advantage of Fig.~\ref{fig:threads_sweep}(a) carries over to warp-
 \end{figure}
 
 % float placed early: renders at the top of the right column beside Section VI-A3
+% TODO(roofline): WGMMA points 2.31/5.85 not yet from the final SimX runs
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]
@@ -57,8 +58,8 @@ The 16-thread advantage of Fig.~\ref{fig:threads_sweep}(a) carries over to warp-
 Fig.~\ref{fig:iw_sweep}(b) normalizes each configuration against an issue
 width of one. An issue width of two provides 1.21--1.48$\times$ speedup,
 while four reaches up to 1.84$\times$. Increasing to eight only peaks at 2.02$\times$, with the 8- and 16-thread designs largely saturating after
-four and the 32-thread design even regresses. This proves that wider issue provides diminishing returns once operand delivery and
-non-TCU execution become the dominant costs.
+four. This proves that wider issue provides diminishing returns once
+non-TCU execution becomes the dominant cost.
 
 At the instruction level, the warp-group MMA of FourShadow scales nearly linearly with the issue width. Fig.~\ref{fig:q2_nt_iw}(b) streams back-to-back warp-group MMAs at 32 threads per warp and issue widths of 1, 2 and 4, a narrower range than the whole-kernel sweep of Fig.~\ref{fig:iw_sweep}(b), which extends to 8. Each doubling of the issue width raises throughput by $\times$2.00 and again by $\times$2.00 in RS mode at $\mathit{NRC}{=}16$, and by $\times$1.89 and then $\times$1.80 in SS mode at $\mathit{NRC}{=}32$. As the issue width grows, the sparse per-$K$ speedup stays at 1.275$\times$ in RS mode and rises from 1.349$\times$ to 1.417$\times$ in SS mode. Sparsity shortens the fixed micro-op part of a step, from 72 to 53 cycles in RS mode at $\mathit{NRC}{=}16$.
 
@@ -92,6 +93,7 @@ control, and outer $K$-loop work do not shrink with accumulator capacity.
 \end{figure}
 
 \subsubsection{K vs.\ 2K-Wide FEDP}\label{sec:eval_fedp2k}
+% TODO(fig10): FEDP bars not from the final runs; NRC-16 K-wide lat-4 bars differ from Fig. 9
 Fig.~\ref{fig:fedp2k_sweep} shows that the 2K-wide FEDP is able to reduce instruction count by 31--33\% and execution cycles by 28--30\% in both
 operand-staging modes. Our evaluations also show that increasing FEDP pipeline latency from four to eight
 cycles adds at most 3.1\% overhead. Halving the number of $K$-dimension
@@ -195,7 +197,7 @@ loss nor the 16-thread gain; their source is not isolated.
     \label{fig:sparse_nvidia}
 \end{figure*}
 
-In Fig.~\ref{fig:sparse_wg_sweep}, the pinned dense and sparse warp-group GEMM kernels at (IW-4, NW-4), 8 threads per warp and $\mathit{NRC}{=}8$ give a ratio of 2.22--2.35$\times$ in whole-kernel cycles for $K$ from 128 to 1024. The ratio exceeds 2$\times$ because the two kernels do unequal work per $K$ step: the warp-group MMA is 2.1--2.5\% of the dense loop step, and the rest is the staging of the $A$ and $B$ tiles, which differs between the kernels in element count and index arithmetic. With the dense $A$ staged in the sparse kernel's layout, sparsity gains 1.60--1.72$\times$ in RS mode and 1.55--1.66$\times$ in SS mode; the $A$ copy and the $B$ indexing still differ. On the H100, with equal dense and sparse staging, the $128{\times}128{\times}K$ GEMM on one SM gains 1.00--1.55$\times$.
+In Fig.~\ref{fig:sparse_wg_sweep}, the dense and sparse warp-group GEMM kernels at (IW-4, NW-4), 8 threads per warp and $\mathit{NRC}{=}8$ give a ratio of 2.22--2.35$\times$ in whole-kernel cycles for $K$ from 128 to 1024. The ratio exceeds 2$\times$ because the two kernels do unequal work per $K$ step: the warp-group MMA is 2.1--2.5\% of the dense loop step, and the rest is the staging of the $A$ and $B$ tiles, which differs between the kernels in element count and index arithmetic. With the dense $A$ staged in the sparse kernel's layout, sparsity gains 1.60--1.72$\times$ in RS mode and 1.55--1.66$\times$ in SS mode; the $A$ copy and the $B$ indexing still differ. On the H100, with equal dense and sparse staging, the $128{\times}128{\times}K$ GEMM on one SM gains 1.00--1.55$\times$.
 
 The H100 warp-group instruction itself halves its per-$K$ cost with $A$ in registers and a wide tile: for one CTA and a $64{\times}64$ tile, sparse warp-group MMA gains 2.00$\times$ with $A$ in registers and 1.33$\times$ with $A$ in shared memory, and no warp-group speedup on the H100 exceeds 2.00$\times$. A sparse instruction covers twice the $K$ of a dense one with the same $A$ bytes and twice the $B$ bytes, so per $K$ it halves the math and the $A$ bytes but not the $B$ bytes. With $A$ in registers and a wide tile, the $B$ delivery fits under the halved math (Section~\ref{sec:eval_wg_delivery}); with $A$ in shared memory the 2\,KB compressed $A$ is added to every instruction's delivery, which then sets the time.
 
@@ -313,7 +315,7 @@ However, performance scales much more slowly, reaching 1.37--1.41$\times$ at
 $IW{=}2$ and 1.67--1.71$\times$ at $IW{=}4$. Doubling the area again
 to an estimated 455--462\,k$\mu$m$^2$ at $IW{=}8$ raises speedup to
 only 1.70--1.81$\times$. Thus, $IW{=}4$ forms the practical optimal on the curve, beyond which additional TCU blocks and larger warp-groups are increasingly
-limited by operand delivery and non-TCU execution rather than
+limited by non-TCU execution rather than
 arithmetic capacity.
 \begin{figure}
     \centering
