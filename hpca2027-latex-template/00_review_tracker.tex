@@ -18,7 +18,7 @@
 \large\bfseries\textcolor{red!75!black}{INTERNAL REVIEW TRACKER --- remove before submission}}}\par
 \vspace{3pt}
 {\footnotesize
-55 rows in 13 categories cover 100 reviewer comments (A 3, B 27, C 9, D 19, E 16, F 26). Rows: \stR{} 16, \stP{} 19, \stO{} 19, \stM{} 1; comments: 24 / 38 / 37 / 1. Items: W weakness, C\# numbered comment, Cm other comment, Q(\#) question for revision. Figure numbers in the comment column are the submitted paper's; locations are sections, figures and tables of this PDF; ``cover~N'' is item N of the cover page.}\par\vspace{2pt}
+55 rows in 13 categories cover 100 reviewer comments (A 3, B 27, C 9, D 19, E 16, F 26). Rows: \stR{} 16, \stP{} 18, \stO{} 20, \stM{} 1; comments: 24 / 35 / 40 / 1. Items: W weakness, C\# numbered comment, Cm other comment, Q(\#) question for revision. Figure numbers in the comment column are the submitted paper's; locations are sections, figures and tables of this PDF; ``cover~N'' is item N of the cover page.}\par\vspace{2pt}
 \scriptsize
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.0}
@@ -30,7 +30,7 @@
 \endhead
 \rowcolor{gray!18}\multicolumn{3}{@{}l@{}}{\textbf{Novelty and insight}} \\
 No fundamentally new insight; results intuitive or predictable & A\,W; B\,W; C\,Cm; F\,W & \stP{} --- Q1/Q2 (\ref{sec:motivation}), six answer boxes; cover 1, 4. Novelty is the reviewers' call \\
-Diminishing returns and WGMMA limits are already well known & A\,Cm & \stP{} --- mechanism in Answer \#2 for Q2 (\ref{sec:eval_iw}); Sec.~I still states both as findings \\
+Diminishing returns and WGMMA limits are already well known & A\,Cm & \stP{} --- Answer \#2 for Q2 (\ref{sec:eval_iw}): whole kernel diminishes, WGMMA step near-linear; Sec.~I unchanged \\
 Any counter-intuitive or new tensor-core insight? & A\,Q & \stR{} --- six answer boxes (\ref{sec:eval_threads}, \ref{sec:eval_iw}, \ref{sec:eval_wg_delivery}, \ref{sec:eval_sparse_wg}--\ref{sec:eval_sparse_meta}); cover 4 \\
 A key contribution beyond the infrastructure? & F\,Q & \stR{} --- Q1/Q2 (\ref{sec:mot_causes}, \ref{sec:mot_point}), answered in \ref{sec:eval}; cover 1, 4 \\
 ``Best configuration depends on workload'' is expected & F\,Cm & \stO{} --- unchanged in Sec.~I, contribution bullet~2 \\
@@ -64,7 +64,7 @@ Small registers per thread: does it limit the conclusions? & F\,Cm & \stO{} --- 
 Enough RF capacity and bandwidth for the base TCU? & F\,Cm & \stP{} --- \ref{sec:bg_tcu}: three sources read in one cycle; capacity not discussed \\
 Metadata from global memory: latency impact? & F\,Cm & \stR{} --- \ref{sec:eval_sparse_meta}, Fig.~\ref{fig:sparse_nvidia}(c); \ref{sec:design_sparse}; cover 8 \\
 \rowcolor{gray!18}\multicolumn{3}{@{}l@{}}{\textbf{Roofline}} \\
-WGMMA 2.31 vs.\ WMMA 23.21 FLOP/cycle; what is counted? & B\,W, C3, Q3 & \stP{} --- VI-A3: one $B$ tile per warp (4.00); cover 7. FLOP accounting not stated \\
+WGMMA 2.31 vs.\ WMMA 23.21 FLOP/cycle; what is counted? & B\,W, C3, Q3 & \stO{} --- VI-A3 points as submitted; $B$ 1.00 tile/warpgroup; order, FLOP accounting open \\
 \rowcolor{gray!18}\multicolumn{3}{@{}l@{}}{\textbf{Design-space coverage and shapes}} \\
 Only $M{=}N{=}128$; test rectangular or skinny GEMM & D\,C5; E\,W3 & \stO{} --- \ref{sec:method_sw}; \ref{sec:eval_sparse_halves} adds $64{\times}64{\times}K$, still square \\
 Why these matrix sizes? Representative? & F\,Cm & \stO{} --- \ref{sec:method_sw} states the shapes, not why \\

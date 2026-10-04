@@ -21,13 +21,15 @@
 %   D5/E    rectangular or skinny GEMM beyond the 128x128 output
 %   E3      stall breakdown (FEDP busy, RAW, bank conflicts, refill waits, non-TCU), beyond item 6
 %   B4      AMD (CDNA) validation; prior DSE tools beyond Table I (gem5-SALAM, MAERI/SIGMA, ...)
-%   B3      an explicit statement of what the roofline counts per mode (item 7 explains the order only)
+%   B3      the roofline (B (3)): what it counts per mode and why WGMMA sits below WMMA; item 7
+%           no longer explains the order (since the SimX B fix, 2026-10-04, the 4.00 B fetches are 1.00;
+%           the roofline WGMMA points are the submitted ones, not reproducible)
 %   C       non-SGEMM and sparse workloads beyond the existing end-to-end set
 %   F       remaining typos ("hierarchial", "it's"), small fonts, Fig. 13
 %           grouping, matrix sizes, RF capacity question; bandwidth scaling with cores
 %           and "Note-worthily" moot: VI-A.3 (cores/socket) removed
 %   --      registered title ends "RISC-V GPGPU"; main.tex says "RISC-V GPU"
-% Questions omitted from the answer block for that reason: B (2), C (1), C (2),
+% Questions omitted from the answer block for that reason: B (2), B (3), C (1), C (2),
 % D (1), D (2), E (1). B (1) is listed for its configuration part only.
 \thispagestyle{empty}
 \pagenumbering{Alph}
@@ -73,9 +75,10 @@ findings: the H100 overlaps operand delivery with the math where FourShadow adds
 evidence. [A][B][F]
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#1 (\ref{sec:eval_threads}): per-lane warp-group MMA
 throughput peaks at 16 threads per warp; NVIDIA's 32-thread point sits on that plateau (level in RS
-mode, 7--15\% behind in SS mode).
+mode, 11--19\% behind in SS mode).
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#2 (\ref{sec:eval_iw}): a wider warpgroup gives
-diminishing gains and a smaller sparse speedup.
+diminishing whole-kernel gains, while the warp-group instruction scales nearly linearly and keeps or
+raises its sparse speedup.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_wg_delivery}): shared-memory
 operands bound warp-group MMA at 128 bytes per cycle; the H100 hides that delivery under the math
 once the tile is wide enough.
@@ -94,7 +97,7 @@ symmetric/asymmetric heatmap (Fig.~\ref{fig:sparse_sym_sweep}) prints raw speedu
 kernel cycles at a stated configuration, not min--max-normalized
 values: the asymmetric layouts gain 1.24--1.78$\times$, and both symmetric layouts sit below both
 asymmetric ones in 11 of 12 rows. Sparse warp-group ratios above 2$\times$ trace to
-unequal work per $K$ step in the two kernels: the warp-group MMA is 2.2--2.7\% of the
+unequal work per $K$ step in the two kernels: the warp-group MMA is 2.1--2.5\% of the
 dense loop step, and with the dense $A$ staged in the sparse kernel's layout, sparsity gains
 1.60--1.72$\times$ in RS and 1.55--1.66$\times$ in SS mode (\ref{sec:eval_sparse_wg}).
 \ref{sec:eval_sparse_halves} splits the per-$K$ cost into a part sparsity halves and
@@ -106,17 +109,18 @@ configurations measured, and no warp-group speedup on the H100 exceeds 2.00$\tim
 \noindent\textbf{6. Attributions rest on the cycles of a step.} A FourShadow warp-group step
 costs a fixed micro-op sequence plus about one cycle per 64-byte operand line
 (\ref{sec:eval_threads}, \ref{sec:eval_wg_delivery}). This composition accounts for the 16-thread
-optimum of warp-group MMA (from 16 to 32 threads only $M$ doubles, which adds $A$-operand lines in
-SS mode),
-for the falling return of issue width ($\times$1.71, then $\times$1.58 in RS mode), and for the
-falling sparse speedup (sparsity shortens only the fixed part, 72 to 53 cycles in RS mode)
-(\ref{sec:eval_iw}). The accumulator sweep (Fig.~\ref{fig:nrc_sweep}) now states its
+optimum of warp-group MMA (from 16 to 32 threads only $M$ doubles, adding $A$-operand lines in
+SS mode)
+and for the sparse speedup of a step (sparsity shortens only the fixed part, 72 to 53 cycles in RS
+mode); its throughput scales linearly with issue width ($\times$2.00 twice in RS mode,
+\ref{sec:eval_iw}). The accumulator sweep (Fig.~\ref{fig:nrc_sweep}) now states its
 configuration, adds a second one, and is bracketed by one H100 SM on the same GEMM. [B][D][E][F]
 
 \vspace{2pt}
-\noindent\textbf{7. The roofline is reconciled.} In FourShadow's simulated kernels the
-shared-memory reads of an SS step amount to one $B$ tile per warp, 4.00 per step, so WGMMA saves
-no $B$ traffic and sits below WMMA in the roofline (Fig.~\ref{fig:roofline}). [B]
+\noindent\textbf{7. Simulated $B$ sharing matches the RTL.} SimX merges a request for a queued
+$B$ line (Section~\ref{sec:methodology}): an SS step reads one $B$ tile per warpgroup (1.00,
+\ref{sec:design_wgmma}); Figs.~\ref{fig:q2_nt_iw}, \ref{fig:nrc_sweep},
+\ref{fig:h100_ss_delivery} and~\ref{fig:sparse_wg_sweep} are re-measured.
 
 \vspace{2pt}
 \noindent\textbf{8. Presentation.} Section~\ref{sec:background} defines $M$, $N$, $K$ and
@@ -138,14 +142,13 @@ sweep to its Evaluation part and defines issue width and warps per core, and
 \ref{sec:method_sw} gives the sweeps' kernels, shapes and baselines. [B][C][F]
 
 \vspace{2pt}
-% Partly answered, stated on this page only as far as done: B (3) explains the order, not what the
-% roofline counts per mode; B (4) NVIDIA only, no AMD; B (5) the mechanism for warp-group MMA, no
+% Partly answered, stated on this page only as far as done: B (4) NVIDIA only, no AMD; B (5) the mechanism for warp-group MMA, no
 % NT = 64 or larger-register sweep; E (3) and D5 a step-cost composition, not a stall breakdown.
-% Not listed (not answered yet): B (2), C (1), C (2), D (1), D (2), E (1); B (1) only for its
+% Not listed (not answered yet): B (2), B (3), C (1), C (2), D (1), D (2), E (1); B (1) only for its
 % configuration part (item 9), the release stays open. C and F's issue width are review comments.
-\noindent\textbf{Answers by reviewer.} A, new or counter-intuitive insights: items 4, 1.
-B~(1), sweep configuration: item 9. B~(3), roofline: item 7. B~(4), NVIDIA validation, error
-disclosed: item 3. B~(5), the 16-thread optimum: item 6 (warp-group MMA).
+\noindent\textbf{Answers by reviewer.} A, new insights: items 4, 1.
+B~(1), sweep configuration: item 9. B~(4), NVIDIA validation:
+item 3. B~(5), the 16-thread optimum: item 6 (warp-group MMA).
 C, NVIDIA WGMMA and sparsity baselines: items 3,~9. E~(2), raw sparse speedups, ratios
 above 2$\times$: item 5. E~(3), cycle-level support for attributions: item 6. F, a contribution
 beyond the infrastructure: items 1, 4; issue width: items 8,~9.

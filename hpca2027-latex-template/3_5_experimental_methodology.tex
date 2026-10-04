@@ -1,7 +1,7 @@
 \section{Methodology}
 \label{sec:methodology}
 
-FourShadow is implemented in Vortex~\cite{vortex}, the open-source RISC-V GPU, and its performance is measured there: in processor cycles on SimX, the Vortex cycle-level simulator, and end to end on an FPGA. It is compared with two NVIDIA GPUs, an RTX 5080 and an H100, for the reasons given in Section~\ref{sec:motivation}. Because the NVIDIA GPUs run different toolkits and FourShadow counts simulated cycles, the platforms are compared only by ratios and trends, never by absolute cycles.
+FourShadow is implemented in Vortex~\cite{vortex}, the open-source RISC-V GPU, and its performance is measured there: in processor cycles on SimX, the Vortex cycle-level simulator, and end to end on an FPGA. SimX carries one fix to its tile buffer that matches the RTL: a request for a $B$ line already waiting in its queue is merged with the queued request. FourShadow is compared with two NVIDIA GPUs, an RTX 5080 and an H100, for the reasons given in Section~\ref{sec:motivation}. Because the NVIDIA GPUs run different toolkits and FourShadow counts simulated cycles, the platforms are compared only by ratios and trends, never by absolute cycles.
 
 \subsection{Hardware Configuration}\label{sec:method_hw}
 
