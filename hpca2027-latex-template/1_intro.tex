@@ -8,121 +8,32 @@ However, the architectural principles governing this scaling remain poorly under
 
 Studying these questions requires an open and synthesizable GPU platform that exposes the arithmetic array and the surrounding SIMT mechanisms that determine its utilization, including register mapping, operand collection, micro-op scheduling, warp scheduling, shared-memory banking, accumulator capacity, and metadata movement. Simulation-only models may abstract these mechanisms and standalone matrix engines omit their coupling to the SIMT pipeline (Table~\ref{tab:related_work_comparison}). FourShadow studies Tensor Cores as tightly integrated GPU functional units using a configurable, cycle-accurate, and synthesizable implementation built on the open-source RISC-V-based Vortex GPGPU.
 
-% float placed early: renders at the top of page 2
-\begin{table*}[t]
+% float placed early: renders at the top of the right column of page 1
+\begin{table}[t]
 \centering
 \caption{Comparison of GPU tensor-core architectures, simulators and related research.}
 \label{tab:related_work_comparison}
-\renewcommand{\arraystretch}{0.9}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{p{2.4cm} p{2.4cm} p{4.1cm} p{2.6cm} p{2.2cm} p{1.5cm} c c c}
+\footnotesize
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular}{@{}l l l l c c@{}}
 \toprule
-\textbf{Paper} &
-\textbf{Simulation} &
-\textbf{Data Types} &
-\textbf{Thread Config.} &
-\textbf{Sparsity} &
-\textbf{TC Style} &
-\makecell{\textbf{Warp-group}\\\textbf{MMA}} &
-\makecell{\textbf{Low Latency}\\\textbf{Dot Product}} &
-\makecell{\textbf{Open}\\\textbf{Source}} \\
+\textbf{Paper} & \textbf{Simulation} & \makecell{\textbf{Thread}\\\textbf{Config.}} & \textbf{Sparsity} & \makecell{\textbf{Warp-}\\\textbf{group}\\\textbf{MMA}} & \makecell{\textbf{Open}\\\textbf{Source}} \\
 \midrule
 \rowcolor{blue!8}
-\textbf{FourShadow (Ours)}
-  & Cycle-sim, RTL
-  & TF32, FP16/8, BF16/8, INT8/4
-  & 2, 4, 8, 16, 32
-  & 2:4 structured
-  & SIMT
-  & \cyes
-  & Fused (RTL)
-  & \cyes \\
+\makecell[l]{\textbf{FourShadow}\\\textbf{(Ours)}} & \makecell[l]{Cycle-sim,\\RTL} & \makecell[l]{2, 4, 8,\\16, 32} & \makecell[l]{2:4\\structured} & \cyes & \cyes \\
 \midrule
-\textbf{Virgo}~\cite{kim2025virgo}
-  & Cycle-sim, RTL
-  & INT8/32
-  & Fixed 32
-  & \cno
-  & Systolic
-  & \cyes
-  & Discrete
-  & \cyes \\
-\midrule
-\textbf{CoopWarp}~\cite{nada2025cooperative}
-  & Cycle-sim
-  & FP8, FP16, BF16, FP32
-  & 4, 8, 16, 32
-  & \cno
-  & SIMT
-  & \cno
-  & Discrete
-  & \cyes \\
-\midrule
-\textbf{RM-STC}~\cite{huang2023rmstc}
-  & Cycle-sim
-  & FP16, INT8
-  & Fixed 32
-  & Any degree
-  & SIMT
-  & \cno
-  & Discrete
-  & \cno \\
-\midrule
-\textbf{VEGETA}~\cite{jeong2023vegeta}
-  & Cycle-sim, RTL
-  & BF16, FP32
-  & No SIMT
-  & N:M flexible
-  & Systolic
-  & \cno
-  & Discrete
-  & \cno \\
-\midrule
-\textbf{SIMD$^2$}~\cite{zhang2022simd2}
-  & HW emulation
-  & FP16, INT8
-  & Fixed 32
-  & \cno
-  & SIMT
-  & \cno
-  & Discrete
-  & \cno \\
-\midrule
-\textbf{Accel-Sim}~\cite{accel-sim}
-  & Cycle-sim
-  & FP16
-  & Fixed 32
-  & \cno
-  & SIMT
-  & \cyes
-  & Fused (Sim)
-  & \cyes \\
-\midrule
-\textbf{Sparse TC}~\cite{zhu2019sparsetensorcore}
-  & Cycle-sim
-  & FP16, INT8
-  & Fixed 32
-  & Vector N:M
-  & SIMT
-  & \cno
-  & Discrete
-  & \cno \\
-\midrule
-\textbf{GPGPU-Sim}~\cite{raihan2019modeling}
-  & Cycle-sim
-  & FP16/32
-  & Fixed 32
-  & \cno
-  & Modeled
-  & \cno
-  & Fused (Sim)
-  & \cyes \\
+\textbf{Virgo}~\cite{kim2025virgo} & Cycle-sim, RTL & Fixed 32 & \cno & \cyes & \cyes \\
+\textbf{CoopWarp}~\cite{nada2025cooperative} & Cycle-sim & \makecell[l]{4, 8,\\16, 32} & \cno & \cno & \cyes \\
+\textbf{RM-STC}~\cite{huang2023rmstc} & Cycle-sim & Fixed 32 & Any degree & \cno & \cno \\
+\textbf{VEGETA}~\cite{jeong2023vegeta} & Cycle-sim, RTL & No SIMT & N:M flexible & \cno & \cno \\
+\textbf{SIMD$^2$}~\cite{zhang2022simd2} & HW emulation & Fixed 32 & \cno & \cno & \cno \\
+\textbf{Accel-Sim}~\cite{accel-sim} & Cycle-sim & Fixed 32 & \cno & \cyes & \cyes \\
+\textbf{Sparse TC}~\cite{zhu2019sparsetensorcore} & Cycle-sim & Fixed 32 & Vector N:M & \cno & \cno \\
+\textbf{GPGPU-Sim}~\cite{raihan2019modeling} & Cycle-sim & Fixed 32 & \cno & \cno & \cyes \\
 \bottomrule
-\addlinespace[2pt]
-\multicolumn{9}{l}{Warp-group MMA: several warps share one instruction with shared-memory operands.}
-\end{tabular}%
-}
-\end{table*}
+\end{tabular}
+\end{table}
 
 Modern SIMT Tensor Cores are commonly organized as arrays of fused dot-product (FEDP) units rather than as the systolic arrays of standalone dataflow accelerators such as Google TPUs~\cite{jouppi2017indatacenterperformanceanalysistensor, jouppi2020domain, norrie2021design, jouppi2021ten, jouppi2023tpuv4} and AWS Trainium~\cite{aws_trainium_architecture}. A systolic array amortizes operand movement for large, regular matrices, but its rigid dataflow can reduce utilization on small, irregular, or sparse tiles and requires approximately $(2N-1)$ cycles to fill and drain an $N\times N$ array, whereas an FEDP array sits beside the other functional units of a SIMT pipeline and executes larger tiles as micro-operations, which provides low-latency, flexible execution but makes throughput sensitive to the surrounding SIMT organization. Warpgroup MMA expands this design space by allowing multiple warps to cooperatively consume shared-memory operands across several Tensor Core blocks, but more blocks do not guarantee proportional speedup: performance may instead be limited by shared-memory bandwidth, operand-buffer refills, accumulator dependencies, descriptor delivery, or micro-op scheduling. Structured sparsity adds an interaction between the logical matrix representation and the physical datapath: commercial GPUs support 2:4 structured sparsity, in which at least two of every four contiguous elements of matrix A are zero~\cite{nvidia2020ampere, mishra2021acceleratingsparsedeepneural} and the nonzero values are stored in compressed form alongside metadata identifying their positions. Although this nominally halves matrix-A storage and arithmetic work, the realized benefit depends on whether the compressed mapping preserves FEDP utilization (Section~\ref{sec:design_sparse}).
 
