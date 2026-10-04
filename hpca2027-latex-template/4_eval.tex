@@ -13,7 +13,7 @@ configuration names it in the (IW-N, NW-M) form.
 The last parts of Sections~\ref{sec:eval_threads} and~\ref{sec:eval_iw} answer Q2 (Section~\ref{sec:mot_point}) at the design points around NVIDIA's.
 
 \subsubsection{Threads/Warp}\label{sec:eval_threads}
-Fig.~\ref{fig:threads_sweep} compares TCU SGEMM with scalar FP32 execution
+Fig.~\ref{fig:threads_sweep}(a) compares TCU SGEMM with scalar FP32 execution
 at the same thread count. Packing more low-precision elements raises
 speedup from 3.55--6.44$\times$ for TF32 to 9.53--27.46$\times$ for FP8.
 Most notably, we find that the 16-thread configuration is consistently the strongest and reaches
@@ -21,18 +21,20 @@ Most notably, we find that the 16-thread configuration is consistently the stron
 further. This shows that Tensor Core scaling is non-monotonic with warp width
 and depends significantly on tile geometry and pipeline utilization.
 
-\begin{figure} [h]
-    \centering
-    \includegraphics[width=0.9\linewidth]
-    {hpca2027-latex-template/fig/sgemm_speedup_heatmap_v3_gaplabel.pdf}
-    \caption{SGEMM speedup over scalar FP32 execution across
-    threads/warp and input precisions.}
-    \label{fig:threads_sweep}
-\end{figure}
-
-The 16-thread advantage of Fig.~\ref{fig:threads_sweep} carries over to warp-group MMA, and the design points around NVIDIA's show why. A FourShadow warp-group step costs a fixed micro-op sequence, set by the accumulator count and sparsity, plus about one cycle per 64-byte operand line. From 8 to 16 threads every micro-op covers four times the work at the same fixed cost; from 16 to 32 threads only $M$ doubles, which adds $A$-operand lines in SS mode. Per lane at (IW-4, NW-4), 16 threads per warp is therefore 7--15\% ahead of 32 in SS mode (2.11 against 1.98 MAC per cycle per thread at $\mathit{NRC}{=}32$, Fig.~\ref{fig:q2_nt_iw}(a)) and level with it in RS mode.
+The 16-thread advantage of Fig.~\ref{fig:threads_sweep}(a) carries over to warp-group MMA, and the design points around NVIDIA's show why. A FourShadow warp-group step costs a fixed micro-op sequence, set by the accumulator count and sparsity, plus about one cycle per 64-byte operand line. From 8 to 16 threads every micro-op covers four times the work at the same fixed cost; from 16 to 32 threads only $M$ doubles, which adds $A$-operand lines in SS mode. Per lane at (IW-4, NW-4), 16 threads per warp is therefore 7--15\% ahead of 32 in SS mode (2.11 against 1.98 MAC per cycle per thread at $\mathit{NRC}{=}32$, Fig.~\ref{fig:q2_nt_iw}(a)) and level with it in RS mode.
 
 \answerbox{Answer \#1 for Q2}{Tensor-core throughput per lane peaks at 16 threads per warp for warp-group MMA, because a micro-op's fixed cost is spread over four times the work from 8 to 16 threads, while from 16 to 32 threads the added work brings added operand lines; NVIDIA's 32-thread point sits on this plateau: 16 threads ties with it in RS mode and leads by 7--15\% in SS mode.}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]
+    {hpca2027-latex-template/fig/eval_nt_iw_heatmaps.pdf}
+    \caption{(a)~SGEMM speedup over scalar FP32 execution across
+    threads/warp and input precisions. (b)~BF16 WGMMA speedup over an
+    issue width of one across threads/warp and issue-width configurations.}
+    \label{fig:threads_sweep}
+    \label{fig:iw_sweep}
+\end{figure}
 
 \begin{figure}[t]
     \centering
@@ -50,21 +52,13 @@ The 16-thread advantage of Fig.~\ref{fig:threads_sweep} carries over to warp-gro
 \end{figure}
 
 \subsubsection{Warps/Warpgroup (Issue Width)}\label{sec:eval_iw}
-Fig.~\ref{fig:iw_sweep} normalizes each configuration against an issue
+Fig.~\ref{fig:iw_sweep}(b) normalizes each configuration against an issue
 width of one. An issue width of two provides 1.21--1.48$\times$ speedup,
 while four reaches up to 1.84$\times$. Increasing to eight only peaks at 2.02$\times$, with the 8- and 16-thread designs largely saturating after
 four and the 32-thread design even regresses. This proves that wider issue provides diminishing returns once operand delivery and
 non-TCU execution become the dominant costs.
-\begin{figure}
-    \centering
-    \includegraphics[width=0.9\linewidth]
-    {hpca2027-latex-template/fig/iw_speedup_heatmap_blue_v1.pdf}
-    \caption{BF16 WGMMA speedup over an issue width of one across
-    threads/warp and issue-width configurations.}
-    \label{fig:iw_sweep}
-\end{figure}
 
-At the instruction level, warp-group MMA on FourShadow shows where these returns go. Fig.~\ref{fig:q2_nt_iw}(b) streams back-to-back warp-group MMAs at 32 threads per warp and issue widths of 1, 2 and 4, a narrower range than the whole-kernel sweep of Fig.~\ref{fig:iw_sweep}, which extends to 8. Each doubling of the issue width raises throughput by $\times$1.71 and then $\times$1.58 in RS mode at $\mathit{NRC}{=}16$, and by $\times$1.55 and then $\times$1.38 in SS mode at $\mathit{NRC}{=}32$. The sparse per-$K$ speedup falls as the issue width grows, from 1.275$\times$ to 1.171$\times$ in RS mode and from 1.349$\times$ to 1.228$\times$ in SS mode. Sparsity shortens the fixed micro-op part of a step, from 72 to 53 cycles in RS mode at $\mathit{NRC}{=}16$, while the operand lines, which sparsity barely reduces, grow with the number of tensor blocks.
+At the instruction level, warp-group MMA on FourShadow shows where these returns go. Fig.~\ref{fig:q2_nt_iw}(b) streams back-to-back warp-group MMAs at 32 threads per warp and issue widths of 1, 2 and 4, a narrower range than the whole-kernel sweep of Fig.~\ref{fig:iw_sweep}(b), which extends to 8. Each doubling of the issue width raises throughput by $\times$1.71 and then $\times$1.58 in RS mode at $\mathit{NRC}{=}16$, and by $\times$1.55 and then $\times$1.38 in SS mode at $\mathit{NRC}{=}32$. The sparse per-$K$ speedup falls as the issue width grows, from 1.275$\times$ to 1.171$\times$ in RS mode and from 1.349$\times$ to 1.228$\times$ in SS mode. Sparsity shortens the fixed micro-op part of a step, from 72 to 53 cycles in RS mode at $\mathit{NRC}{=}16$, while the operand lines, which sparsity barely reduces, grow with the number of tensor blocks.
 
 \answerbox{Answer \#2 for Q2}{A wider warpgroup gives diminishing gains and a smaller sparse speedup, because the operand lines of a step grow with the number of tensor blocks while sparsity shortens only the fixed micro-op part: from an issue width of 1 to 4 at 32 threads per warp, the sparse speedup falls from 1.349$\times$ to 1.228$\times$ in SS mode.}
 
