@@ -8,7 +8,8 @@
 % paper_numbers.json via the paper text). Every section, figure and table is a \ref.
 %
 % NOT CLAIMED (not in the paper yet; never printed on this page):
-%   B1      artifact release commitment, repository plan, reproduction steps
+%   B1      artifact release commitment, repository plan, build and reproduction steps
+%           (the configuration part is item 9: Table II and Section V-B)
 %   B2/D1/E1 packed-SIMT baseline; abstract 9.6x/2.1x "over the baseline TCU" vs body
 %           9.15x/2.00x over SIMT; gains over the baseline TCU (D Q1, E Q1)
 %   D2      Fig. 8 per-width scalar normalization; fixed-precision cycles across widths (D Q1)
@@ -26,8 +27,8 @@
 %           grouping, matrix sizes, RF capacity question; bandwidth scaling with cores
 %           and "Note-worthily" moot: VI-A.3 (cores/socket) removed
 %   --      registered title ends "RISC-V GPGPU"; main.tex says "RISC-V GPU"
-% Questions omitted from the answer block for that reason: B (1), B (2), C (1), C (2),
-% D (1), D (2), E (1).
+% Questions omitted from the answer block for that reason: B (2), C (1), C (2),
+% D (1), D (2), E (1). B (1) is listed for its configuration part only.
 \thispagestyle{empty}
 \pagenumbering{Alph}
 
@@ -59,11 +60,11 @@ GPGPU-Sim included. [B][C]
 \vspace{2pt}
 \noindent\textbf{3. FourShadow is measured beside two NVIDIA GPUs.} A new Methodology
 (Section~\ref{sec:methodology}) adds an RTX 5080 for warp-level MMA with 2:4 sparsity and an H100
-for warp-group and warp-level MMA, dense and sparse, all timed over an in-kernel region and
+for warp-group and warp-level MMA, dense and sparse, timed over an in-kernel region and
 compared with FourShadow by ratios and trends. Over the 17 shapes measured on both,
 FourShadow's FP16 sparse speedup differs from the RTX 5080's by a median of 6.2\% at 32 threads
 per warp and 9.0\% at 8 threads (\ref{sec:eval_sparse_halves}), more at issue widths of 2 and 4
-(Section~\ref{sec:methodology}). The differences are reported as
+(Section~\ref{sec:methodology}). The differences are
 findings: the H100 overlaps operand delivery with the math where FourShadow adds the two
 (\ref{sec:eval_wg_delivery}). [B][C]
 
@@ -85,20 +86,20 @@ against 1.33$\times$ with $A$ in shared memory.
 only part of the per-$K$ cost, so the warp-level speedup stays below 2$\times$.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#4 (\ref{sec:eval_sparse_meta}): one NVIDIA warp hides
 an early metadata load behind its own work; FourShadow (four warps on one issue lane, 32 threads
-per warp) hides it only behind the others.\par
+per warp) needs the other warps.\par
 
 \vspace{2pt}
 \noindent\textbf{5. Sparsity results are re-measured, plotted raw and explained.} The
 symmetric/asymmetric heatmap (Fig.~\ref{fig:sparse_sym_sweep}) prints raw speedups from total
-kernel cycles at a stated configuration instead of min--max-normalized
+kernel cycles at a stated configuration, not min--max-normalized
 values: the asymmetric layouts gain 1.24--1.78$\times$, and both symmetric layouts sit below both
-asymmetric ones in 11 of 12 rows. The sparse warp-group ratios above 2$\times$ are traced to
-unequal work per $K$ step in the dense and sparse kernels: the warp-group MMA is 2.2--2.7\% of the
+asymmetric ones in 11 of 12 rows. Sparse warp-group ratios above 2$\times$ trace to
+unequal work per $K$ step in the two kernels: the warp-group MMA is 2.2--2.7\% of the
 dense loop step, and with the dense $A$ staged in the sparse kernel's layout, sparsity gains
-1.60--1.72$\times$ in RS mode and 1.55--1.66$\times$ in SS mode (\ref{sec:eval_sparse_wg}).
-Section~\ref{sec:eval_sparse_halves} splits the per-$K$ cost into a part that sparsity halves and
-a part it leaves unchanged; this cost model, fitted to measured $K$ sweeps, replaces the analytic
-model of the submitted paper. FourShadow's warp-level speedup peaks at 1.92$\times$ over the
+1.60--1.72$\times$ in RS and 1.55--1.66$\times$ in SS mode (\ref{sec:eval_sparse_wg}).
+\ref{sec:eval_sparse_halves} splits the per-$K$ cost into a part sparsity halves and
+one it leaves unchanged; this model, fitted to measured $K$ sweeps, replaces the submitted
+analytic one. FourShadow's warp-level speedup peaks at 1.92$\times$ over the
 configurations measured, and no warp-group speedup on the H100 exceeds 2.00$\times$. [B][D][E]
 
 \vspace{2pt}
@@ -123,22 +124,31 @@ $A$--$D$ (Eq.~\ref{eq:fedp}), the tile, block and micro-op steps, the symmetric 
 layouts, and the issue width (\ref{sec:bg_issue}) before their use. Section~\ref{sec:design}
 describes the design only; its trade-off studies are in Section~\ref{sec:eval_wgmma}, and
 Section~\ref{sec:design_sparse} opens with a definition of 2:4 sparsity. The Introduction's
-unresolved figure reference now points to Fig.~\ref{fig:figure_integration}; three submitted
-figures (Figs.~4, 14 and~18) are replaced by text; the latency of the metadata load is measured in
-Section~\ref{sec:eval_sparse_meta}. Two submitted figures are removed: the analytic model
+broken figure reference now points to Fig.~\ref{fig:figure_integration}; three submitted
+figures (Figs.~4, 14 and~18) are replaced by text; the metadata-load latency is measured in
+\ref{sec:eval_sparse_meta}. Two submitted figures are removed: the analytic model
 (Fig.~5), replaced by the fitted cost model of item 5, and the core-count sweep (Fig.~10), which
-measured how a fixed GEMM is split across cores rather than the tensor core. [B][D][F]
+measured the split of a fixed GEMM across cores, not the tensor core. [B][D][F]
+
+\vspace{2pt}
+\noindent\textbf{9. One table states every configuration.} Table~\ref{tab:config}
+sets FourShadow's parameters and MMA instructions beside the RTX 5080's
+and the H100's; \ref{sec:method_hw} states which are build options, marks the default, points each
+sweep to its Evaluation part and defines issue width and warps per core, and
+\ref{sec:method_sw} gives the sweeps' kernels, shapes and baselines. [B][C][F]
 
 \vspace{2pt}
 % Partly answered, stated on this page only as far as done: B (3) explains the order, not what the
 % roofline counts per mode; B (4) NVIDIA only, no AMD; B (5) the mechanism for warp-group MMA, no
 % NT = 64 or larger-register sweep; E (3) and D5 a step-cost composition, not a stall breakdown.
-% Not listed (not answered yet): B (1), B (2), C (1), C (2), D (1), D (2), E (1).
-\noindent\textbf{Answers to the reviewers' questions.} A, new or counter-intuitive insights:
-items 4, 1. B (3), roofline: item 7. B (4), validation against NVIDIA with the error
-disclosed: item 3. B (5), the 16-thread optimum: item 6, its mechanism for warp-group
-MMA. E (2), raw sparse speedups and ratios above 2$\times$: item 5. E (3), cycle-level support
-for the attributions: item 6. F, a contribution beyond the infrastructure: items 1, 4.
+% Not listed (not answered yet): B (2), C (1), C (2), D (1), D (2), E (1); B (1) only for its
+% configuration part (item 9), the release stays open. C and F's issue width are review comments.
+\noindent\textbf{Answers by reviewer.} A, new or counter-intuitive insights: items 4, 1.
+B~(1), sweep configuration: item 9. B~(3), roofline: item 7. B~(4), NVIDIA validation, error
+disclosed: item 3. B~(5), the 16-thread optimum: item 6 (warp-group MMA).
+C, NVIDIA WGMMA and sparsity baselines: items 3,~9. E~(2), raw sparse speedups, ratios
+above 2$\times$: item 5. E~(3), cycle-level support for attributions: item 6. F, a contribution
+beyond the infrastructure: items 1, 4; issue width: items 8,~9.
 
 \clearpage
 \pagenumbering{arabic}
