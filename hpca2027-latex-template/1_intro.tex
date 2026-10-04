@@ -21,15 +21,15 @@ Studying these questions requires an open and synthesizable GPU platform that ex
 \textbf{Paper} & \textbf{Simulation} & \makecell{\textbf{Thread}\\\textbf{Config.}} & \textbf{Sparsity} & \makecell{\textbf{Warp-}\\\textbf{group}\\\textbf{MMA}} & \makecell{\textbf{Open}\\\textbf{Source}} \\
 \midrule
 \rowcolor{blue!8}
-\makecell[l]{\textbf{FourShadow}\\\textbf{(Ours)}} & \makecell[l]{Cycle-sim,\\RTL} & \makecell[l]{2, 4, 8,\\16, 32} & \makecell[l]{2:4\\structured} & \cyes & \cyes \\
+\textbf{FourShadow} & \makecell[l]{Cycle-sim,\\RTL} & {\scriptsize 4,\,8,\,16,\,32} & \makecell[l]{2:4\\structured} & \cyes & \cyes \\
 \midrule
 \textbf{Virgo}~\cite{kim2025virgo} & Cycle-sim, RTL & Fixed 32 & \cno & \cyes & \cyes \\
-\textbf{CoopWarp}~\cite{nada2025cooperative} & Cycle-sim & \makecell[l]{4, 8,\\16, 32} & \cno & \cno & \cyes \\
+\textbf{CoopWarp}~\cite{nada2025cooperative} & Cycle-sim & {\scriptsize 4,\,8,\,16,\,32} & \cno & \cno & \cyes \\
 \textbf{RM-STC}~\cite{huang2023rmstc} & Cycle-sim & Fixed 32 & Any degree & \cno & \cno \\
 \textbf{VEGETA}~\cite{jeong2023vegeta} & Cycle-sim, RTL & No SIMT & N:M flexible & \cno & \cno \\
 \textbf{SIMD$^2$}~\cite{zhang2022simd2} & HW emulation & Fixed 32 & \cno & \cno & \cno \\
 \textbf{Accel-Sim}~\cite{accel-sim} & Cycle-sim & Fixed 32 & \cno & \cyes & \cyes \\
-\textbf{Sparse TC}~\cite{zhu2019sparsetensorcore} & Cycle-sim & Fixed 32 & Vector N:M & \cno & \cno \\
+\textbf{Sparse TC}~\cite{zhu2019sparsetensorcore} & Cycle-sim & Fixed 32 & N:M Vector & \cno & \cno \\
 \textbf{GPGPU-Sim}~\cite{raihan2019modeling} & Cycle-sim & Fixed 32 & \cno & \cno & \cyes \\
 \bottomrule
 \end{tabular}
