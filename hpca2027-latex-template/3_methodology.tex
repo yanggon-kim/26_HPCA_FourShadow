@@ -120,37 +120,6 @@ The second holds the descriptors in the per-warp TCU SRAM that stores the sparse
 
 In the symmetric case, panel~(b) with $\mathit{NT}{=}4$, a dense block of $B$, $\mathit{tcK}{\times}\mathit{tcN} = 2{\times}2$ words, already fills a register, and the doubled block would need a fifth source register. A micro-op has four register fields, inherited from the R4-type \texttt{fmadd} encoding, all occupied by $A$, $B$, $C$ and $D$. The symmetric configurations therefore halve $\mathit{tcN}$ from 2 to 1, which doubles $n_{\mathrm{steps}}$ from 2 to 4 while $k_{\mathrm{steps}}$ halves from 2 to 1 (red annotations of panel~(b)): a thread mask activates half the FEDP units in each micro-op, and the micro-op count stays at 16.
 
-\textbf{Analytic Speedup Model.}
-Figure~\ref{fig:sparse_analytic} captures an analytic model of the speedup derived from adding a 2:4 structure sparsity subsystem to the TCU. The dense cost is normalized to~1 and sparsity halves the compute term~$\mathit{TC}$ but adds metadata overhead $\mathit{MO}$ that grows linearly as the input datatype narrows.
-
-\begin{figure}[ht]
-\small
-\raggedright
-\hrule
-\vspace{3pt}
-\noindent\textbf{Dense (normalized to 1):}
-\begin{equation}
-\mathit{Cycle}_{\text{dense}} = A_{\text{load}} + B_{\text{load}} + \mathit{TC} + D_{\text{store}} = 1
-\end{equation}
-\noindent\textbf{Sparse:}
-\begin{equation}
-\mathit{Cycle}_{\text{sparse}} = A_{\text{load}} \!\times\! s_{\text{eff}} + B_{\text{load}} + \tfrac{1}{2}\,\mathit{TC} + D_{\text{store}}
-\end{equation}
-\noindent\textbf{Speedup and effective saving:}
-\begin{equation}
-\mathit{Speedup} = \frac{1}{\mathit{Cycle}_{\text{sparse}}}, \qquad
-s_{\text{eff}} = 1 - \tfrac{1}{2} + \mathit{MO}
-\end{equation}
-\noindent where $\mathit{MO}$ is the metadata overhead relative to matrix~$A$:
-\begin{equation}
-\mathit{MO} = \frac{\texttt{sizeof}(\texttt{input\_dtype})}{32}
-= \begin{cases} 3.125\% & \texttt{tf32} \\ 6.25\% & \texttt{fp16/bf16} \\ 12.5\% & \texttt{fp8/bf8} \end{cases}
-\end{equation}
-\hrule
-\caption{Analytic speedup model of sparse TCU over dense TCU. (Assume the matrix C is initialized as zero)}
-\label{fig:sparse_analytic}
-\end{figure}
-
 \subsection{Programming Model}
 \begin{figure}
     \centering
