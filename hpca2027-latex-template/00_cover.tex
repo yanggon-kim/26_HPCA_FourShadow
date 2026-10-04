@@ -113,9 +113,9 @@ falling sparse speedup (sparsity shortens only the fixed part, 72 to 53 cycles i
 configuration, adds a second one, and is bracketed by one H100 SM on the same GEMM. [B][D][E][F]
 
 \vspace{2pt}
-\noindent\textbf{7. The roofline is reconciled.} In FourShadow's simulated kernels every warp
-fetches $B$ itself, 4.00 times per SS step, so WGMMA saves no $B$ traffic and sits below WMMA in
-the roofline (Fig.~\ref{fig:roofline}). [B]
+\noindent\textbf{7. The roofline is reconciled.} In FourShadow's simulated kernels the
+shared-memory reads of an SS step amount to one $B$ tile per warp, 4.00 per step, so WGMMA saves
+no $B$ traffic and sits below WMMA in the roofline (Fig.~\ref{fig:roofline}). [B]
 
 \vspace{2pt}
 \noindent\textbf{8. Presentation.} Section~\ref{sec:background} defines $M$, $N$, $K$ and
@@ -125,7 +125,9 @@ describes the design only; its trade-off studies are in Section~\ref{sec:eval_wg
 Section~\ref{sec:design_sparse} opens with a definition of 2:4 sparsity. The Introduction's
 unresolved figure reference now points to Fig.~\ref{fig:figure_integration}; three submitted
 figures (Figs.~4, 14 and~18) are replaced by text; the latency of the metadata load is measured in
-Section~\ref{sec:eval_sparse_meta}. [B][D][F]
+Section~\ref{sec:eval_sparse_meta}. Two submitted figures are removed: the analytic model
+(Fig.~5), replaced by the fitted cost model of item 5, and the core-count sweep (Fig.~10), which
+measured how a fixed GEMM is split across cores rather than the tensor core. [B][D][F]
 
 \vspace{2pt}
 % Partly answered, stated on this page only as far as done: B (3) explains the order, not what the
