@@ -32,7 +32,7 @@
 
 \noindent We thank the reviewers for their careful reviews. The revision organizes the paper around
 two questions, measures FourShadow beside two NVIDIA GPUs,
-re-measures and explains the sparsity results, and states seven findings. Numbers refer to the
+re-measures and explains the sparsity results, and states six findings. Numbers refer to the
 revised paper; [A]--[F] name the reviews.
 
 \vspace{2pt}
@@ -64,11 +64,10 @@ FourShadow's FP16 sparse speedup differs from the RTX 5080's by a median of 6.2\
 per warp and 9.0\% at 8 threads (\ref{sec:eval_sparse_halves}), more at issue widths of 2 and 4
 (Section~\ref{sec:methodology}). The differences are reported as
 findings: the H100 overlaps operand delivery with the math where FourShadow adds the two
-(\ref{sec:eval_wg_delivery}), and its byte rule reads $B$ once per warp-group instruction,
-FourShadow's simulated kernels once per warp (\ref{sec:eval_wg_bread}). [B][C]
+(\ref{sec:eval_wg_delivery}). [B][C]
 
 \vspace{2pt}
-\noindent\textbf{4. Seven findings answer the two questions,} each stated in a box after its
+\noindent\textbf{4. Six findings answer the two questions,} each stated in a box after its
 evidence. [A][B][F]
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#1 (\ref{sec:eval_threads}): per-lane warp-group MMA
 throughput peaks at 16 threads per warp; NVIDIA's 32-thread point sits on that plateau (level in RS
@@ -78,14 +77,12 @@ diminishing gains and a smaller sparse speedup.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_wg_delivery}): shared-memory
 operands bound warp-group MMA at 128 bytes per cycle; the H100 hides that delivery under the math
 once the tile is wide enough.
-\par\noindent\hangindent=1em\hangafter=1 Q1 \#2 (\ref{sec:eval_wg_bread}): NVIDIA's warp-group MMA
-owes its lead over warp-level MMA to one read of $B$ for four warps.
-\par\noindent\hangindent=1em\hangafter=1 Q1 \#3 (\ref{sec:eval_sparse_wg}): sparse warp-group MMA
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#2 (\ref{sec:eval_sparse_wg}): sparse warp-group MMA
 reaches the nominal 2$\times$ only with $A$ in registers and a wide tile; on the H100, 2.00$\times$
 against 1.33$\times$ with $A$ in shared memory.
-\par\noindent\hangindent=1em\hangafter=1 Q1 \#4 (\ref{sec:eval_sparse_halves}): 2:4 sparsity halves
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#3 (\ref{sec:eval_sparse_halves}): 2:4 sparsity halves
 only part of the per-$K$ cost, so the warp-level speedup stays below 2$\times$.
-\par\noindent\hangindent=1em\hangafter=1 Q1 \#5 (\ref{sec:eval_sparse_meta}): one NVIDIA warp hides
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#4 (\ref{sec:eval_sparse_meta}): one NVIDIA warp hides
 an early metadata load behind its own work; FourShadow (four warps on one issue lane, 32 threads
 per warp) hides it only behind the others.\par
 
@@ -117,9 +114,7 @@ configuration, adds a second one, and is bracketed by one H100 SM on the same GE
 \vspace{2pt}
 \noindent\textbf{7. The roofline is reconciled.} In FourShadow's simulated kernels every warp
 fetches $B$ itself, 4.00 times per SS step, so WGMMA saves no $B$ traffic and sits below WMMA in
-Fig.~\ref{fig:roofline}. On the H100 the order reverses: warp-level MMA fed from
-shared memory costs 1.75--2.54$\times$ as much per output as warp-group MMA in SS mode
-(\ref{sec:eval_wg_bread}). [B]
+the roofline (Fig.~\ref{fig:roofline}). [B]
 
 \vspace{2pt}
 \noindent\textbf{8. Presentation.} Section~\ref{sec:background} defines $M$, $N$, $K$ and
