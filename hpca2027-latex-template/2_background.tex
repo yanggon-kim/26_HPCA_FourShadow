@@ -103,6 +103,13 @@ Shared memory is a scratchpad private to each core and shared by the warps that 
 
 A kernel fills shared memory from global memory either with ordinary per-thread loads and stores or through DXA. DXA is Vortex's counterpart of the Tensor Memory Accelerator of NVIDIA Hopper~\cite{nvidia2022hopper}: a warp issues one instruction that names a pre-programmed descriptor of a tile, and an engine shared by the cores of a socket copies that tile from global memory into shared memory asynchronously while the warp continues with other work. The warp-group tensor core of Section~\ref{sec:design_wgmma} reads its operands from shared memory.
 
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=\textwidth]{hpca2027-latex-template/fig/fourshadow_uarch.pdf}
+    \caption{FourShadow's complete datapath: the warp-group tensor core and the sparse tensor core added to the base tensor core of a Vortex SIMT core.}
+    \label{fig:figure_integration}
+\end{figure*}
+
 \section{Motivation}
 \label{sec:motivation}
 

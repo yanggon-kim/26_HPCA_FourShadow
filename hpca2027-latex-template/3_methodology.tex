@@ -5,13 +5,6 @@
 \subsection{Overview of FourShadow}
 \label{sec:design_overview}
 
-\begin{figure*}[ht]
-    \centering
-    \includegraphics[width=\textwidth]{hpca2027-latex-template/fig/fourshadow_uarch.pdf}
-    \caption{FourShadow's complete datapath: the warp-group tensor core and the sparse tensor core added to the base tensor core of a Vortex SIMT core.}
-    \label{fig:figure_integration}
-\end{figure*}
-
 FourShadow adds two components to the base tensor core of Section~\ref{sec:bg_tcu}, the warp-group tensor core (Section~\ref{sec:design_wgmma}), which reads its operands from shared memory through the Warp-Group Tile Buffer Subsystem, and the sparse tensor core (Section~\ref{sec:design_sparse}), which adds 2:4 structured sparsity; Figure~\ref{fig:figure_integration} shows the complete datapath with both. Section~\ref{sec:design_pm} describes the programming model that selects among warp-level MMA, warp-group MMA and their sparse forms at compile time.
 
 \subsection{Warp-group Tensor Core}\label{sec:design_wgmma}
