@@ -67,7 +67,7 @@ At the instruction level, warp-group MMA on FourShadow shows where these returns
 Fig.~\ref{fig:roofline} shows that WMMA raises arithmetic intensity from
 0.25 to 3.61 FLOP/byte and throughput from 2.65 to 23.21 FLOP/cycle.
 Sparse WMMA further reaches 33.49 FLOP/cycle. On the other hand, while WGMMA has the highest achieved operational intensities at 5.82 and 7.11 FLOP/byte, it only reaches 2.31 and
-5.85 FLOP/cycle for dense and sparse execution respectively. This indicates that Tensor Core designs, especially with sparsity enabled are able to move fairly memory-bound kernels into the compute bound region. WGMMA seems to be improving arithmetic intensity specifically from it's larger operating tiles and shared-memory reuse, making it particularly suitable for modern ML systems inference or LLM Decode workloads that are significantly more memory-bound than compute-bound. In the simulated kernels the shared-memory reads of an SS step amount to one $B$ tile per warp, 4.00 per step, so WGMMA saves no $B$ traffic and sits below WMMA here.
+5.85 FLOP/cycle for dense and sparse execution respectively. This indicates that Tensor Core designs, especially with sparsity enabled are able to move fairly memory-bound kernels into the compute bound region. In the simulated kernels the shared-memory reads of an SS step amount to one $B$ tile per warp, 4.00 per step, so WGMMA saves no $B$ traffic and sits below WMMA here.
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]
@@ -100,7 +100,7 @@ control, and outer $K$-loop work do not shrink with accumulator capacity.
 \subsubsection{K vs.\ 2K-Wide FEDP}
 Fig.~\ref{fig:fedp2k_sweep} shows that the 2K-wide FEDP is able to reduce instruction count by 31--33\% and execution cycles by 28--30\% in both
 operand-staging modes. Our evaluations also show that increasing FEDP pipeline latency from four to eight
-cycles add less than 2\% overhead. Halving the number of $K$-dimension
+cycles adds at most 3.1\% overhead. Halving the number of $K$-dimension
 micro-ops therefore considerably outweighs the deeper pipeline and extra descriptor-setup micro-op cost.
 % REVIEW(2026-10-01): the next sentence moved here from the design section (a measurement); its source run is not identified in the pinned branch d6426cca1 -- coauthors confirm.
 The setup micro-op that dense RS mode adds with the 2K-wide FEDP increases the end-to-end cycle count by under 1\%.
@@ -176,7 +176,7 @@ loss nor the 16-thread gain; their source is not isolated.
 \begin{figure}[t]
     \centering
     \includegraphics[width=\linewidth]
-    {hpca2027-latex-template/fig/sparse_wg_cycles_clustered_newdata_v3.pdf}
+    {hpca2027-latex-template/fig/sparse_wg_cycles_short.pdf}
     \caption{Dense and 2:4 sparse BF16 WGMMA execution cycles in
     RS and SS operand-staging modes.}
     \label{fig:sparse_wg_sweep}
@@ -305,7 +305,7 @@ area--performance ratio for both Llama~2 phases.
 \begin{figure}
     \centering
     \includegraphics[width=0.9\linewidth]
-    {hpca2027-latex-template/fig/pareto.pdf}
+    {hpca2027-latex-template/fig/pareto_short.pdf}
     \caption{End-to-end SimX speedup over the SIMT baseline versus
     synthesized TCU cell area across threads/warp configurations.}
     \label{fig:pareto}
