@@ -41,10 +41,10 @@ Figure~\ref{fig:tiling_equations} derives the tile, the block and the steps from
 \noindent\textbf{\textsc{Block (one micro-op)}}
 \begin{flalign}
 &\mathit{block\_cap} = \mathit{NT},\quad
-\ell_b = \lfloor\log_2(\mathit{block\_cap})\rfloor & \\
+\ell_b = \lfloor\log_2(\mathit{block\_cap})\rfloor & \label{eq:block_cap}\\
 &\mathit{tcM} = 2^{\,\ell_b - \lfloor\ell_b/2\rfloor},\;\;
 \mathit{tcN} = 2^{\,\lfloor\ell_b/2\rfloor},\;\;
-\mathit{tcK} = \tfrac{\mathit{block\_cap}}{\max(\mathit{tcM},\,\mathit{tcN})} &
+\mathit{tcK} = \tfrac{\mathit{block\_cap}}{\max(\mathit{tcM},\,\mathit{tcN})} & \label{eq:block_tc}
 \end{flalign}
 \hrule
 \vspace{3pt}
