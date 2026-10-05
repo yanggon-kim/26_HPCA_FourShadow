@@ -62,7 +62,7 @@ four. This indicates that wider issue gives diminishing returns once non-TCU exe
 
 At the instruction level, the warp-group MMA of FourShadow scales nearly linearly with the issue width. Fig.~\ref{fig:q2_nt_iw}(b) streams back-to-back warp-group MMAs at 32 threads per warp and issue widths of 1, 2 and 4, a narrower range than the whole-kernel sweep of Fig.~\ref{fig:iw_sweep}(b), which extends to 8. Each doubling of the issue width raises throughput by $\times$2.00 and again by $\times$2.00 in RS mode at $\mathit{NRC}{=}16$, and by $\times$1.89 and then $\times$1.80 in SS mode at $\mathit{NRC}{=}32$. As the issue width grows, the sparse per-$K$ speedup stays at 1.275$\times$ in RS mode and rises from 1.349$\times$ to 1.417$\times$ in SS mode. Sparsity shortens the fixed micro-op part of a step, from 72 to 53 cycles in RS mode at $\mathit{NRC}{=}16$.
 
-\answerbox{Answer \#2 for Q2}{A wider warpgroup gives diminishing gains for the whole kernel, while the warp-group MMA instruction itself scales nearly linearly and keeps or raises its sparse speedup, so the diminishing return lies outside the tensor core's warp-group step: from an issue width of 1 to 4 at 32 threads per warp, the instruction's throughput doubles twice in RS mode, and its sparse speedup rises from 1.349$\times$ to 1.417$\times$ in SS mode.}
+\answerbox{Answer \#2 for Q2}{A wider warpgroup gives diminishing gains for the whole kernel, while the warp-group MMA instruction itself scales nearly linearly, so the diminishing return lies outside the tensor core's warp-group step: from an issue width of 1 to 4 at 32 threads per warp, the instruction's throughput doubles twice in RS mode.}
 
 
 \subsubsection{Roofline Model Performance Analysis}
