@@ -62,7 +62,7 @@ Why does scaling stop at 16 threads? & F\,Cm & \stR{} --- \ref{sec:eval_threads}
 NT changes tile, registers, FEDP at once; do not overgeneralize & E\,W3 & \stP{} --- \ref{sec:eval_threads}: block shape; \ref{sec:mot_point} scopes Q2; ``consistently'' in \ref{sec:eval_threads}, VI-E2 \\
 Small registers per thread: does it limit the conclusions? & F\,Cm & \stO{} --- \ref{sec:bg_tcu} states 24 of 32 registers; impact not discussed \\
 Enough RF capacity and bandwidth for the base TCU? & F\,Cm & \stP{} --- \ref{sec:bg_tcu}: three sources read in one cycle; capacity not discussed \\
-Metadata from global memory: latency impact? & F\,Cm & \stR{} --- \ref{sec:eval_sparse_meta}, Fig.~\ref{fig:sparse_nvidia}(c); \ref{sec:design_sparse}; cover 8 \\
+Metadata from global memory: latency impact? & F\,Cm & \stR{} --- \ref{sec:eval_sparse_meta} with its setup, Fig.~\ref{fig:sparse_nvidia}(c); \ref{sec:design_sparse}; cover 8 \\
 \rowcolor{gray!18}\multicolumn{3}{@{}l@{}}{\textbf{Roofline}} \\
 WGMMA 2.31 vs.\ WMMA 23.21 FLOP/cycle; what is counted? & B\,W, C3, Q3 & \stO{} --- VI-A3 WGMMA points not from final SimX; counting, order unexplained \\
 \rowcolor{gray!18}\multicolumn{3}{@{}l@{}}{\textbf{Design-space coverage and shapes}} \\

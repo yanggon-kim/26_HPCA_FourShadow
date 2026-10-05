@@ -187,11 +187,11 @@ loss nor the 16-thread gain; their source is not isolated.
     each dashed line is the bound $1/(1-f/2)$ of the platform of the same colour.
     (b)~Halvable share $f$ of the per-$K$ cost for FP16 on the RTX 5080, an
     H100 and FourShadow at 8 and 32 threads per warp, from the
-    $64{\times}64{\times}K$ fits; the bar labels give the bound.
-    (c)~Cycles that one metadata reload adds per iteration against the number
-    of filler operations before the sparse MMA, FP16, on a logarithmic axis:
-    one warp of the RTX 5080; FourShadow at (IW-1, NW-4) with one warp alone,
-    where the early and late schedules coincide, and with four one-warp CTAs
+    $64{\times}64{\times}K$ fits.
+    (c)~Cycles a metadata reload adds per iteration, early or late minus
+    resident, against the filler count $d$, FP16:
+    one warp of the RTX 5080; FourShadow at (IW-1, NW-4) with one warp alone
+    (early and late coincide) and with four one-warp CTAs
     on the issue lane at 32 threads per warp (cycles per CTA).}
     \label{fig:sparse_nvidia}
 \end{figure*}
@@ -213,11 +213,13 @@ Only the FP16 fits are valid on the RTX 5080: the TF32 fit has a negative dense 
 \answerbox{Answer \#3 for Q1}{2:4 sparsity halves only part of the per-$K$ cost of a warp-level tensor-core GEMM, so its speedup stays below 2$\times$ and depends on the size of that halvable part: for FP16 it is 69.7\% on the RTX 5080 (bound 1.53$\times$) and 54.4\% on the H100 (1.37$\times$).}
 
 \subsubsection{One NVIDIA Warp Hides Its Metadata Load; FourShadow Needs Several}\label{sec:eval_sparse_meta}
-On the RTX 5080, one CTA of one warp reloads the metadata, an ordinary register operand of \texttt{mma.sp}, in each of 256 iterations of a sparse FP16 MMA, before (early) or after (late) 0 to 64 filler operations (Fig.~\ref{fig:sparse_nvidia}(c)). The late reload adds 363.1 to 364.2 cycles per iteration at every filler distance; the early reload adds 326.2 cycles with no filler and 0.3 cycles with 64 filler operations. An early load thus costs the maximum of the load and the filler, and a late load their sum: the two rules, without a fitted constant, reproduce the cycles within 0.13\% for FP16 and within 0.72\% over six data formats. With 16 filler operations the profiled long-scoreboard stall share is 26.8\% early and 55.2\% late, at the same 11,858 instructions and 269 load requests.
+Fig.~\ref{fig:sparse_nvidia}(c) measures the cost of reloading the metadata in a loop of a sparse MMA and $d\in\{0,4,16,64\}$ filler operations per iteration: dependent integer operations on one register (\texttt{mad.lo.u32} on NVIDIA, \texttt{addi} on FourShadow), independent of the MMA and the metadata, which stand in for a kernel's other work. Three schedules run the same filler and MMA: resident loads the metadata once before the loop, early reloads it before the filler, late after it; the compiled code confirms the placement. A reload adds the early or late minus the resident cycles at equal $d$, per iteration, so the filler and the MMA cancel. A warp that issues past its pending load overlaps an early load with the filler, so early costs the maximum of the load and the filler (the maximum rule) and late their sum (the sum rule): the added cycles fall with $d$ for early and stay flat for late.
 
-An H100 follows the same two rules. One warp's late reload adds 293.9 to 295.1 cycles per iteration, and its early reload falls from 246.1 cycles with no filler to 2.1 cycles with 64 filler operations; the rules reproduce these cycles within 0.45\%. One warpgroup issuing sparse warp-group MMA behaves alike: its late reload adds 233 to 287 cycles, and its early reload 189 to 239 cycles with no filler and $-$3 to 3 cycles with 64 filler operations, with the maximum rule within 1.9\% and the sum rule within 0.14\%.
+On the RTX 5080, one CTA of one warp reloads the metadata, an ordinary register operand of \texttt{mma.sp}, in each of 256 FP16 iterations. The late reload adds 363.1 to 364.2 cycles at every $d$; the early reload adds 326.2 cycles at $d{=}0$ and 0.3 cycles at $d{=}64$. Without a fitted constant, the two rules hold within 0.13\% for FP16 and 0.72\% over six data formats.
 
-On FourShadow at (IW-1, NW-4), a dedicated instruction loads the metadata into a per-warp memory (Section~\ref{sec:design_sparse}), and with one CTA of one active warp the reload adds 9.0 cycles per iteration, early or late, at 8 and 32 threads per warp. When four one-warp CTAs share the issue lane at 32 threads per warp, the reload adds 59.3 cycles per CTA with no filler, and from 4 to 64 filler operations the late reload stays between 58.0 and 62.1 cycles while the early reload falls from 28.7 to 7.6 cycles (sum and maximum rules within 1.7\% and 4.6\%). This separation is stated for 32 threads only, because at 8 threads the late reload also falls, from 51.9 to 11.6 cycles; the scope is a simulation of one-warp CTAs on a lane of four warp slots, and absolute cycles are not compared across the platforms.
+An H100 follows the same two rules. One warp's late reload adds 293.9 to 295.1 cycles, and its early reload falls from 246.1 cycles at $d{=}0$ to 2.1 at $d{=}64$; the rules hold within 0.45\%. One warpgroup issuing sparse warp-group MMA behaves alike: its late reload adds 233 to 287 cycles, and its early reload 189 to 239 cycles at $d{=}0$ and $-$3 to 3 at $d{=}64$ (maximum and sum rules within 1.9\% and 0.14\%).
+
+On FourShadow at (IW-1, NW-4), a dedicated instruction loads the metadata into a per-warp memory (Section~\ref{sec:design_sparse}), and with one warp alone the reload adds 9.0 cycles, early or late, at 8 and 32 threads per warp. When four one-warp CTAs share the issue lane at 32 threads per warp, the reload adds 59.3 cycles per CTA at $d{=}0$, and from $d{=}4$ to 64 the late reload stays between 58.0 and 62.1 cycles while the early reload falls from 28.7 to 7.6 (sum and maximum rules within 1.7\% and 4.6\%). The separation holds at 32 threads only: at 8 threads the late reload also falls, from 51.9 to 11.6 cycles; the scope is a simulation of one-warp CTAs on a lane of four warp slots, and absolute cycles are not compared across platforms.
 
 \answerbox{Answer \#4 for Q1}{The cost of sparse metadata depends on where the kernel issues the load and on what can run while it is pending: one warp of the RTX 5080 or the H100, and one warpgroup of the H100, hides an early load behind its own work, whereas FourShadow at (IW-1, NW-4) and 32 threads per warp hides it only behind other warps sharing its issue lane.}
 
