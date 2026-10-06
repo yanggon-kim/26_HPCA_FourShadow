@@ -73,8 +73,9 @@ evidence. [A][B][F]
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#1 (\ref{sec:eval_threads}): per-lane warp-group MMA
 throughput peaks at 16 threads per warp; NVIDIA's 32-thread point sits on that plateau (level in RS
 mode, 11--19\% behind in SS mode).
-\par\noindent\hangindent=1em\hangafter=1 Q2 \#2 (\ref{sec:eval_iw}): a wider warpgroup gives
-diminishing whole-kernel gains, while the warp-group instruction scales nearly linearly.
+\par\noindent\hangindent=1em\hangafter=1 Q2 \#2 (\ref{sec:eval_iw}): a wider warpgroup scales
+the warp-group MMA but not the kernel around it, as the core fetches one warp instruction per cycle;
+with the warps grown to match, an issue width of 8 gives 3.6--3.9$\times$, not 8$\times$.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_sparse_wg}): sparse warp-group MMA
 reaches the nominal 2$\times$ only with $A$ in registers and a wide tile; on the H100, 2.00$\times$
 against 1.33$\times$ with $A$ in shared memory.
@@ -106,7 +107,7 @@ optimum of warp-group MMA (from 16 to 32 threads only $M$ doubles, adding $A$-op
 SS mode)
 and for the sparse speedup of a step (sparsity shortens only the fixed part, 72 to 53 cycles in RS
 mode); its throughput scales linearly with issue width ($\times$2.00 twice in RS mode,
-\ref{sec:eval_iw}). The accumulator sweep (Fig.~\ref{fig:nrc_sweep}) now states its
+\ref{sec:eval_iw}), while the rest of the kernel issues at most about one instruction per cycle. The accumulator sweep (Fig.~\ref{fig:nrc_sweep}) now states its
 configuration, adds a second one, and is bracketed by one H100 SM on the same GEMM. [B][D][E][F]
 
 \vspace{2pt}

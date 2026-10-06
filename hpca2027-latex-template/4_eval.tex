@@ -23,7 +23,8 @@ Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:til
     {hpca2027-latex-template/fig/eval_nt_iw_heatmaps.pdf}
     \caption{(a)~SGEMM speedup over scalar FP32 execution across
     threads/warp and input precisions. (b)~BF16 WGMMA speedup over an
-    issue width of one across threads/warp and issue-width configurations.}
+    issue width of one across threads/warp and issue-width configurations,
+    four warps per core (eight at an issue width of 8, as IW${\le}$NW).}
     \label{fig:threads_sweep}
     \label{fig:iw_sweep}
 \end{figure}
@@ -58,11 +59,13 @@ Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:til
 Fig.~\ref{fig:iw_sweep}(b) normalizes each configuration against an issue
 width of one. An issue width of two provides 1.21--1.48$\times$ speedup,
 while four reaches up to 1.84$\times$. Increasing to eight only peaks at 2.02$\times$, with the 8- and 16-thread designs largely saturating after
-four. This indicates that wider issue gives diminishing returns once non-TCU execution dominates: in the dense warp-group GEMM loop at (IW-4, NW-4), 8 threads per warp and $\mathit{NRC}{=}8$, the warp-group MMA is 2.1--2.5\% of a $K$ step, and the rest stages $A$ and $B$ into shared memory on the integer and load/store units (Section~\ref{sec:eval_sparse_wg}).
+four. The returns diminish because instruction issue, not the tensor core or shared memory, bounds the kernel. In the dense warp-group GEMM loop at (IW-4, NW-4), 8 threads per warp and $\mathit{NRC}{=}8$, the warp-group MMA is 2.1--2.5\% of a $K$ step, and the rest stages $A$ and $B$ into shared memory on the integer and load/store units (Section~\ref{sec:eval_sparse_wg}). With four warps per core, the kernel issues 0.42--0.44 instructions per cycle at every issue width and uses 1.5--1.7\% of the shared-memory bank bandwidth, so a wider issue gains only the instructions saved by staging $B$ once for a larger warpgroup. Growing the warps with the issue width, to (IW-2, NW-8), (IW-4, NW-16) and (IW-8, NW-32), speeds up a $K$ step over (IW-1, NW-4) by 2.4--2.5$\times$, 3.2--3.5$\times$ and 3.6--3.9$\times$ rather than 2, 4 and 8$\times$: from (IW-4, NW-16) on, the core schedules a warp in 93--99\% of cycles, because its front end fetches one warp instruction per cycle whatever the issue width. The warp-group MMA escapes this bound because each instruction expands into $2\,\mathit{NRC}$ micro-ops that keep its warp's tensor block busy.
+% Sources: 00_doc/vortex-wgdxa2k/results/SMEM_BW_IW.md (staging IPC, banks), IW_NW_SWEEP.md sections 2 and 4 (NW-4 IPC 0.416-0.437, bank use 0.015-0.017) + iw_nw_sweep.json (diagonal, sched. busy); fetch: SimX core.cpp:330-358.
+% TODO(fig6b-iw8): the printed IW-8 row (1.18--2.02x over IW 1) is not reproduced; the final SimX (IW-8, NW-8) cell gives 2.80--3.20x per K step (IW_NW_SWEEP.md section 3).
 
 At the instruction level, the warp-group MMA of FourShadow scales nearly linearly with the issue width. Fig.~\ref{fig:q2_nt_iw}(b) streams back-to-back warp-group MMAs at 32 threads per warp and issue widths of 1, 2 and 4, a narrower range than the whole-kernel sweep of Fig.~\ref{fig:iw_sweep}(b), which extends to 8. Each doubling of the issue width raises throughput by $\times$2.00 and again by $\times$2.00 in RS mode at $\mathit{NRC}{=}16$, and by $\times$1.89 and then $\times$1.80 in SS mode at $\mathit{NRC}{=}32$. As the issue width grows, the sparse per-$K$ speedup stays at 1.275$\times$ in RS mode and rises from 1.349$\times$ to 1.417$\times$ in SS mode. Sparsity shortens the fixed micro-op part of a step, from 72 to 53 cycles in RS mode at $\mathit{NRC}{=}16$. The issue-width results are measured on FourShadow alone; a commercial GPU fixes its warpgroup at four warps.
 
-\answerbox{Answer \#2 for Q2}{A wider warpgroup gives diminishing gains for the whole kernel, while the warp-group MMA instruction itself scales nearly linearly, so most of the diminishing return lies outside the tensor core's warp-group step: from an issue width of 1 to 4 at 32 threads per warp, the instruction's throughput doubles twice in RS mode.}
+\answerbox{Answer \#2 for Q2}{A wider warpgroup scales the warp-group MMA but not the kernel around it: the core fetches one warp instruction per cycle, so the kernel's other instructions issue at most about one per cycle, while each warp-group MMA expands into $2\,\mathit{NRC}$ micro-ops that keep its tensor block busy; with the warps grown to match, an issue width of 8 speeds up the GEMM by 3.6--3.9$\times$, not 8$\times$.}
 
 
 \subsubsection{Roofline Model Performance Analysis}
@@ -294,7 +297,7 @@ However, performance scales much more slowly, reaching 1.37--1.41$\times$ at
 $IW{=}2$ and 1.67--1.71$\times$ at $IW{=}4$. Doubling the area again
 to an estimated 455--462\,k$\mu$m$^2$ at $IW{=}8$ raises speedup to
 only 1.70--1.81$\times$. Thus, $IW{=}4$ forms the practical optimal on the curve, beyond which additional TCU blocks and larger warp-groups are increasingly
-limited by non-TCU execution rather than
+limited by the core's instruction front end (Section~\ref{sec:eval_iw}) rather than
 arithmetic capacity.
 \begin{figure}
     \centering
