@@ -80,7 +80,7 @@ with warps grown to match, an issue width of 8 speeds up a $K$ step by 3.6--3.9$
 only part of the per-$K$ cost, so the warp-level speedup stays below 2$\times$.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#2 (\ref{sec:eval_sparse_wg}): sparsity halves $A$ but
 not $B$, which grows with the tile width, so the halvable share of a warp-group MMA GEMM falls as the
-tile widens (61--70\% at $N{=}16$ on the H100 and FourShadow).
+tile widens, on the H100 (pipelined loop) and FourShadow.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#3 (\ref{sec:eval_sparse_meta}): one NVIDIA warp hides
 an early metadata load behind its own work; FourShadow (four warps on one issue lane, 32 threads
 per warp) needs the other warps.\par
@@ -95,8 +95,8 @@ part sparsity halves and one it leaves unchanged; this model, fitted to measured
 the submitted analytic one, and FourShadow's warp-level speedup peaks at 1.92$\times$ over the
 configurations measured. Sparse warp-group MMA is re-measured with identically staged dense and sparse
 kernels (the submitted ratios above 2$\times$ compared differently staged ones): FourShadow gains
-1.41--1.53$\times$, and its halvable share, 68--70\% at $N{=}16$ against the H100's 61--69\%, falls
-with the tile width on both (\ref{sec:eval_sparse_wg}). [B][D][E]
+1.41--1.53$\times$, and its halvable share falls with the tile width, as on the H100's pipelined
+loop (\ref{sec:eval_sparse_wg}). [B][D][E]
 
 \vspace{2pt}
 \noindent\textbf{6. Attributions rest on the cycles of a step.} A FourShadow warp-group step
