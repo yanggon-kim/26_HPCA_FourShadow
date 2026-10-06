@@ -36,7 +36,7 @@
 
 \noindent We thank the reviewers for their careful reviews. The revision organizes the paper around
 two questions, measures FourShadow beside two NVIDIA GPUs,
-re-measures and explains the sparsity results, and states five findings. Numbers refer to the
+re-measures and explains the sparsity results, and states four findings. Numbers refer to the
 revised paper; [A]--[F] name the reviews.
 
 \vspace{2pt}
@@ -68,7 +68,7 @@ per warp and 9.0\% at 8 threads (\ref{sec:eval_sparse_halves}), more at issue wi
 (Section~\ref{sec:methodology}). [B][C]
 
 \vspace{2pt}
-\noindent\textbf{4. Five findings answer the two questions,} each stated in a box after its
+\noindent\textbf{4. Four findings answer the two questions,} each stated in a box after its
 evidence. [A][B][F]
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#1 (\ref{sec:eval_threads}): per-lane warp-group MMA
 throughput peaks at 16 threads per warp; NVIDIA's 32-thread point sits on that plateau (level in RS
@@ -80,10 +80,7 @@ with warps grown to match, an issue width of 8 speeds up a $K$ step by 3.6--3.9$
 only part of the per-$K$ cost, so the warp-level speedup stays below 2$\times$.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#2 (\ref{sec:eval_sparse_wg}): sparsity halves $A$ but
 not $B$, which grows with the tile width, so the halvable share of a warp-group MMA GEMM falls as the
-tile widens, on the H100 (pipelined loop) and FourShadow.
-\par\noindent\hangindent=1em\hangafter=1 Q1 \#3 (\ref{sec:eval_sparse_meta}): one NVIDIA warp hides
-an early metadata load behind its own work; FourShadow (four warps on one issue lane, 32 threads
-per warp) needs the other warps.\par
+tile widens, on the H100 (pipelined loop) and FourShadow.\par
 
 \vspace{2pt}
 \noindent\textbf{5. Sparsity results are re-measured, plotted raw and explained.} The
