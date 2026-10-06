@@ -75,7 +75,7 @@ throughput peaks at 16 threads per warp; NVIDIA's 32-thread point sits on that p
 mode, 11--19\% behind in SS mode).
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#2 (\ref{sec:eval_iw}): a wider warpgroup scales
 the warp-group MMA but not the kernel around it, as the core fetches one warp instruction per cycle;
-with the warps grown to match, an issue width of 8 gives 3.6--3.9$\times$, not 8$\times$.
+with the warps grown to match, an issue width of 8 speeds up a $K$ step by 3.6--3.9$\times$, not 8$\times$.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_sparse_wg}): sparse warp-group MMA
 reaches the nominal 2$\times$ only with $A$ in registers and a wide tile; on the H100, 2.00$\times$
 against 1.33$\times$ with $A$ in shared memory.
