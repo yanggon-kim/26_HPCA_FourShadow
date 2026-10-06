@@ -27,7 +27,7 @@
 %   C       non-SGEMM and sparse workloads beyond the existing end-to-end set
 %   F       remaining typos ("hierarchial", "it's"), small fonts, Fig. 13
 %           grouping, matrix sizes, RF capacity question; bandwidth scaling with cores
-%           and "Note-worthily" moot: VI-A.3 (cores/socket) removed
+%           and "Note-worthily" moot: the cores/socket subsection removed
 %   --      registered title ends "RISC-V GPGPU"; main.tex says "RISC-V GPU"
 % Questions omitted from the answer block for that reason: B (2), B (3), C (1), C (2),
 % D (1), D (2), E (1). B (1) is listed for its configuration part only.
@@ -40,10 +40,10 @@ re-measures and explains the sparsity results, and states four findings. Numbers
 revised paper; [A]--[F] name the reviews.
 
 \vspace{2pt}
-\noindent\textbf{1. Two questions organize the paper.} A new Motivation
-(Section~\ref{sec:motivation}) poses Q1, the microarchitectural behavior behind NVIDIA's
-tensor-core features (\ref{sec:mot_causes}), and Q2, the behavior of a tensor core as its
-architectural parameters change (\ref{sec:mot_point}). FourShadow is the white-box counterpart of
+\noindent\textbf{1. Two questions organize the paper.} The rewritten Introduction
+(Section~\ref{sec:intro}) shows that tensor-core throughput is bought with silicon and power and
+poses Q1, the microarchitectural behavior behind NVIDIA's tensor-core features, and Q2, the
+behavior of a tensor core as its architectural parameters change. FourShadow is the white-box counterpart of
 a commercial tensor core: where the two agree, the mechanism visible in FourShadow is a candidate
 explanation; where they differ, the difference excludes one. The Evaluation answers Q2 in
 Section~\ref{sec:eval_hierarchy} and Q1 in Section~\ref{sec:eval_sparse}. [A][B][C][F]

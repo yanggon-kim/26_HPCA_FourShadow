@@ -2,7 +2,7 @@
 
 \subsection{Scaling Across the SIMT Hierarchy}\label{sec:eval_hierarchy}
 
-The last parts of Sections~\ref{sec:eval_threads} and~\ref{sec:eval_iw} answer Q2 (Section~\ref{sec:mot_point}) at the design points around NVIDIA's.
+The last parts of Sections~\ref{sec:eval_threads} and~\ref{sec:eval_iw} answer Q2 (Section~\ref{sec:intro}) at the design points around NVIDIA's.
 
 \subsubsection{Threads/Warp}\label{sec:eval_threads}
 Fig.~\ref{fig:threads_sweep}(a) compares TCU SGEMM with scalar FP32 execution
@@ -44,7 +44,7 @@ Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:til
     \label{fig:q2_nt_iw}
 \end{figure}
 
-% float placed early: renders at the top of the right column beside Section VI-A3
+% float placed early: renders at the top of the right column beside Section V-A3
 % TODO(roofline): WGMMA points 2.31/5.85 not yet from the final SimX runs
 \begin{figure}
     \centering
@@ -76,7 +76,7 @@ Sparse WMMA further reaches 33.49 FLOP/cycle. On the other hand, while WGMMA has
 
 \subsection{Warp-Group Tensor Core Design Space Exploration}\label{sec:eval_wgmma}
 
-The three parts explore FourShadow's warp-group design space; Section~\ref{sec:eval_sparse} answers Q1 (Section~\ref{sec:mot_causes}).
+The three parts explore FourShadow's warp-group design space; Section~\ref{sec:eval_sparse} answers Q1 (Section~\ref{sec:intro}).
 
 \subsubsection{Number of Accumulator Registers (NRC) Scaling}\label{sec:eval_nrc}
 As shown in Fig.~\ref{fig:nrc_sweep}, at (IW-2, NW-4) and 32 threads per warp, increasing NRC from 8 to 16 reduces
@@ -122,9 +122,9 @@ registers enable a larger accumulator configuration or there is extreme register
 
 \subsection{Sparse Tensor Core Design Space Exploration}\label{sec:eval_sparse}
 
-This subsection answers Q1, the internal mechanisms behind tensor-core sparsity (Section~\ref{sec:mot_causes}). The first part explores the symmetric and asymmetric layouts of warp-level MMA on FourShadow. The next two give the answers by comparing FourShadow with NVIDIA GPUs: warp-level MMA with 2:4 sparsity with an RTX 5080 and an H100, and warp-group MMA with an H100; the last measures the metadata load on both GPUs (Sections~\ref{sec:eval_sparse_halves}, \ref{sec:eval_sparse_wg} and~\ref{sec:eval_sparse_meta}, configuration in Section~\ref{sec:methodology}).
+This subsection answers Q1, the internal mechanisms behind tensor-core sparsity (Section~\ref{sec:intro}). The first part explores the symmetric and asymmetric layouts of warp-level MMA on FourShadow. The next two give the answers by comparing FourShadow with NVIDIA GPUs: warp-level MMA with 2:4 sparsity with an RTX 5080 and an H100, and warp-group MMA with an H100; the last measures the metadata load on both GPUs (Sections~\ref{sec:eval_sparse_halves}, \ref{sec:eval_sparse_wg} and~\ref{sec:eval_sparse_meta}, configuration in Section~\ref{sec:methodology}).
 
-\subsubsection{Symmetric vs.\ Asymmetric Sparse Configurations}
+\subsubsection{Symmetric vs.\ Asymmetric Sparse Configurations}\label{sec:eval_sparse_sym}
 Sparsity speeds up the asymmetric layouts in every cell of
 Fig.~\ref{fig:sparse_sym_sweep} and the symmetric layouts less. The 8- and
 32-thread cells span 1.24--1.78$\times$, with the maximum for TF32 at
@@ -148,7 +148,7 @@ loss nor the 16-thread gain; their source is not isolated.
     \label{fig:sparse_sym_sweep}
 \end{figure}
 
-% float placed early: renders at the top of the next page, beside Section VI-C2
+% float placed early: renders at the top of the next page, beside Section V-C2
 \begin{figure*}[t]
     \centering
     \includegraphics[width=\textwidth]
