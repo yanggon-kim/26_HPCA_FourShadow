@@ -21,17 +21,15 @@ Warps/core (NW) & 4, \textbf{16} & 4 per CTA & 4 per CTA \\
 Issue width (IW) & 1, 2, 4, 8 (\ref{sec:eval_iw}) & -- & 4 (warpgroup) \\
 Accum.\ regs.\ ($\mathit{NRC}$) & 8, 16, 32 (\ref{sec:eval_nrc}) & -- & $N$ = 16, 32, 64 \\
 FEDP width & $K$, $2K$ (\ref{sec:eval_fedp2k}) & not visible & not visible \\
-Cores / SMs used & 1 & 1 of 84 & 1 of 132 \\
 Warp-level MMA & TCU, dense, 2:4 & \texttt{mma(.sp)} & \texttt{mma(.sp)} \\
 Warp-group MMA & WGMMA, RS, SS & -- & \texttt{wgmma(.sp)} \\
-Shared-mem.\ copy & DXA & not used & not used \\
 Toolchain & SimX & \makecell[l]{CUDA 13.0,\\\texttt{sm\_120a}} & \makecell[l]{CUDA 12.4.131,\\\texttt{sm\_90a}} \\
 Cycles & simulated & \texttt{clock64} & \texttt{clock64} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:config} lists the configuration of each platform. FourShadow's entries are Vortex build options, with the tensor core, warp-group MMA and DXA enabled; only the accumulator count $\mathit{NRC}$ is a kernel parameter; parentheses name the part of Section~\ref{sec:eval} that sweeps a value, and bold marks the default (an issue width cannot exceed NW). We name a FourShadow configuration by its issue width (IW) and its number of warps per core (NW): (IW-1, NW-4) issues from one warp per cycle on a core of four warps; every part that runs four warps per core states it. The configuration matched to the H100 is (IW-4, NW-4) at 32 threads per warp. The H100 has no $\mathit{NRC}$; each $\mathit{NRC}$ is paired with the \texttt{wgmma.m64nNk16} of equal warp-group tile, $N{=}\mathit{NRC}\,\mathit{NT}/(2\,\mathit{tcM}){=}2\,\mathit{NRC}$ (Fig.~\ref{fig:wgmma_tiling_equations}), whose 128 threads each hold $N/2{=}\mathit{NRC}$ FP32 accumulators~\cite{nvidia2026ptxisa}.
+Table~\ref{tab:config} lists the configuration of each platform; every run uses one FourShadow core and one SM of each GPU. FourShadow's entries are Vortex build options, with the tensor core, warp-group MMA and DXA enabled; only the accumulator count $\mathit{NRC}$ is a kernel parameter; parentheses name the part of Section~\ref{sec:eval} that sweeps a value, and bold marks the default (an issue width cannot exceed NW). We name a FourShadow configuration by its issue width (IW) and its number of warps per core (NW): (IW-1, NW-4) issues from one warp per cycle on a core of four warps; every part that runs four warps per core states it. The configuration matched to the H100 is (IW-4, NW-4) at 32 threads per warp. The H100 has no $\mathit{NRC}$; each $\mathit{NRC}$ is paired with the \texttt{wgmma.m64nNk16} of equal warp-group tile, $N{=}\mathit{NRC}\,\mathit{NT}/(2\,\mathit{tcM}){=}2\,\mathit{NRC}$ (Fig.~\ref{fig:wgmma_tiling_equations}), whose 128 threads each hold $N/2{=}\mathit{NRC}$ FP32 accumulators~\cite{nvidia2026ptxisa}.
 
 \subsection{Software Configuration}\label{sec:method_sw}
 

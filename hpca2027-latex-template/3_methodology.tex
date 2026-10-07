@@ -109,9 +109,9 @@ The second holds the descriptors in the per-warp TCU SRAM that stores the sparse
 
 \textbf{Sparse Metadata Flow.} Before sparse execution the kernel calls \texttt{load\_sp\_metadata}, which emits one warp-level instruction, \texttt{TCU\_LD}: each lane contributes one 32-bit metadata word, and a warp-level address generation unit (AGU) issues the load as an ordinary load/store request. The request is routed by its address like any other load, to global or to shared memory; our sparse kernels keep the metadata in global memory. The returned words are written to the metadata SRAM of every tensor block, indexed by warp, and a micro-op reads the part selected by its $m$ and $k$ steps, so any tensor block can run that warp's sparse micro-ops. In the RTL the scoreboard orders the two operations: the decoder marks the metadata load as the writer of a reserved per-warp scoreboard bit and every sparse MMA as a reader of it, and the bit is released by the writeback of the load, which the AGU raises in the cycle it writes the SRAM, so a sparse MMA issues only after its metadata is written, without a software-visible fence.
 
-\textbf{Asymmetric vs.\ Symmetric Configurations.} The halved $K$ steps halve the micro-ops of a sparse WMMA only in the asymmetric configurations of Section~\ref{sec:bg_tcu} ($\mathit{NT}{\in}\{2,8,32\}$), a consequence of the RISC-V instruction encoding. A sparse micro-op needs twice the $B$ of a dense one (the red ``$\times$2 col candidates'' of Figure~\ref{fig:figure_register_mapping}). In the asymmetric case, panel~(a) with $\mathit{NT}{=}8$, a dense block of $B$ occupies half a register, so the doubled block fits in the one $B$ register that the micro-op already reads (red \texttt{reg0}). In the red annotations, $\mathit{xtileK}$ halves from 8 to 4 and $k_{\mathrm{steps}}$ from 4 to 2, so the micro-ops halve from 32 to 16 with every FEDP unit active.
+\textbf{Asymmetric vs.\ Symmetric Configurations.} The halved $K$ steps halve the micro-ops of a sparse WMMA only in the asymmetric configurations of Section~\ref{sec:bg_tcu} ($\mathit{NT}{\in}\{2,8,32\}$), a consequence of the four registers a micro-op names (Section~\ref{sec:design_pm}). A sparse micro-op needs twice the $B$ of a dense one (the red ``$\times$2 col candidates'' of Figure~\ref{fig:figure_register_mapping}). In the asymmetric case, panel~(a) with $\mathit{NT}{=}8$, a dense block of $B$ occupies half a register, so the doubled block fits in the one $B$ register that the micro-op already reads (red \texttt{reg0}). In the red annotations, $\mathit{xtileK}$ halves from 8 to 4 and $k_{\mathrm{steps}}$ from 4 to 2, so the micro-ops halve from 32 to 16 with every FEDP unit active.
 
-In the symmetric case, panel~(b) with $\mathit{NT}{=}4$, a dense block of $B$, $\mathit{tcK}{\times}\mathit{tcN} = 2{\times}2$ words, already fills a register, and the doubled block would need a fifth source register. A micro-op has four register fields, inherited from the R4-type \texttt{fmadd} encoding, all occupied by $A$, $B$, $C$ and $D$. The symmetric configurations therefore halve $\mathit{tcN}$ from 2 to 1, which doubles $n_{\mathrm{steps}}$ from 2 to 4 while $k_{\mathrm{steps}}$ halves from 2 to 1 (red annotations of panel~(b)): a thread mask activates half the FEDP units in each micro-op, and the micro-op count stays at 16.
+In the symmetric case, panel~(b) with $\mathit{NT}{=}4$, a dense block of $B$, $\mathit{tcK}{\times}\mathit{tcN} = 2{\times}2$ words, already fills a register, and the doubled block would need a second $B$ register, which a micro-op cannot name: its four register fields hold $A$, $B$, $C$ and $D$. The symmetric configurations therefore halve $\mathit{tcN}$ from 2 to 1, which doubles $n_{\mathrm{steps}}$ from 2 to 4 while $k_{\mathrm{steps}}$ halves from 2 to 1 (red annotations of panel~(b)): a thread mask activates half the FEDP units in each micro-op, and the micro-op count stays at 16.
 
 \subsection{Programming Model}
 \begin{figure}
@@ -123,6 +123,30 @@ In the symmetric case, panel~(b) with $\mathit{NT}{=}4$, a dense block of $B$, $
 \label{sec:sw_integrationv4}\label{sec:design_pm}
 
 FourShadow exposes WMMA, WGMMA, and 2:4 structured sparsity as composable primitives selected almost entirely at compile time. Input/output format (\texttt{ITYPE}/\texttt{OTYPE}), NRC, and RS-versus-SS mode (Section~\ref{sec:design_wgmma}) are all template parameters on \texttt{wgmma\_config\_t} and \texttt{wgmma\_context} (Figure~\ref{fig:sw_integrationv4}), so the same kernel source compiles down to dense WMMA, dense WGMMA, or sparse WGMMA execution depending on how it is instantiated.
+
+\begin{table}[t]
+\centering
+\caption{RISC-V encoding of the tensor-core instructions (R-type, opcode 0x0B, funct7 0x02).}
+\label{tab:isa}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l l l l@{}}
+\toprule
+ & \textbf{WMMA} & \textbf{WGMMA} & \textbf{\texttt{TCU\_LD}} \\
+\midrule
+funct3 & 0 & 1 & 2 \\
+rd & output format & output format & metadata slot \\
+rs1 & input format & input format & address register \\
+rs2 & sparse & sparse, $\mathit{NRC}$, SS/RS & input format \\
+\midrule
+$C/D$ & \texttt{f0}--\texttt{f7} & \texttt{f0}--\texttt{f}$(\mathit{NRC}{-}1)$ & -- \\
+$A$ & \texttt{f10}--\texttt{f17} & \texttt{x10} or \texttt{f24}--\texttt{f27} & -- \\
+$B$ & \texttt{f24}--\texttt{f31} & \texttt{x11} & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Instruction encoding.} The three tensor-core instructions are 32-bit RISC-V R-type instructions in the CUSTOM-0 opcode space (0x0B) with funct7 0x02, and funct3 selects the instruction (Table~\ref{tab:isa}). In WMMA and WGMMA the rd, rs1 and rs2 fields hold immediates, not register numbers: the output format, the input format and flags that mark a sparse instruction and, for WGMMA, select $\mathit{NRC}$ and SS or RS mode. The operands sit in fixed registers (last three rows); for WGMMA, \texttt{x10} and \texttt{x11} hold the shared-memory descriptors of Section~\ref{sec:design_wgmma}. The sequencer expands an instruction into micro-ops in the loop order of Figs.~\ref{fig:tiling_equations} and~\ref{fig:wgmma_tiling_equations}, and each micro-op names four registers: $A$ or its descriptor in rs1, $B$ or its descriptor in rs2, and the accumulator in rs3 as $C$ and in rd as $D$. \texttt{TCU\_LD} reads its one register operand, the metadata address, from rs1 (Section~\ref{sec:design_sparse}).
 
 \textbf{Metadata packing.} On the host, \texttt{pack\_metadata\_wg} repacks the 2:4 mask produced by pruning/compression into the per-thread SRAM bank layout that the \texttt{TCU\_LD} AGU and the metadata SRAM expect (Section~\ref{sec:design_sparse}); the layout is dimensioned against the \emph{WMMA}-config per-warp depth, since that shared hardware is sized for WMMA.
 
