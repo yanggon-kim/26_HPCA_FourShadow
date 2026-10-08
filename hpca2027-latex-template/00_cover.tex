@@ -36,7 +36,7 @@
 
 \noindent We thank the reviewers for their careful reviews. The revision organizes the paper around
 two questions, measures FourShadow beside two NVIDIA GPUs,
-re-measures and explains the sparsity results, and states four findings. Numbers refer to the
+re-measures and explains the sparsity results, and states five findings. Numbers refer to the
 revised paper; [A]--[F] name the reviews.
 
 \vspace{2pt}
@@ -46,7 +46,7 @@ efficiency, and poses Q1, the microarchitectural behavior behind NVIDIA's tensor
 behavior of a tensor core as its architectural parameters change. FourShadow is the white-box counterpart of
 a commercial tensor core: where the two agree, the mechanism visible in FourShadow is a candidate
 explanation; where they differ, the difference excludes one. The Evaluation answers Q2 in
-Section~\ref{sec:eval_hierarchy} and Q1 in Section~\ref{sec:eval_sparse}. [A][B][C][F]
+Section~\ref{sec:eval_hierarchy} and Q1 in \ref{sec:eval_delay_a} and Section~\ref{sec:eval_sparse}. [A][B][C][F]
 
 \vspace{2pt}
 \noindent\textbf{2. Inherited and new parts are separated.} A new Background
@@ -68,7 +68,7 @@ per warp and 9.0\% at 8 threads (\ref{sec:eval_sparse_halves}), more at issue wi
 (Section~\ref{sec:methodology}). [B][C]
 
 \vspace{2pt}
-\noindent\textbf{4. Four findings answer the two questions,} each stated in a box after its
+\noindent\textbf{4. Five findings answer the two questions,} each stated in a box after its
 evidence. [A][B][F]
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#1 (\ref{sec:eval_threads}): per-lane warp-group MMA
 throughput peaks at 16 threads per warp; NVIDIA's 32-thread point sits on that plateau (level in RS
@@ -76,9 +76,11 @@ mode, 11--19\% behind in SS mode).
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#2 (\ref{sec:eval_iw}): a wider warpgroup scales
 the warp-group MMA but not the kernel around it, as the core fetches one warp instruction per cycle;
 with warps grown to match, an issue width of 8 speeds up a $K$ step by 3.6--3.9$\times$, not 8$\times$.
-\par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_sparse_halves}): 2:4 sparsity halves
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_delay_a}): in SS mode every warp-group MMA waits for $A$,
+a fixed delay per instruction on both machines.
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#2 (\ref{sec:eval_sparse_halves}): 2:4 sparsity halves
 only part of the per-$K$ cost, so the warp-level speedup stays below 2$\times$.
-\par\noindent\hangindent=1em\hangafter=1 Q1 \#2 (\ref{sec:eval_sparse_wg}): sparsity halves $A$ but
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#3 (\ref{sec:eval_sparse_wg}): sparsity halves $A$ but
 not $B$, which grows with the tile width, so the halvable share of a warp-group MMA GEMM falls as the
 tile widens, on the H100 (pipelined loop) and FourShadow.\par
 
