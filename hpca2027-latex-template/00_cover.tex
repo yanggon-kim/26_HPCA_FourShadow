@@ -40,8 +40,8 @@ re-measures and explains the sparsity results, and states five findings. Numbers
 revised paper; [A]--[F] name the reviews.
 
 \vspace{2pt}
-\noindent\textbf{1. Two questions organize the paper.} The rewritten Introduction
-(Section~\ref{sec:intro}) shows that tensor-core throughput is bought with silicon, so a feature is judged by its area
+\noindent\textbf{1. Two questions organize the paper.} The rewritten Abstract and Introduction
+(Section~\ref{sec:intro}) show that tensor-core throughput is bought with silicon, so a feature is judged by its area
 efficiency, and poses Q1, the microarchitectural behavior behind NVIDIA's tensor-core features, and Q2, the
 behavior of a tensor core as its architectural parameters change. FourShadow is the white-box counterpart of
 a commercial tensor core: where the two agree, the mechanism visible in FourShadow is a candidate
@@ -61,23 +61,22 @@ GPGPU-Sim included. [B][C]
 \vspace{2pt}
 \noindent\textbf{3. FourShadow is measured beside two NVIDIA GPUs.} A new Methodology
 (Section~\ref{sec:methodology}) adds an RTX 5080 for warp-level MMA with 2:4 sparsity and an H100
-for warp-group and warp-level MMA, dense and sparse, timed over an in-kernel region and
+for warp-group and warp-level MMA, dense and sparse, and for the delay for reading $A$ in SS mode (\ref{sec:eval_delay_a}), timed over an in-kernel region and
 compared with FourShadow by ratios and trends. Over the 17 shapes measured on both,
 FourShadow's FP16 sparse speedup differs from the RTX 5080's by a median of 6.2\% at 32 threads
 per warp and 9.0\% at 8 threads (\ref{sec:eval_sparse_halves}), more at issue widths of 2 and 4
 (Section~\ref{sec:methodology}). [B][C]
 
 \vspace{2pt}
-\noindent\textbf{4. Five findings answer the two questions,} each stated in a box after its
-evidence. [A][B][F]
+\noindent\textbf{4. Five boxed findings answer the two questions.} [A][B][F]
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#1 (\ref{sec:eval_threads}): per-lane warp-group MMA
 throughput peaks at 16 threads per warp; NVIDIA's 32-thread point sits on that plateau (level in RS
 mode, 11--19\% behind in SS mode).
 \par\noindent\hangindent=1em\hangafter=1 Q2 \#2 (\ref{sec:eval_iw}): a wider warpgroup scales
 the warp-group MMA but not the kernel around it, as the core fetches one warp instruction per cycle;
 with warps grown to match, an issue width of 8 speeds up a $K$ step by 3.6--3.9$\times$, not 8$\times$.
-\par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_delay_a}): in SS mode every warp-group MMA waits for $A$,
-a fixed delay per instruction on both machines.
+\par\noindent\hangindent=1em\hangafter=1 Q1 \#1 (\ref{sec:eval_delay_a}): in SS mode $A$ crosses the shared-memory port
+before each warp-group MMA multiplies, a fixed delay per instruction on both machines (H100: 9.0--10.0 cycles).
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#2 (\ref{sec:eval_sparse_halves}): 2:4 sparsity halves
 only part of the per-$K$ cost, so the warp-level speedup stays below 2$\times$.
 \par\noindent\hangindent=1em\hangafter=1 Q1 \#3 (\ref{sec:eval_sparse_wg}): sparsity halves $A$ but
@@ -110,8 +109,8 @@ configuration, adds a second one, and is bracketed by one H100 SM on the same GE
 
 \vspace{2pt}
 \noindent\textbf{7. Simulated $B$ sharing matches the RTL.} SimX merges a request for a queued
-$B$ line (Section~\ref{sec:methodology}): an SS step reads one $B$ tile per warpgroup (1.00,
-\ref{sec:design_wgmma}); Figs.~\ref{fig:q2_nt_iw} and~\ref{fig:nrc_sweep} are re-measured.
+$B$ line (Section~\ref{sec:methodology}): an SS step reads one $B$ tile per warpgroup
+(\ref{sec:design_wgmma}); Figs.~\ref{fig:q2_nt_iw} and~\ref{fig:nrc_sweep} are re-measured.
 
 \vspace{2pt}
 \noindent\textbf{8. Presentation.} Section~\ref{sec:background} defines $M$, $N$, $K$ and
