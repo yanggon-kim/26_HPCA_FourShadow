@@ -101,7 +101,9 @@ Each micro-op reads three source registers, one each for $A$, $B$ and $C/D$, fro
 
 The issue width is the number of warps from which a core issues an instruction in the same cycle. The issue stage is divided into that many issue slots, and the warps are interleaved over the slots by warp index, so each slot serves $\mathit{NW}$ divided by the issue width warps. An issue width of one issues from a single warp per cycle.
 
-The tensor core scales with the issue width: the core instantiates one tensor block, a complete $\mathit{NT}$-unit FEDP grid, per issue slot. The warps that issue together, one from each slot, form a \emph{warpgroup}; the size of a warpgroup therefore equals the issue width, and the tensor blocks of a core can serve all warps of one warpgroup in the same cycle. On NVIDIA GPUs a warp has 32 threads and a warp group has four warps~\cite{luo2025dissectingnvidiahopperarchitecture}; that point corresponds to $\mathit{NT}{=}32$ and an issue width of four here. The instruction that makes the warps of a warpgroup cooperate on one matrix operation is part of our design (Section~\ref{sec:design_wgmma}).
+
+The tensor core scales with the issue width: each issue slot has one \emph{tensor block} (an $\mathit{NT}$-unit FEDP grid), a hardware unit distinct from the matrix \emph{block} computed by a micro-op.
+ The warps that issue together, one from each slot, form a \emph{warpgroup}; the size of a warpgroup therefore equals the issue width, and the tensor blocks of a core can serve all warps of one warpgroup in the same cycle. On NVIDIA GPUs a warp has 32 threads and a warp group has four warps~\cite{luo2025dissectingnvidiahopperarchitecture}; that point corresponds to $\mathit{NT}{=}32$ and an issue width of four here. The instruction that makes the warps of a warpgroup cooperate on one matrix operation is part of our design (Section~\ref{sec:design_wgmma}).
 
 \subsection{Shared Memory and DXA}
 \label{sec:bg_smem}
