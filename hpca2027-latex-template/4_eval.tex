@@ -68,7 +68,7 @@ At the instruction level, the warp-group MMA of FourShadow scales nearly linearl
 \answerbox{Answer \#2 for Q2}{A wider warpgroup scales the warp-group MMA but not the kernel around it: the core fetches one warp instruction per cycle, so the kernel's other instructions issue at most about one per cycle, while each warp-group MMA expands into $2\,\mathit{NRC}$ micro-ops that keep its tensor block busy; with the warps grown to match, an issue width of 8 speeds up a $K$ step of the GEMM by 3.6--3.9$\times$, not 8$\times$.}
 
 
-\subsubsection{Roofline Model Performance Analysis}
+\subsubsection{Roofline Model Performance Analysis}\label{sec:eval_roofline}
 Fig.~\ref{fig:roofline} shows that WMMA raises arithmetic intensity from
 0.25 to 3.61 FLOP/byte and throughput from 2.65 to 23.21 FLOP/cycle.
 Sparse WMMA further reaches 33.49 FLOP/cycle. On the other hand, while WGMMA has the highest achieved operational intensities at 5.82 and 7.11 FLOP/byte, it only reaches 2.31 and
@@ -112,7 +112,7 @@ The setup micro-op that dense RS mode adds with the 2K-wide FEDP increases the e
     \label{fig:fedp2k_sweep}
 \end{figure}
 
-\subsubsection{TCU SRAM vs.\ Register File WGMMA Descriptor Load}
+\subsubsection{TCU SRAM vs.\ Register File WGMMA Descriptor Load}\label{sec:eval_desc}
 Moving the WGMMA descriptors into TCU SRAM increases cycles by
 1.2--6.5\% relative to register-file delivery. The penalty is largest for short SS kernels
 and decreases as more computation amortizes descriptor setup. Relieving
@@ -232,7 +232,7 @@ The same parts halve in RS and SS mode on both machines, the math and $A$ but no
 
 On the RTX 5080 (Fig.~\ref{fig:sparse_nvidia}(c)), one warp's late reload adds 363.1 to 364.2 cycles at every $n$, and its early reload 326.2 cycles at $n{=}0$ and 0.3 at $n{=}64$. The warp issues the filler while the load is pending, so an early reload costs the larger of the load and the filler and a late one their sum; both rules hold within 0.13\% for FP16 and 0.72\% over six data formats. An H100 follows them within 0.45\%: one warp's late reload adds 293.9 to 295.1 cycles, and its early reload falls from 246.1 cycles at $n{=}0$ to 2.1 at $n{=}64$. Independent work that outlasts the load therefore hides an early reload. FourShadow at (IW-1, NW-4) shows the same hiding when four one-warp CTAs share the issue lane at 32 threads per warp: the early reload's added cycles fall from 28.7 per CTA at $n{=}4$ to 7.6 at $n{=}64$, while the late reload's stay at 58.0 to 62.1.
 
-\subsection{FPGA Design Flow}
+\subsection{FPGA Design Flow}\label{sec:eval_fpga}
 
 We implement FourShadow on an AMD Alveo U55C with 16\,GB HBM2 and
 target a 250\,MHz clock frequency. The evaluated system contains
@@ -291,7 +291,7 @@ workload-dependent rather than uniformly additive.
     \label{fig:e2e_fpga}
 \end{figure}
 
-\subsection{ASIC Design Flow}
+\subsection{ASIC Design Flow}\label{sec:eval_asic}
 
 \subsubsection{ASIC Synthesis and Timing}
 
