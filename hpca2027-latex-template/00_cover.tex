@@ -13,8 +13,10 @@
 %   B2/D1/E1 packed-SIMT baseline; gains over the baseline TCU (D Q1, E Q1). The abstract
 %           now states the body's 9.15x/2.00x over the SIMT baseline (Llama 2), 2026-10-08.
 %   D2      Fig. 8 per-width scalar normalization; fixed-precision cycles across widths (D Q1)
-%   B6/D3/D4 workload definitions, model sizes, precision, SIMT-baseline provenance of the
-%           end-to-end figure; sparse-input provenance, output quality, timing boundary (D Q2)
+%   B6/D3/D4 workload definitions: model and input sizes are in Table III since 2026-10-09 (values
+%           from the Akili draft, TODO(e2e-workloads), not claimed until checked); precision, scope,
+%           SIMT-baseline provenance of the end-to-end figure; sparse-input provenance, output
+%           quality, timing boundary (D Q2)
 %   C Q2    WGMMA / sparsity / 2K-FEDP breakdown of the CNN 16.88x and NeRF 26.82x
 %   B6/C Q1 ASIC frequency, power, energy per MMA; FLOP/area vs H100 / MI300
 %   B Q5    NT = 64 sweep or a larger register file (the 24-register budget question)
