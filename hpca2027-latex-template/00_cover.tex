@@ -1,5 +1,7 @@
 % Revision cover page (HPCA 2027, paper #2126) -- first draft 2026-10-04; reorganized 2026-10-09 around the
 % reviewers' "Questions for revision/rebuttal" (items 1-9, nine question groups) plus item 10 (other comments).
+% 2026-10-09 (user): the opening and two run-in headers say items 1-9 (the questions) were prioritized and
+% item 10 (the Comments for authors) was also addressed.
 % Committee rules: first page of the PDF; changes and how they answer the reviewers;
 % paper margins, line spacing and fonts; no title or banner; anonymous; no external links.
 % Input from main.tex through \AddToHook{begindocument/end}, so it is typeset before the
@@ -46,8 +48,13 @@
 \thispagestyle{empty}
 \pagenumbering{Alph}
 
-\noindent We thank the reviewers. Items 1--9 answer the questions for revision and item 10 the
-other comments; [A]--[F] name the reviews, and every reference links into the revised paper.
+\noindent We thank the reviewers. The revision gave priority to the reviewers' \emph{Questions for
+revision/rebuttal}: items 1--9 answer them one by one. Beyond these, we also addressed the
+\emph{Comments for authors} (item 10). [A]--[F] name the reviews; every reference links into the
+revised paper.
+
+\vspace{3pt}
+\noindent\textbf{\emph{Questions for revision/rebuttal (prioritized).}}
 
 \vspace{2pt}
 \noindent\textbf{1. Five boxed findings answer the two questions.} [A][F] FourShadow is the
@@ -126,8 +133,11 @@ the RTL, simulator, kernels and figure scripts in a public repository, with its 
 camera-ready version. Table~\ref{tab:config} and \ref{sec:method_hw} name each swept build option
 and its default, and \ref{sec:method_sw} the sweeps' kernels and shapes.
 
+\vspace{3pt}
+\noindent\textbf{\emph{Comments for authors.}}
+
 \vspace{2pt}
-\noindent\textbf{10. Actions for the comments for authors.}
+\noindent\textbf{10. We also addressed these, review by review.}
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[A]}~The limits are measured, not assumed: \ref{sec:eval_iw} traces the diminishing
 issue-width return to the front end, which fetches one warp instruction per cycle.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[B]}~Table~\ref{tab:related_work_comparison} places FourShadow among prior platforms,
