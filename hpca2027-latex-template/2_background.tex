@@ -8,19 +8,27 @@ This section describes the base tensor core that FourShadow extends and the conc
 
 The base tensor core is built into Vortex~\cite{vortex}, an open-source RISC-V GPU. A Vortex processor is organized as clusters of cores; inside a cluster, a socket groups the cores that share first-level caches.
 
-Each core is a SIMT pipeline that runs $\mathit{NW}$ warps. A warp is a group of $\mathit{NT}$ threads that execute the same instruction on $\mathit{NT}$ lanes of the datapath, so the threads per warp ($\mathit{NT}$) set the width of every per-thread structure: the register file holds $\mathit{NT}$ entries per architectural register, and the load/store unit has $\mathit{NT}$ lanes. Both $\mathit{NW}$ and $\mathit{NT}$ are compile-time parameters.
+Each core is a Single Instruction, Multiple Thread (SIMT) pipeline that runs $\mathit{NW}$ warps. A warp is a group of $\mathit{NT}$ threads that execute the same instruction on $\mathit{NT}$ lanes of the datapath, so the threads per warp ($\mathit{NT}$) set the width of every per-thread structure: the register file holds $\mathit{NT}$ entries per architectural register, and the load/store unit has $\mathit{NT}$ lanes. Both $\mathit{NW}$ and $\mathit{NT}$ are compile-time parameters.
 
 \subsection{Base Tensor Core}
 \label{sec:bg_tcu}
 
-The base tensor core is the Tensor Core Unit (TCU), a functional unit in the execute stage of each core beside the ALU, FPU, LSU and SFU (Figure~\ref{fig:figure_integration}). It shares the core's front end, register file, shared memory and caches with those units, and it executes the warp-level MMA (WMMA) instruction. Its compute engine is a grid of Fused Dot Product (FEDP) units, each of which computes one element of $D$:
+
+The base tensor core is the Tensor Core Unit (TCU), a functional unit in the execute stage of each core beside the ALU, FPU, LSU and SFU (Figure~\ref{fig:figure_integration}). It shares the core's front end, register file, shared memory and caches with those units, and it executes the warp-level matrix multiply-accumulate (WMMA) instruction.
+
+WMMA computes $D = AB + C$, where $A$ is an $M{\times}K$ matrix, $B$ is a $K{\times}N$ matrix, and $C$ and $D$ are $M{\times}N$ matrices. The TCU's compute engine consists of a grid of Fused Dot Product (FEDP) units, each of which computes one output element:
 \begin{equation}
 \label{eq:fedp}
 D_{m,n} =
 \sum_{i=0}^{K-1}
 \left(A_{m,i} \times B_{i,n}\right) + C_{m,n}.
 \end{equation}
-Figure~\ref{fig:tiling_equations} derives the tile, the block and the steps from the threads per warp $\mathit{NT}$; $\mathit{NT}{=}8$ is the running example.
+
+
+
+A WMMA instruction operates on a \emph{tile}, which is divided into smaller \emph{blocks} to fit the $\mathit{NT}$ FEDP units. Each \emph{micro-op} processes one block, accumulating partial results along the $K$ dimension.
+Figure~\ref{fig:tiling_equations} derives the tile dimensions, block dimensions, and number of micro-ops from the threads per warp $\mathit{NT}$; $\mathit{NT}{=}8$ is the running example.
+
 
 \begin{figure}[ht]
 \small
@@ -79,12 +87,14 @@ Vortex's RV32 ISA provides 32 floating-point registers per thread. The base tens
 \end{figure}
 
 \textbf{Thread-FEDP Mapping:}
-A \emph{block} is the part of a tile that one \emph{micro-op} computes on the $\mathit{NT}$ FEDP units (the Block equations of Figure~\ref{fig:tiling_equations}): the units form a $\mathit{tcM}{\times}\mathit{tcN}$ grid, and each takes a dot product of $\mathit{tcK}$ words. The block is $4{\times}2{\times}2$ for $\mathit{NT}{=}8$ and $2{\times}2{\times}2$ for $\mathit{NT}{=}4$; for $\mathit{NT}{=}32$ it is $8{\times}4{\times}4$ for 32-bit inputs, $8{\times}4{\times}8$ for 16-bit inputs and $8{\times}4{\times}16$ for 8-bit inputs. A configuration is \emph{asymmetric} when a block of $B$ occupies half a register, so that two adjacent blocks pack into one register ($\mathit{NT}{\in}\{2,\allowbreak 8,\allowbreak 32\}$; panel (a)), and \emph{symmetric} when a block of $B$ fills a whole register ($\mathit{NT}{\in}\{4,16\}$; panel (b)). The \emph{steps} $m_{\mathrm{steps}}$, $n_{\mathrm{steps}}$ and $k_{\mathrm{steps}}$ are the blocks per tile in each dimension (the Steps equation), 2, 4 and 4 for $\mathit{NT}{=}8$. A WMMA instruction executes one micro-op per block, with $n$ innermost, $m$ in the middle and $k$ outermost (the loop nest of Figure~\ref{fig:tiling_equations}): 32 micro-ops for $\mathit{NT}{=}8$ and 16 for $\mathit{NT}{=}4$.
+A \emph{block} is the part of a tile that one \emph{micro-op} computes on the $\mathit{NT}$ FEDP units (the Block equations of Figure~\ref{fig:tiling_equations}): the units form a $\mathit{tcM}{\times}\mathit{tcN}$ grid, and each takes a dot product of $\mathit{tcK}$ words. The block is $4{\times}2{\times}2$ for $\mathit{NT}{=}8$ and $2{\times}2{\times}2$ for $\mathit{NT}{=}4$; for $\mathit{NT}{=}32$ it is $8{\times}4{\times}4$ for 32-bit inputs, $8{\times}4{\times}8$ for 16-bit inputs and $8{\times}4{\times}16$ for 8-bit inputs. A configuration is \emph{asymmetric} when a block of $B$ occupies half a register, so that two adjacent blocks pack into one register ($\mathit{NT}{\in}\{2,\allowbreak 8,\allowbreak 32\}$; panel (a)), and \emph{symmetric} when a block of $B$ fills a whole register ($\mathit{NT}{\in}\{4,16\}$; panel (b)). 
+The \emph{steps} count blocks per tile along each dimension. For $\mathit{NT}{=}8$, the $8{\times}8{\times}8$ tile and $4{\times}2{\times}2$ block yield $(m_{\mathrm{steps}},n_{\mathrm{steps}},k_{\mathrm{steps}})=(2,4,4)$, requiring 32 micro-ops. These execute with $n$ innermost, $m$ in the middle and $k$ outermost (Figure~\ref{fig:tiling_equations}); $\mathit{NT}{=}4$ requires 16 micro-ops.
+
 
 % REVIEW(2026-10-01): the pinned branch permutes register offsets in VX_tcu_uops.sv; it does not relocate B to f21..f28 (action item I-4). The unverified ``24 percentage points'' was removed -- coauthors confirm the mechanism.
 Each micro-op reads three source registers, one each for $A$, $B$ and $C/D$, from a register file divided into four banks. The registers of matrix $B$ are relocated so that the three sources fall in different banks and are read in the same cycle.
 
-\textbf{FEDP Microarchitecture \& Datatypes:}\label{para:datatypes-fedp} The FEDP unit is Ten-Four~\cite{rout2026tenfouropensourcefuseddot}, a four-stage, four-cycle design (multiply, align, accumulate, normalize and round) with a configurable dot-product length. It multiplies TF32, FP16, BF16, FP8 (E4M3), BF8 (E5M2), INT8 and INT4 inputs and accumulates in FP32 or INT32; each input format is enabled or disabled at compile time.
+\textbf{FEDP Microarchitecture \& Datatypes:}\label{para:datatypes-fedp} The FEDP unit is Ten-Four~\cite{rout2026tenfouropensourcefuseddot}, a four-stage, four-cycle implementation that multiplies, aligns, accumulates, and then normalizes and rounds dot-product results. It multiplies TF32, FP16, BF16, FP8 (E4M3), BF8 (E5M2), INT8 and INT4 inputs and accumulates in FP32 or INT32; each input format is enabled or disabled at compile time.
 
 \subsection{Issue Width and Warpgroups}
 \label{sec:bg_issue}
