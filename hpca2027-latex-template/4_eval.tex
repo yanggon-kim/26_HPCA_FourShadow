@@ -274,16 +274,23 @@ DXA engine 2.5\%, the LSU 1.4\% and the SFU 0.9\%.
   \end{tabular}
 \end{table}
 
-Fig.~\ref{fig:e2e_fpga} shows that WGMMA provides its largest gains
-when matrix operations dominate execution. It raises NeRF from
-4.72$\times$ to 26.17$\times$, Llama~2 prefill from 5.91$\times$ to
-9.15$\times$, and decode from 1.42$\times$ to 2.00$\times$, while CNN,
-attention, and FlashAttention remain nearly unchanged. Sparsity alone
-benefits NeRF and slightly improves attention, but its metadata and
-compression overhead reduce performance for CNN and both Llama~2
-phases. Combining sparsity with WGMMA reaches 16.88$\times$ for CNN
-and 26.82$\times$ for NeRF, showing that the two extensions are
-workload-dependent rather than uniformly additive.
+Fig.~\ref{fig:e2e_fpga} shows end-to-end speedups over the dense
+warp-level MMA (WMMA) baseline. WGMMA alone reaches 10.28$\times$ for
+MoE, 10.18$\times$ for Llama-3.2-1B prefill, 7.76$\times$ for decode,
+5.63$\times$ for attention and 3.13$\times$ for CNN, but only
+1.71$\times$ for NeRF and 1.05$\times$ for FlashAttention. Sparsity
+alone gives at most 1.12$\times$, except 1.70$\times$ for attention;
+on top of WGMMA it adds 1.03--1.30$\times$, reaching 12.74$\times$ for
+MoE, 12.39$\times$ for prefill and 6.90$\times$ for attention. The
+speedups are smaller for workloads whose runtime is not GEMM-dominated,
+such as FlashAttention and NeRF.
+Surprisingly, these end-to-end speedups exceed the single-tile
+speedups. This is mainly because the FPGA's memory system has a higher
+latency than the simulation model. WMMA is sensitive to global memory
+latency, whereas WGMMA is less so because it overlaps computation with
+data movement from global memory. The FPGA's HBM also has far higher
+bandwidth than the simulated memory, but matching the simulator's
+bandwidth to it reduces a GEMM's cycle count by at most 9\%.
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]
