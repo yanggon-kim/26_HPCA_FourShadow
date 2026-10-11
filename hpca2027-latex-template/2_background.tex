@@ -91,9 +91,6 @@ A \emph{block} is the part of a tile that one \emph{micro-op} computes on the $\
 The \emph{steps} count blocks per tile along each dimension. For $\mathit{NT}{=}8$, the $8{\times}8{\times}8$ tile and $4{\times}2{\times}2$ block yield $(m_{\mathrm{steps}},n_{\mathrm{steps}},k_{\mathrm{steps}})=(2,4,4)$, requiring 32 micro-ops. These execute with $n$ innermost, $m$ in the middle and $k$ outermost (Figure~\ref{fig:tiling_equations}); $\mathit{NT}{=}4$ requires 16 micro-ops.
 
 
-% REVIEW(2026-10-01): the pinned branch permutes register offsets in VX_tcu_uops.sv; it does not relocate B to f21..f28 (action item I-4). The unverified ``24 percentage points'' was removed -- coauthors confirm the mechanism.
-Each micro-op reads three source registers, one each for $A$, $B$ and $C/D$, from a register file divided into four banks. The registers of matrix $B$ are relocated so that the three sources fall in different banks and are read in the same cycle.
-
 \textbf{FEDP Microarchitecture \& Datatypes:}\label{para:datatypes-fedp} The FEDP unit is Ten-Four~\cite{rout2026tenfouropensourcefuseddot}, a four-stage, four-cycle implementation that multiplies, aligns, accumulates, and then normalizes and rounds dot-product results. It multiplies TF32, FP16, BF16, FP8 (E4M3), BF8 (E5M2), INT8 and INT4 inputs and accumulates in FP32 or INT32; each input format is enabled or disabled at compile time.
 
 \subsection{Issue Width and Warpgroups}

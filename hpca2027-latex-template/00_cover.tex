@@ -22,7 +22,8 @@
 %      baseline/configuration per result (E Q1)
 %   3  e2e workload definition (B C6, D W3/C3/Q2); CNN/NeRF gain split (C Q2, WGMMA/SP only)
 %   4  NVIDIA validation (B W/C4/Q4); NVIDIA WGMMA/sparse comparison (C W2); area (C Q1, partly)
-%   5  attribution/stall rows (D C5, E W2/Cm/Q3); what limits each parameter (F Cm)
+%   5  attribution/stall rows (D C5, E W2/Cm/Q3); what limits each parameter (F Cm); skinny GEMM (D C5, E W3;
+%      2026-10-11: IV-B, V-A2, V-C3 sentences, phantom labels sec:skinny_method/_iw/_sparse)
 %   6  sparse heatmap raw (B C6, D C6, E W1/Cm/Q2); model vs >2x (E W2/Cm/Q2)
 %   7  16 threads vs 24 registers (B C6/Q5); fixed-precision per-width (D W2/C2/Q1); why 16 threads (F Cm)
 %   8  roofline (B W/C3/Q3) -- row stays Open: the counting is not explained in the paper
@@ -42,8 +43,8 @@
 %   C Q1    FLOP/area or FLOP/cycle against the H100 or MI300; B4 AMD (CDNA) validation; B6 ASIC
 %           frequency, power, energy per MMA
 %   E3/D5   a per-category stall breakdown (item 5 gives step costs, IPC, scheduler occupancy only);
-%           skinny/rectangular GEMM (Part 4 runs in progress, not in the paper); B (5) NT = 64 or a
-%           larger register file
+%           skinny GEMM at warp level (SKINNY.md 5.3: >2x on wide n = 16, weaker NT 16 at tall n = 16;
+%           not in the paper); B (5) NT = 64 or a larger register file
 %   B3      the roofline FLOP accounting: what is counted per mode and why WGMMA sits below WMMA in
 %           FLOP/cycle; TODO(roofline): the WGMMA points are not from the final SimX runs. Item 8 says
 %           only what V-A3 prints (no causal "because")
@@ -112,7 +113,8 @@ shared-memory bank bandwidth; with warps grown to match an issue width of 4 or 8
 schedules a warp in 93--99\% of cycles (\ref{sec:eval_iw}). Sparsity shortens the fixed part of a
 step from 72 to 53 cycles in RS mode (\ref{sec:eval_iw}). The SS delay is traced to the $A$ path
 (\ref{sec:eval_delay_a}), and an early metadata load is shown to hide behind independent work
-(\ref{sec:eval_sparse_meta}).
+(\ref{sec:eval_sparse_meta}). On skinny GEMMs, tall and wide with one output side of 16 to 64 (\ref{sec:skinny_method}), the diminishing issue-width
+return (\ref{sec:skinny_iw}) and the 1.42--1.54$\times$ warp-group sparsity gain (\ref{sec:skinny_sparse}) hold.
 
 \vspace{2pt}
 \noindent\textbf{6. Sparse speedups are plotted raw and explained.} [D][E]
