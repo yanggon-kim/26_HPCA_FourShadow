@@ -246,8 +246,8 @@ the SFU 1.6\% and the remainder 0.7\%.
 
 \begin{table}
   \centering
-  \caption{Post-synthesis resource breakdown of the fully enabled
-  FourShadow TCU.}
+  \caption{Post-route resource breakdown of the fully enabled
+  FourShadow TCU on the Alveo U55C.}
   \label{tab:tcu-parts}
   \setlength{\tabcolsep}{5pt}
   \renewcommand{\arraystretch}{1.15}
@@ -256,18 +256,16 @@ the SFU 1.6\% and the remainder 0.7\%.
   \textbf{Part} & \textbf{LUT} & \textbf{FF} &
   \textbf{BRAM} & \textbf{DSP} \\
   \midrule
-  FEDP array ($4\times$)             & 47\,533 & 14\,800 & 0  & 128 \\
-  Lane dispatch                      & 18\,665 & 6\,990  & 0  & 0   \\
-  WGMMA control                      & 17\,183 & 5\,149  & 0  & 2   \\
-  A operand buffers ($4\times$)      & 16\,476 & 4\,493  & 0  & 0   \\
-  Lane gather                        & 1\,638  & 2\,240  & 0  & 0   \\
-  AGU                                & 1\,490  & 1\,303  & 0  & 0   \\
-  2:4 sparsity metadata SRAM         & 1\,056  & 0       & 32 & 0   \\
-  B buffer, FIFOs, and glue          & 772     & 64      & 4  & 0   \\
+  FEDP array ($4\times$)                        & 98\,379 & 32\,441 & 0 & 256 \\
+  Lane dispatch                                 & 26\,909 & 6\,776  & 0 & 0   \\
+  WGMMA control                                 & 18\,666 & 5\,547  & 0 & 2   \\
+  2:4 sparsity metadata, LUT-RAM ($4\times$)    & 5\,060  & 0       & 0 & 0   \\
+  Landing and metadata queues, glue ($4\times$) & 3\,484  & 1\,348  & 0 & 0   \\
+  AGU                                           & 1\,782  & 1\,300  & 0 & 0   \\
+  Lane gather                                   & 25      & 2\,252  & 0 & 0   \\
   \midrule
-  \textbf{TCU total}                 &
-  \textbf{104\,813} & \textbf{35\,039} &
-  \textbf{36} & \textbf{130} \\
+  \textbf{TCU total}                            &
+  \textbf{154\,305} & \textbf{49\,664} & \textbf{0} & \textbf{258} \\
   \bottomrule
   \end{tabular}
 \end{table}
