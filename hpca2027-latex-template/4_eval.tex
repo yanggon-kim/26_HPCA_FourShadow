@@ -242,10 +242,11 @@ target a 250\,MHz clock frequency. The evaluated system contains
 one core with eight 8-thread warps, an issue width of four, and four
 8-lane Ten-Four\cite{rout2026tenfouropensourcefuseddot} blocks supporting FP16 inputs and FP32
 accumulation, WGMMA, 2K-wide FEDP, and 2:4 structured sparsity. Table.~\ref{tab:tcu-parts} shows the hierarchical utilization overhead of each FourShadow extended unit.
-Of the post-synthesis LUT area of the fully enabled Vortex core, the TCU
-takes 53.7\%, the issue stage and front end 17.2\%, the FPU 13.8\%, the ALU
-6.1\%, memory (first-level caches and local memory) 4.8\%, the LSU 2.1\%,
-the SFU 1.6\% and the remainder 0.7\%.
+Of the post-route LUT utilization of the fully enabled Vortex core,
+including its first-level caches, local memory and DXA engine, the TCU
+takes 40.6\%, the issue stage and front end 23.1\%, the FPU 22.7\%,
+memory (first-level caches and local memory) 5.4\%, the ALU 3.2\%, the
+DXA engine 2.5\%, the LSU 1.4\% and the SFU 0.9\%.
 
 \begin{table}
   \centering
