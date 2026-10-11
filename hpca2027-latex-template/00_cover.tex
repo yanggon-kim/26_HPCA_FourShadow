@@ -8,13 +8,18 @@
 % \maketitle of hpca-template.tex (DO NOT MODIFY). The page has no number; \pagenumbering
 % restarts the paper at page 1 on the title page.
 % Every number below is printed in the paper (sources: 00_doc/vortex-wgdxa2k/results/
-% paper_numbers.json via the paper text). Every section, figure and table is a \ref.
+% paper_numbers.json via the paper text; FPGA end-to-end numbers: the bar labels of Fig. e2e_fpga,
+% fig/fpga_e2e.png from 7bfabe4, speedup over the dense TCU, as in the abstract and Sec. I).
+% 2026-10-11: V-D's text still gives the SIMT-baseline numbers until its author rewrites it (accepted
+% by the user); items 2 and 3 cite the abstract, Sec. I and the figure, not V-D's text.
+% Every section, figure and table is a \ref.
 % Reviewer tags = the reviews whose Questions section raised the point; D's questions end with
 % "See above questions as well", so D's numbered comments C3-C6 count as D's questions.
 %
 % ITEM -> TRACKER ROWS (00_doc/01_revision/review_tracker_gen.py, "cover N"):
 %   1  novelty/insight rows (A W/Q, B W, C Cm, F W/Q), thesis row (B W/C5)
-%   2  abstract-vs-body baseline (B C2, D W1/C1/Q1, E W1/Cm/Q1); baseline/configuration per result (E Q1)
+%   2  abstract-vs-body baseline (B C2, D W1/C1/Q1, E W1/Cm/Q1); gains over the base TCU (B C2, D C1/Q1);
+%      baseline/configuration per result (E Q1)
 %   3  e2e workload definition (B C6, D W3/C3/Q2); CNN/NeRF gain split (C Q2, WGMMA/SP only)
 %   4  NVIDIA validation (B W/C4/Q4); NVIDIA WGMMA/sparse comparison (C W2); area (C Q1, partly)
 %   5  attribution/stall rows (D C5, E W2/Cm/Q3); what limits each parameter (F Cm)
@@ -27,12 +32,13 @@
 %      A-D/M,N,K, sparsity intro, metadata latency, cores/socket
 %
 % NOT CLAIMED (open; never printed on this page):
-%   B2/D1/E1 packed-SIMT baseline (B (2)); the gains over the base TCU stated as numbers (D Q1);
+%   B2/D1/E1 packed-SIMT baseline (B (2));
 %           Fig. 6(a) still over scalar FP32 per width (D Q1, F)
 %   C Q2    the 2K-FEDP share of the end-to-end gains (Fig. 15 has TCU, +SP, +WGMMA, +both only)
 %   D Q2    the source of the sparse inputs, output quality, timing boundary; precision and scope of the
 %           end-to-end workloads; TODO(e2e-workloads): the Table III workload values come from the Akili
-%           draft and are unverified (stories15M agrees with origin/dtcu; its default run is 8 tokens, not 10)
+%           draft and are unverified (stories15M agrees with origin/dtcu; its default run is 8 tokens, not 10);
+%           MoE has no settings in Table III (no source found); item 3 names the four other workload kinds
 %   C Q1    FLOP/area or FLOP/cycle against the H100 or MI300; B4 AMD (CDNA) validation; B6 ASIC
 %           frequency, power, energy per MMA
 %   E3/D5   a per-category stall breakdown (item 5 gives step costs, IPC, scheduler occupancy only);
@@ -73,18 +79,20 @@ halves only part of the per-$K$ cost.
 the warp-group tile widens, on the H100 too.\par
 
 \vspace{2pt}
-\noindent\textbf{2. Every result has one stated baseline.} [B][D][E] The abstract and the body
-print the same end-to-end speedups over one SIMT baseline, 9.15$\times$ and 2.00$\times$ for
-Llama~2 prefill and decode, and Fig.~\ref{fig:e2e_fpga} separates the base TCU from each
-extension. Table~\ref{tab:config} states each platform's configuration and enabled features;
+\noindent\textbf{2. Every result has one stated baseline.} [B][D][E] The FPGA end-to-end
+speedups are over the dense base TCU, alike in the abstract, Section~\ref{sec:intro} and
+Fig.~\ref{fig:e2e_fpga}: WGMMA gives 10.18$\times$ and 7.76$\times$ for Llama~2 prefill and
+decode, and 12.39$\times$ and 8.57$\times$ with 2:4 sparsity. The SimX area--performance study
+(Fig.~\ref{fig:pareto}) is over the SIMT baseline, as its caption states. Table~\ref{tab:config} states each platform's configuration and enabled features;
 \ref{sec:method_sw} gives the sweeps' kernels and shapes, and each Evaluation part names its baseline
 configuration.
 
 \vspace{2pt}
 \noindent\textbf{3. End-to-end workloads are specified and their gains separated.} [C][D]
-Table~\ref{tab:config} gives each workload's model and input sizes. \ref{sec:eval_fpga}
-separates WGMMA, sparsity and both: WGMMA lifts NeRF from 4.72$\times$ to 26.17$\times$, and the
-text states where sparsity helps (NeRF) and where its metadata overhead costs (CNN, Llama~2).
+Table~\ref{tab:config} gives the models and input sizes of the attention, CNN, NeRF and Llama~2
+workloads. Fig.~\ref{fig:e2e_fpga} separates WGMMA, sparsity and both over the base TCU: across
+the seven workloads, WGMMA alone gives 1.05--10.28$\times$, sparsity alone 1.02--1.70$\times$,
+and both 1.09--12.74$\times$.
 
 \vspace{2pt}
 \noindent\textbf{4. FourShadow is measured beside two NVIDIA GPUs.} [B][C]
