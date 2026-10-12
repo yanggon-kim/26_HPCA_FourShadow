@@ -67,9 +67,23 @@ fig.tight_layout(pad=0.15)
 fig.savefig(FIG / "asic_nt_area_speedup.pdf")
 plt.close(fig)
 
-# ---- (2) E3-D core area: pie, TCU parts listed under the TCU entry ---------
+# ---- (2) Sub-core area: Ten-Four Fig. 9(b) shares, TCU parts listed under it
+# The slice shares are Ten-Four's sub-core breakdown; the TCU is split in the
+# ratios of the E3-D-NT4 TCU sub-components (asic_e3d_breakdown.csv)
 parts = {r["component"]: float(r["area_um2"]) for r in read("asic_e3d_breakdown.csv")}
-total = sum(parts.values())
+TCU_PCT = 36.0
+slices = [
+    ("FPU", 25.0, "#3b8beb"),
+    ("Register File", 16.0, "#17a589"),
+    ("Issue", 10.0, "#e0518d"),
+    ("Shared Memory", 3.7, "#c98a06"),
+    ("LSU", 3.0, "#ec7063"),
+    ("ALU", 2.8, "#1e8a1e"),
+    ("Warp Scheduler", 2.6, "#9b8fe8"),
+    ("Rest of Core", 1.0, "#a6a6a6"),
+    ("TCU", TCU_PCT, "#e4572e"),
+]
+total = 100.0  # Ten-Four's rounded shares sum to 100.1
 pct = lambda v: 100 * v / total
 tcu_parts = [
     ("FEDP Datapath", parts["TCU - FEDP datapath"]),
@@ -78,32 +92,12 @@ tcu_parts = [
     ("WGMMA Buffers + Ctrl.",
      parts["TCU - WGMMA tile buffers"] + parts["TCU - WGMMA control"]),
 ]
-other_keys = ["ALU", "LSU", "SFU", "Memory unit (other)", "Frontend + control", "Uncore"]
-# Ten-Four Fig. 9(b) style: saturated colours, large slices labelled inside,
-# small slices in a square-marker legend
-slices = [
-    ("TCU", sum(v for _, v in tcu_parts), "#e4572e"),
-    ("FPU", parts["FPU"], "#3b8beb"),
-    ("Register File", parts["Register file + operand collectors"], "#17a589"),
-    ("Issue", parts["Issue (ibuffer scoreboard dispatcher)"], "#e0518d"),
-    ("L1 D-Cache", parts["L1 D$"], "#8e7cc3"),
-    ("Other", sum(parts[k] for k in other_keys), "#a6a6a6"),
-    ("L1 I-Cache", parts["L1 I$"], "#c99a06"),
-    ("LMEM", parts["LMEM (16 KB)"], "#1e8449"),
-    ("DXA", parts["DXA"], "#f5b041"),
-]
-# Pinned shares (%) for the pie; the TCU sub-components and the remaining
-# slices are rescaled to fill the rest, keeping their synthesized ratios
-PINNED = {"L1 D-Cache": 33.0, "TCU": 18.0}
-free = sum(v for n, v, _ in slices if n not in PINNED)
-free_scale = (100 - sum(PINNED.values())) / free
-tcu_scale = PINNED["TCU"] / slices[0][1]
-slices = [(n, PINNED.get(n, v * free_scale), c) for n, v, c in slices]
-tcu_parts = [(sub, sv * tcu_scale) for sub, sv in tcu_parts]
-total = 100.0
+tcu_um2 = sum(v for _, v in tcu_parts)
+tcu_parts = [(sub, TCU_PCT * v / tcu_um2) for sub, v in tcu_parts]
+tcu = TCU_PCT
 INSIDE = 7.0  # % threshold for an inside label
 
-fig = plt.figure(figsize=(3.4, 1.9))
+fig = plt.figure(figsize=(3.4, 2.0))
 ax = fig.add_axes([0.0, 0.0, 0.545, 1.0])
 wedges, _ = ax.pie([v for _, v, _ in slices], colors=[c for *_, c in slices],
                    startangle=90, counterclock=False, radius=1.0,
@@ -113,21 +107,22 @@ for w, (name, v, _) in zip(wedges, slices):
     if pct(v) < INSIDE:
         continue
     ang = math.radians((w.theta1 + w.theta2) / 2)
-    r = 0.55 if pct(v) > 20 else 0.66
-    ax.text(r * math.cos(ang), r * math.sin(ang), f"{name}\n{pct(v):.0f}%",
+    r = 0.55 if pct(v) > 20 else 0.7
+    ax.text(r * math.cos(ang), r * math.sin(ang),
+            f"{name.replace(' ', chr(10))}\n{pct(v):.0f}%",
             ha="center", va="center", fontsize=7, fontweight="bold",
             color="white", linespacing=0.95)
 
 small = [(w, n, v) for w, (n, v, _) in zip(wedges, slices) if pct(v) < INSIDE]
 leg = fig.legend([Patch(facecolor=w.get_facecolor()) for w, *_ in small],
                  [f"{n}  {pct(v):.1f}%" for _, n, v in small],
-                 loc="upper left", bbox_to_anchor=(0.555, 0.97), fontsize=7.5,
+                 loc="upper left", bbox_to_anchor=(0.555, 0.99), fontsize=7.5,
                  handlelength=0.9, handleheight=0.9, handletextpad=0.5,
                  labelspacing=0.3, borderpad=0.2, frameon=False)
 lines = [f"{sub}  {pct(sv):.1f}%" for sub, sv in tcu_parts]
-fig.text(0.57, 0.44, f"TCU ({PINNED['TCU']:.1f}%)", ha="left", va="bottom", fontsize=7.5,
-         fontweight="bold", color="#e4572e")
-fig.text(0.57, 0.42, "\n".join(lines), ha="left", va="top", fontsize=7,
+fig.text(0.57, 0.37, f"TCU ({pct(tcu):.1f}%)", ha="left", va="bottom",
+         fontsize=7.5, fontweight="bold", color="#e4572e")
+fig.text(0.57, 0.35, "\n".join(lines), ha="left", va="top", fontsize=7,
          linespacing=1.3)
 fig.savefig(FIG / "asic_area_breakdown.pdf")
 plt.close(fig)

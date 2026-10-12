@@ -336,16 +336,14 @@ TCU area grows almost linearly with issue width (Fig.~\ref{fig:iw_area_scaling})
     \centering
     \includegraphics[width=\linewidth]
     {hpca2027-latex-template/fig/asic_area_breakdown.pdf}
-    \caption{Area breakdown of the full-featured core
-    ($\mathit{NT}{=}\mathit{NW}{=}\mathit{IW}{=}4$).}
+    \caption{Sub-core area breakdown of a full-featured FourShadowTCU}
     \label{fig:asic_breakdown}
 \end{figure}
 
 \subsubsection{Area Cost of the Tensor-Core Extensions}
-Fig.~\ref{fig:asic_breakdown} breaks down the core with every warp-group extension. The L1 data cache dominates at 33\% only because its small RAMs are flip-flops at this configuration, followed by the TCU at 18.0\%, 11.6 points of it in the FEDP datapath, and the FPU at 16.9\%; the DXA engine takes 3.0\%. The feature ladder measures what each extension adds to the dense WMMA core (0.291\,mm$^2$):
+The feature ladder adds each extension to the dense WMMA core (0.291\,mm$^2$):
 \begin{itemize}
-    \item \textbf{2:4 sparsity} grows the TCU by 1,745\,$\mu$m$^2$, 0.6\% of the core, for the metadata SRAM and the gather logic that selects the kept $B$ values; the core grows by 0.4\%.
-    \item \textbf{Warp-group MMA with DXA} adds 3.9\%: the DXA engine is 3.2\%, and the TCU's warp-group tile buffers and control only 0.5\% (1,571\,$\mu$m$^2$).
-    \item \textbf{The 2K-wide FEDP} widens each dot product and grows the TCU by 34\%, 2.1\% of the core.
+    \item \textbf{2:4 sparsity} adds 1,745\,$\mu$m$^2$ (10\%) to the TCU for the metadata SRAM and the gather logic that selects the kept $B$ values; the core grows by 0.4\% and its power is unchanged.
+    \item \textbf{Warp-group MMA with DXA} adds 11,419\,$\mu$m$^2$ (3.9\%) and 3.2\% power, of which the DXA engine is 9,285\,$\mu$m$^2$ and the TCU's tile buffers and control 1,571\,$\mu$m$^2$.
+    \item \textbf{The 2K-wide FEDP} grows the TCU by 34\% (6,254\,$\mu$m$^2$), 2.1\% of the core, for 0.8\% more power.
 \end{itemize}
-Together, warp-group MMA, DXA and the 2K-wide FEDP add 6.1\% to the core's area and 4.0\% to its vectorless power estimate, while sparsity leaves the power unchanged. Each extension thus costs a few percent of the core at most; the core's area is set by its register file, caches and FPU, not by the tensor-core features.
