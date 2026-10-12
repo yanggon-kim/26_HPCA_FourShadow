@@ -174,8 +174,7 @@ revision adds DXA staging, which hides the transfer of $A$ (\ref{sec:eval_sparse
 Ten-Four, and \ref{sec:design_overview} names the two components it adds, encoded in
 Table~\ref{tab:isa}.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[D]}~``Figure~??'' now points to Fig.~\ref{fig:figure_integration}, and ten evaluation
-figures print their labels at 6.5\,pt or more. The sparse inputs are weights pruned offline, 2:4 by magnitude, and
-outputs are checked against a CPU reference. Because the study targets the tensor core, 1. timing covers device execution only, and 2. model accuracy is outside our scope because performance (i.e. cycle counts) depend on the pattern and matrix shapes, not on the values, so the measured speedups should be the same for any 2:4 sparse weights.
+figures print their labels at 6.5\,pt or more. Sparse inputs are weights 2:4-pruned offline by magnitude; timing covers device execution only, and cycle counts do not depend on the kept values, so accuracy on pruned models does not affect the speedups.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[E]}~\ref{sec:eval_threads} states the block shape at each thread count, and
 Section~\ref{sec:intro} bounds how far FourShadow's best point carries over to a commercial design.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[F]}~Issue width is defined (\ref{sec:bg_issue}, \ref{sec:method_hw}).
