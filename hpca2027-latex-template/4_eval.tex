@@ -307,38 +307,28 @@ bandwidth to it reduces a GEMM's cycle count by at most 9\%.
 
 \subsubsection{ASIC Synthesis and Timing}
 % Source: FourShadow core synthesis report (Vortex master @ 39e76eefa), tables copied to fig/src/asic_runs.csv and asic_e3d_breakdown.csv.
-We synthesize the whole FourShadow core, one cluster with one core including its L1 caches, local memory and DXA engine, with Synopsys Design Compiler X-2025.06-SP1 (\texttt{compile\_ultra -retime}, hierarchy preserved) on ASAP7 7.5-track LVT cells at the TT corner, with \texttt{srambank} SRAM macros, at a 1\,GHz target. Area is the cell area including the macros. ASAP7 has no dual-ported SRAM, so the register file and other dual-ported RAMs are flip-flop arrays, which inflates their share; we compare areas across configurations rather than against SRAM-based designs. Two sets of cores are synthesized: a threads-per-warp sweep at 16 warps and an issue width of one with all data types enabled, and a feature ladder at four threads, four warps and an issue width of four with the default data types, which adds the tensor-core extensions one at a time. All eight cores meet 1\,GHz, with worst register-to-register paths of 965--975\,ps. The critical path runs through the TCU's FEDP multiplier pipeline at 4, 8 and 32 threads per warp, and outside the TCU at 16 threads and in every core of the feature ladder, so none of the extensions limits the clock.
+We synthesize the whole core (one cluster with one core, including its L1 caches, local memory and DXA) with Synopsys Design Compiler X-2025.06-SP1 on ASAP7 7.5-track LVT cells (TT corner) and SRAM macros at 1\,GHz. ASAP7 has no dual-ported SRAM, so the register file is built from flip-flops, which inflates its area. We synthesize a threads-per-warp sweep (16 warps, $\mathit{IW}{=}1$) and a feature ladder ($\mathit{NT}{=}\mathit{NW}{=}\mathit{IW}{=}4$) that adds the extensions one at a time. All eight cores meet 1\,GHz; the TCU's FEDP pipeline is critical only at 4, 8 and 32 threads, so no extension limits the clock.
 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]
     {hpca2027-latex-template/fig/asic_nt_area_speedup.pdf}
-    \caption{BF16 SGEMM speedup over scalar FP32
-    (Fig.~\ref{fig:threads_sweep}(a)) against the synthesized TCU area
-    of each threads-per-warp configuration (16 warps, issue width 1).}
+    \caption{BF16 SGEMM speedup over scalar FP32 against TCU area
+    across threads per warp (16 warps, $\mathit{IW}{=}1$).}
     \label{fig:asic_nt}
 \end{figure}
 
 \subsubsection{Threads/Warp Area--Performance Tradeoff}
-Fig.~\ref{fig:asic_nt} places the BF16 SGEMM speedups of Fig.~\ref{fig:threads_sweep}(a) against the TCU area of each warp width. The TCU grows by 1.95$\times$, 3.43$\times$ and 2.00$\times$ from 4 to 8, 16 and 32 threads, as the Block equations predict (Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc})): each step doubles the number of FEDP units, and from 8 to 16 threads each unit's dot product doubles as well. Performance follows only the second effect. From 4 to 8 threads the speedup falls by 3--6\%; from 8 to 16 it rises by 1.55--1.86$\times$, to 11.29--13.93$\times$; and from 16 to 32 it falls by 21--38\%, most at small $K$, while the TCU doubles to 91.7\,k$\mu$m$^2$. Sixteen threads therefore deliver the highest speedup, and the 32-thread TCU spends twice the area for less. The TCU remains 4.2--9.6\% of the core, which grows from 0.165 to 0.960\,mm$^2$ across the sweep, largely in the flip-flop register file and operand collectors (53\% of the 32-thread core).
+The TCU grows by 1.95$\times$, 3.43$\times$ and 2.00$\times$ from 4 to 8, 16 and 32 threads (Fig.~\ref{fig:asic_nt}): each step doubles the FEDP units, and from 8 to 16 threads each unit's dot product doubles too (Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc})). The BF16 speedup of Fig.~\ref{fig:threads_sweep}(a) follows only the latter: it falls by 3--6\% from 4 to 8 threads, rises by 1.55--1.86$\times$ at 16, and falls by 21--38\% at 32 while the TCU doubles to 91.7\,k$\mu$m$^2$. Sixteen threads thus give the highest speedup, and 32 spend twice the area for less. The TCU is 4.2--9.6\% of the core, which grows from 0.165 to 0.960\,mm$^2$, largely in the flip-flop register file.
 
 \subsubsection{Issue-Width Area--Performance Tradeoff}
-Fig.~\ref{fig:iw_area_scaling} shows that TCU area scales almost
-linearly with issue width, increasing from 58.6\,k$\mu$m$^2$ at
-$IW{=}1$ to 115.6 and 230.6\,k$\mu$m$^2$ at $IW{=}2$ and $IW{=}4$.
-However, performance scales much more slowly, reaching 1.37--1.41$\times$ at
-$IW{=}2$ and 1.67--1.71$\times$ at $IW{=}4$. Doubling the area again
-to an estimated 455--462\,k$\mu$m$^2$ at $IW{=}8$ raises speedup to
-only 1.70--1.81$\times$. Thus, $IW{=}4$ forms the practical optimal on the curve, beyond which additional TCU blocks and larger warp-groups are increasingly
-limited by the core's instruction front end (Section~\ref{sec:eval_iw}) rather than
-arithmetic capacity.
+TCU area grows almost linearly with issue width (Fig.~\ref{fig:iw_area_scaling}), from 58.6 to 115.6 and 230.6\,k$\mu$m$^2$ at $\mathit{IW}{=}1$, 2 and 4, while the speedup reaches only 1.37--1.41$\times$ and 1.67--1.71$\times$; $\mathit{IW}{=}8$, at an estimated 455--462\,k$\mu$m$^2$, gains just 1.70--1.81$\times$. $\mathit{IW}{=}4$ is thus the practical optimum, beyond which the core's instruction front end (Section~\ref{sec:eval_iw}), not arithmetic capacity, limits a wider warpgroup.
 \begin{figure}
     \centering
     \includegraphics[width=0.9\linewidth]
     {hpca2027-latex-template/fig/iw_area_speedup_short.pdf}
-    \caption{WGMMA speedup over $IW{=}1$ versus synthesized TCU cell
-    area at $NT{=}16$, from an earlier synthesis of the standalone TCU. The $IW{=}8$ area is projected from the
-    measured $IW\leq4$ designs.}
+    \caption{WGMMA speedup over $\mathit{IW}{=}1$ against standalone-TCU
+    area at $\mathit{NT}{=}16$; the $\mathit{IW}{=}8$ area is projected.}
     \label{fig:iw_area_scaling}
 \end{figure}
 
@@ -346,11 +336,8 @@ arithmetic capacity.
     \centering
     \includegraphics[width=\linewidth]
     {hpca2027-latex-template/fig/asic_area_breakdown.pdf}
-    \caption{Cell area of the full-featured core (WGMMA, DXA and the
-    2K-wide FEDP; four threads, four warps, issue width 4; 0.309\,mm$^2$)
-    by component; the register file includes its operand collectors. The
-    L1 data cache's RAMs are below the SRAM-macro threshold at this size
-    and are synthesized as flip-flops.}
+    \caption{Area breakdown of the full-featured core
+    ($\mathit{NT}{=}\mathit{NW}{=}\mathit{IW}{=}4$).}
     \label{fig:asic_breakdown}
 \end{figure}
 

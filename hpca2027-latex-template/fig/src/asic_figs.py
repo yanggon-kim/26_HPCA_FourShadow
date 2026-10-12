@@ -43,7 +43,7 @@ BF16_SPEEDUP = {  # Fig. eval_nt_iw_heatmaps (a), BF16 rows
 STYLE = {128: ("#1f77b4", "o"), 256: ("#ff7f0e", "s"),  # as in Fig. iw_area_scaling
          512: ("#2ca02c", "^"), 1024: ("#d62728", "D")}
 
-fig, ax = plt.subplots(figsize=(3.4, 1.75))
+fig, ax = plt.subplots(figsize=(3.4, 1.45))
 for k, ys in BF16_SPEEDUP.items():
     c, m = STYLE[k]
     ax.plot(tcu_k, ys, "--", marker=m, color=c, lw=1.2, ms=3.5, label=f"$K$={k}")
@@ -55,9 +55,10 @@ ax.set_xticks(tcu_k)
 ax.set_xticklabels([f"{x:.1f}" for x in tcu_k])
 ax.minorticks_off()
 ax.set_xlim(5.2, 120)
-ax.set_ylim(5, 17)
+ax.set_ylim(5, 17.5)
+ax.set_yticks([6, 9, 12, 15])
 ax.set_xlabel("TCU area (k$\\mathbf{\\mu}$m$^\\mathbf{2}$)", labelpad=1, **LABEL)
-ax.set_ylabel("BF16 speedup", labelpad=2, **LABEL)
+ax.set_ylabel("Speedup", labelpad=2, **LABEL)
 ax.tick_params(length=2, pad=1.5)
 ax.grid(alpha=0.3, lw=0.5)
 ax.legend(loc="upper left", ncol=2, fontsize=7.5, handlelength=1.8,
