@@ -45,7 +45,7 @@ Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:til
     \centering
     \includegraphics[width=\linewidth]
     {hpca2027-latex-template/fig/roofline_512.pdf}
-    \caption{Roofline analysis of $512^3$ SGEMM on FourShadow analyzing WMMA, WGMMA, 2:4 Structuted Sparsity and FEDP2K extensions.}
+    \caption{Roofline analysis of $512^3$ SGEMM on FourShadow analyzing WMMA, WGMMA, 2:4 Structured Sparsity and FEDP2K extensions.}
     \label{fig:roofline}
 \end{figure}
 
@@ -75,9 +75,8 @@ a 2.52$\times$ speedup. With 2:4 sparsity, WMMA reaches
 157.72 FLOP/cyc and WGMMA reaches 239.66 FLOP/cyc.
 FEDP2K alone changes dense WGMMA throughput only slightly, to
 180.48 FLOP/cyc, while combining it with sparsity reaches
-268.85 FLOP/cyc, 1.50$\times$ dense WGMMA and 3.77$\times$ dense WMMA. This indicates that these modern Tensor Core extensions (2:4 Stuctured Sparsity, WGMMA, FEDP2K) are helping move fairly memory-bound kernels into the compute bound region. WGMMA
-specifically seems to be improving arithmetic intensity significantly from
-it’s larger operating tiles and shared-memory reuse, making it
+268.85 FLOP/cyc, 1.50$\times$ dense WGMMA and 3.77$\times$ dense WMMA. All six points lie right of their ridge points (2, 4 and 8 FLOP/byte), so none is bound by the 1024\,B/cyc memory roof; they remain 11--31$\times$ below their compute roofs. WGMMA
+specifically raises arithmetic intensity 3.5$\times$ through its larger operating tiles and shared-memory reuse, making it
 particularly suitable for modern ML systems inference workloads that are heavily memory-bound at small batch sizes.
 
 \subsection{Warp-Group Tensor Core Design Space Exploration}\label{sec:eval_wgmma}

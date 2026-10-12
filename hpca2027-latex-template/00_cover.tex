@@ -142,7 +142,7 @@ Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc}) give 4, 8 and 8 FP16 MACs per lan
 32 threads; neither has a register term (\ref{sec:eval_threads}). Fig.~\ref{fig:q2_nt_iw}(a)
 compares per-lane FP16 throughput across thread counts. FourShadow's 32 registers per thread (24
 for the tensor core, \ref{sec:bg_tcu}) match an H100 SM at full occupancy (64K registers over
-2,048 threads); at its 255-register maximum only 8 of 64 warps fit.
+2,048 threads); there can only be 8 active lanes in a 32-thread warp at the 255-register maximum limit.
 
 \vspace{1pt}
 \noindent\textbf{8. The roofline is re-measured and its counting stated.} [B] The submitted 2.31
