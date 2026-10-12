@@ -113,14 +113,15 @@ The setup micro-op that dense RS mode adds with the 2K-wide FEDP increases the e
     \label{fig:fedp2k_sweep}
 \end{figure}
 
-\subsubsection{TCU SRAM vs.\ Register File WGMMA Descriptor Load}\label{sec:eval_desc}
-Moving the WGMMA descriptors into TCU SRAM increases cycles by
-1.2--6.5\% relative to register-file delivery. The penalty is largest for short SS kernels
-and decreases as more computation amortizes descriptor setup. Relieving
-the pressure of two register operands does not offset the added
-shared-memory store, synchronization, and AGU traffic. Small control
-metadata should therefore remain in the register file unless those
-registers enable a larger accumulator configuration or there is extreme register pressure.
+% Removed for the 12-page limit (2026-10-12); restore by uncommenting.
+% \subsubsection{TCU SRAM vs.\ Register File WGMMA Descriptor Load}\label{sec:eval_desc}
+% Moving the WGMMA descriptors into TCU SRAM increases cycles by
+% 1.2--6.5\% relative to register-file delivery. The penalty is largest for short SS kernels
+% and decreases as more computation amortizes descriptor setup. Relieving
+% the pressure of two register operands does not offset the added
+% shared-memory store, synchronization, and AGU traffic. Small control
+% metadata should therefore remain in the register file unless those
+% registers enable a larger accumulator configuration or there is extreme register pressure.
 
 \begin{figure}[t]
     \centering
@@ -334,7 +335,7 @@ TCU area grows almost linearly with issue width (Fig.~\ref{fig:iw_area_scaling})
 
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]{hpca2027-latex-template/fig/asic_area_breakdown.pdf}
+    \includegraphics[width=0.9\linewidth]{hpca2027-latex-template/fig/asic_area_breakdown.pdf}
     \caption{Sub-core area breakdown of a full-featured FourShadow TCU}
     \label{fig:asic_breakdown}
 \end{figure}
