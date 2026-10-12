@@ -170,8 +170,7 @@ counterpart (\ref{sec:bg_smem}), warps copy $A$ and $B$ via registers into share
 each warp-group MMA (\ref{sec:eval_iw}), while WMMA computes from registers. The
 revision adds DXA staging, which hides the transfer of $A$ (\ref{sec:eval_sparse_wg}).
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[C]}~Section~\ref{sec:background} describes what FourShadow inherits from Vortex and
-Ten-Four, and \ref{sec:design_overview} names the two components it adds, encoded in
-Table~\ref{tab:isa}.
+Ten-Four, and \ref{sec:design_overview} names the two components it adds.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[D]}~``Figure~??'' now points to Fig.~\ref{fig:figure_integration}, and ten evaluation
 figures print their labels at 6.5\,pt or more. Sparse inputs are weights 2:4-pruned offline by magnitude; timing covers device execution only, and cycle counts do not depend on the kept values, so accuracy on pruned models does not affect the speedups.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[E]}~\ref{sec:eval_threads} states the block shape at each thread count, and
