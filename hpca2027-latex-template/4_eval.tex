@@ -13,7 +13,7 @@ Most notably, we find that the 16-thread configuration is consistently the stron
 further. This shows that Tensor Core scaling is non-monotonic with warp width
 and depends significantly on tile geometry and pipeline utilization.
 
-Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:tiling_equations} show. Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc}) arrange the $\mathit{block\_cap}{=}\mathit{NT}$ FEDP units of a micro-op as a near-square $\mathit{tcM}{\times}\mathit{tcN}$ grid, and each lane's dot product is $\mathit{tcK}{=}\mathit{block\_cap}/\max(\mathit{tcM},\mathit{tcN})$ words: the block is $4{\times}2{\times}2$, $4{\times}4{\times}4$ and $8{\times}4{\times}4$ at 8, 16 and 32 threads, or 4, 8 and 8 FP16 multiply-accumulates (MACs) per lane and micro-op. A warp issues $2\,\mathit{NRC}$ micro-ops per dense step at every $\mathit{NT}$, each at a fixed cost, plus about one cycle per 64-byte operand line. A lane's work thus doubles from 8 to 16 threads but not from 16 to 32, where only $\mathit{tcM}$ doubles, and with it $A$: 16 to 32 shared-memory lines per SS step ($\mathit{IW}{=}4$, $\mathit{NRC}{=}32$). In MACs per cycle over the warpgroup's $\mathit{IW}{\times}\mathit{NT}$ threads, at (IW-4, NW-4), 16 threads is 11--19\% ahead of 32 in SS mode (3.48 against 3.14 at $\mathit{NRC}{=}32$, Fig.~\ref{fig:q2_nt_iw}(a)) and level in RS mode.
+Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:tiling_equations} show. Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc}) arrange the $\mathit{block\_cap}{=}\mathit{NT}$ FEDP units of a micro-op as a near-square $\mathit{tcM}{\times}\mathit{tcN}$ grid, and each lane's dot product is $\mathit{tcK}{=}\mathit{block\_cap}/\max(\mathit{tcM},\mathit{tcN})$ words: the block is $4{\times}2{\times}2$, $4{\times}4{\times}4$ and $8{\times}4{\times}4$ at 8, 16 and 32 threads, or 4, 8 and 8 FP16 multiply-accumulates (MACs) per lane and micro-op. A warp issues $2\,\mathit{NRC}$ micro-ops per dense step at every $\mathit{NT}$, each at a fixed cost, plus about one cycle per 64-byte operand line. A lane's work thus doubles from 8 to 16 threads but not from 16 to 32, where only $\mathit{tcM}$ doubles, and with it $A$: 16 to 32 shared-memory lines per SS step ($\mathit{IW}{=}4$, $\mathit{NRC}{=}32$). In MACs per cycle over the warpgroup's $\mathit{IW}{\times}\mathit{NT}$ threads, from back-to-back FP16 warp-group MMAs at (IW-4, NW-4), 16 threads is 11--19\% ahead of 32 in SS mode (3.48 against 3.14 at $\mathit{NRC}{=}32$, Fig.~\ref{fig:q2_nt_iw}(a)) and level in RS mode.
 
 \answerbox{Answer \#1 for Q2}{Per-lane warp-group MMA throughput peaks at 16 threads per warp, because a lane's dot product doubles from 8 to 16 threads but not from 16 to 32; NVIDIA's 32-thread point sits on this plateau (level in RS mode, 11--19\% behind in SS mode).}
 
@@ -33,14 +33,10 @@ Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:til
     \centering
     \includegraphics[width=\linewidth]
     {hpca2027-latex-template/fig/paper_q2_nt_iw.pdf}
-    \caption{Warp-group MMA on FourShadow at design points around NVIDIA's,
-    from back-to-back instructions on resident FP16 operands, four warps per core.
-    (a)~Dense throughput per lane against threads per warp at (IW-4, NW-4):
-    SS mode at $\mathit{NRC}$ 8, 16 and 32 (solid) and RS mode at 8 and 16
-    (dashed); the dotted line marks NVIDIA's point, 32 threads and an issue width of 4.
-    (b)~Dense throughput (solid, left axis) and sparse per-$K$ speedup (dashed,
-    right axis) against the issue width at 32 threads per warp, RS mode at
-    $\mathit{NRC}{=}16$ and SS mode at $\mathit{NRC}{=}32$.}
+    \caption{Warp-group MMA throughput on FourShadow around NVIDIA's design
+    point, four warps per core, lines labelled by mode and $\mathit{NRC}$: (a)~against
+    threads per warp at (IW-4, NW-4); (b)~dense throughput and sparse speedup
+    against the issue width at 32 threads per warp.}
     \label{fig:q2_nt_iw}
 \end{figure}
 
@@ -61,7 +57,7 @@ four. The returns diminish because instruction issue, not the tensor core or sha
 % Sources: 00_doc/vortex-wgdxa2k/results/SMEM_BW_IW.md (staging IPC, banks), IW_NW_SWEEP.md sections 2 and 4 (NW-4 IPC 0.416-0.437, bank use 0.015-0.017) + iw_nw_sweep.json (diagonal, sched. busy); fetch: SimX core.cpp:330-358.
 % TODO(fig6b-iw8): the printed IW-8 row (1.18--2.02x over IW 1) is not reproduced; the final SimX (IW-8, NW-8) cell gives 2.80--3.20x per K step (IW_NW_SWEEP.md section 3).
 
-At the instruction level, the warp-group MMA of FourShadow scales nearly linearly with the issue width. Fig.~\ref{fig:q2_nt_iw}(b) streams back-to-back warp-group MMAs at 32 threads per warp and issue widths of 1, 2 and 4, a narrower range than the whole-kernel sweep of Fig.~\ref{fig:iw_sweep}(b), which extends to 8. Each doubling of the issue width raises throughput by $\times$2.00 and again by $\times$2.00 in RS mode at $\mathit{NRC}{=}16$, and by $\times$1.89 and then $\times$1.80 in SS mode at $\mathit{NRC}{=}32$. As the issue width grows, the sparse per-$K$ speedup stays at 1.275$\times$ in RS mode and rises from 1.349$\times$ to 1.417$\times$ in SS mode. Sparsity shortens the fixed micro-op part of a step, from 72 to 53 cycles in RS mode at $\mathit{NRC}{=}16$. The issue-width results are measured on FourShadow alone; a commercial GPU fixes its warpgroup at four warps. \phantomsection\label{sec:skinny_iw}The instruction-issue bound holds for skinny GEMMs: (IW-8, NW-32) speeds up a $K$ step over (IW-1, NW-4) by 3.84--3.91$\times$ on wide shapes at 8 threads per warp, and by 2.88--3.74$\times$ on tall shapes with $N{=}16$, where fewer warps have work.
+At the instruction level, the warp-group MMA of FourShadow scales nearly linearly with the issue width. Fig.~\ref{fig:q2_nt_iw}(b) streams back-to-back warp-group MMAs at 32 threads per warp, four warps per core and issue widths of 1, 2 and 4, a narrower range than the whole-kernel sweep of Fig.~\ref{fig:iw_sweep}(b), which extends to 8. Each doubling of the issue width raises throughput by $\times$2.00 and again by $\times$2.00 in RS mode at $\mathit{NRC}{=}16$, and by $\times$1.89 and then $\times$1.80 in SS mode at $\mathit{NRC}{=}32$. As the issue width grows, the sparse per-$K$ speedup stays at 1.275$\times$ in RS mode and rises from 1.349$\times$ to 1.417$\times$ in SS mode. Sparsity shortens the fixed micro-op part of a step, from 72 to 53 cycles in RS mode at $\mathit{NRC}{=}16$. The issue-width results are measured on FourShadow alone; a commercial GPU fixes its warpgroup at four warps. \phantomsection\label{sec:skinny_iw}The instruction-issue bound holds for skinny GEMMs: (IW-8, NW-32) speeds up a $K$ step over (IW-1, NW-4) by 3.84--3.91$\times$ on wide shapes at 8 threads per warp, and by 2.88--3.74$\times$ on tall shapes with $N{=}16$, where fewer warps have work.
 % Source (skinny): SKINNY.md section 5.4 row 16 and skinny.json families.128 claim F3.diag8.avail (w64 = 64x128xK, NT 8 RS/SS only: the 32-thread IW-8 CTA (M 128) cannot tile M = 64; t16 = 128x16xK, NT 8/32 RS/SS); idle warps at t16: SKINNY.md 5.3 finding 2.
 
 \answerbox{Answer \#2 for Q2}{A wider warpgroup scales the warp-group MMA but not the kernel around it: the core fetches one warp instruction per cycle, so the kernel's other instructions issue at most about one per cycle, while each warp-group MMA expands into $2\,\mathit{NRC}$ micro-ops that keep its tensor block busy; with the warps grown to match, an issue width of 8 speeds up a $K$ step of the GEMM by 3.6--3.9$\times$, not 8$\times$.}
@@ -135,15 +131,9 @@ registers enable a larger accumulator configuration or there is extreme register
     \centering
     \includegraphics[width=\columnwidth]
     {hpca2027-latex-template/fig/delay_a.pdf}
-    \caption{Delay for reading $A$ from shared memory in a warp-group MMA, FP16:
-    an H100 (one warpgroup in one CTA on one SM) and FourShadow at (IW-4, NW-4),
-    32 threads per warp, $\mathit{NRC}{=}8$ and 16 ($N{=}16$ and 32); each
-    instruction waits for the previous one to complete.
-    (a)~Latency of one dense warp-group MMA against the tile width $N$ in RS and
-    SS mode; the vertical bars mark SS $-$ RS, flat while the latency grows.
-    (b)~SS $-$ RS delay against $N$, dense and sparse, each line labelled with
-    the bytes of $A$ per instruction: only FourShadow's 1\,KiB sparse $A$ halves
-    the delay; on the H100 four input formats agree within 0.1 cycle.}
+    \caption{Delay for reading $A$ from shared memory (SS $-$ RS) in a warp-group
+    MMA, FP16, on an H100 and FourShadow: (a)~latency against the tile width $N$;
+    (b)~the delay, dense and sparse, labelled with the bytes of $A$.}
     \label{fig:delay_a}
 \end{figure}
 
@@ -158,34 +148,15 @@ registers enable a larger accumulator configuration or there is extreme register
     \label{fig:sparse_sym_sweep}
 \end{figure}
 
-% float placed early: renders at the top of the next page, beside Section V-C2
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=\textwidth]
-    {hpca2027-latex-template/fig/paper_sparse_nvidia_compare.pdf}
-    \caption{Warp-level MMA with 2:4 sparsity on FourShadow and on NVIDIA
-    GPUs (the RTX 5080, and also an H100 in (b)), all timed over the in-kernel region.
-    (a)~Dense-over-sparse speedup of a $64{\times}64{\times}K$ FP16 GEMM;
-    each dashed line is the bound $1/(1-f/2)$ of the platform of the same colour.
-    (b)~Halvable share $f$ of the per-$K$ cost for FP16 on the RTX 5080, an
-    H100 and FourShadow at 8 and 32 threads per warp, from the
-    $64{\times}64{\times}K$ fits.
-    (c)~Cycles a metadata reload adds per iteration, early or late minus
-    resident, against the filler count $n$, FP16:
-    one warp of the RTX 5080; FourShadow at (IW-1, NW-4) with four one-warp CTAs
-    on the issue lane at 32 threads per warp (cycles per CTA).}
-    \label{fig:sparse_nvidia}
-\end{figure*}
-
 \subsubsection{Reading \texorpdfstring{$A$}{A} from Shared Memory Delays Every Warp-Group MMA}\label{sec:eval_delay_a}
 % TODO(delay-a-rtl): the FourShadow delay values come from SimX, which fetches the whole A tile in 64-B lines; III-B describes the RTL A buffer (one K stripe, one bank row per request). See 00_doc/vortex-wgdxa2k/results/DELAY_A.md.
-In RS mode the compute micro-ops read $A$ from registers \texttt{f24}--\texttt{f27}, and only $B$ crosses the shared-memory port. In SS mode each tensor block must fill its $A$ buffer through that port, which all $\mathit{IW}{+}1$ tile buffers share (Section~\ref{sec:design_wgmma}), so its first multiplication waits for those reads. On FourShadow this wait adds 28--31 cycles to a dense warp-group MMA (bars in Fig.~\ref{fig:delay_a}(a)). It does not grow with $N$: $A$ is the $64{\times}16$ tile of every instruction, while $N$ widens only $B$ and the micro-ops, which both modes pay. It follows the bytes of $A$: the compressed 1\,KiB sparse $A$ pays 14--15 cycles (Fig.~\ref{fig:delay_a}(b)). It recurs on every instruction, because the $A$ buffer refills at each instruction's first compute micro-op: a descriptor names an address, and the kernel may rewrite the tile under it. The H100 shows all three signatures: dense SS mode completes 9.0--10.0 cycles after RS mode from $N{=}16$ to 128, sparse pays alike (8.0--9.0) because it also reads 2\,KiB of $A$, and the delay stays at 10.25 cycles when every instruction reads the same $A$. The H100's warp-group MMA thus behaves as one that stages $A$ from shared memory before its first multiplication and keeps no copy between instructions, as FourShadow does.
+In RS mode the compute micro-ops read $A$ from registers \texttt{f24}--\texttt{f27}, and only $B$ crosses the shared-memory port. In SS mode each tensor block must fill its $A$ buffer through that port, which all $\mathit{IW}{+}1$ tile buffers share (Section~\ref{sec:design_wgmma}), so its first multiplication waits for those reads. Fig.~\ref{fig:delay_a} times each warp-group MMA after the previous one completes. On FourShadow at (IW-4, NW-4) and 32 threads per warp this wait adds 28--31 cycles to a dense warp-group MMA (bars in Fig.~\ref{fig:delay_a}(a)). It does not grow with $N$: $A$ is the $64{\times}16$ tile of every instruction, while $N$ widens only $B$ and the micro-ops, which both modes pay. It follows the bytes of $A$: the compressed 1\,KiB sparse $A$ pays 14--15 cycles (Fig.~\ref{fig:delay_a}(b)). It recurs on every instruction, because the $A$ buffer refills at each instruction's first compute micro-op: a descriptor names an address, and the kernel may rewrite the tile under it. One warpgroup of the H100 shows all three signatures: dense SS mode completes 9.0--10.0 cycles after RS mode from $N{=}16$ to 128, sparse pays alike (8.0--9.0) because it also reads 2\,KiB of $A$, and the delay stays at 10.25 cycles when every instruction reads the same $A$. The H100's warp-group MMA thus behaves as one that stages $A$ from shared memory before its first multiplication and keeps no copy between instructions, as FourShadow does.
 
 \answerbox{Answer \#1 for Q1}{A warp-group MMA in SS mode waits for $A$ before its first multiplication, a fixed delay per instruction that does not grow with the tile width; the H100 and FourShadow keep no operand between instructions, so every instruction pays the delay again.}
 
 \subsection{Sparse Tensor Core Design Space Exploration}\label{sec:eval_sparse}
 
-This subsection continues Q1 with the internal mechanisms behind tensor-core sparsity (Section~\ref{sec:intro}). The first part explores the symmetric and asymmetric layouts of warp-level MMA on FourShadow. The next two give the answers by comparing FourShadow with NVIDIA GPUs: warp-level MMA with 2:4 sparsity with an RTX 5080 and an H100, and warp-group MMA with an H100; the last measures the metadata load on both GPUs (Sections~\ref{sec:eval_sparse_halves}, \ref{sec:eval_sparse_wg} and~\ref{sec:eval_sparse_meta}, configuration in Section~\ref{sec:methodology}).
+This subsection continues Q1 with the internal mechanisms behind tensor-core sparsity (Section~\ref{sec:intro}). The first part explores the symmetric and asymmetric layouts of warp-level MMA on FourShadow. The next two give the answers by comparing FourShadow with NVIDIA GPUs: warp-level MMA with 2:4 sparsity with an RTX 5080 and an H100, and warp-group MMA with an H100 (Sections~\ref{sec:eval_sparse_halves} and~\ref{sec:eval_sparse_wg}, configuration in Section~\ref{sec:methodology}).
 
 \subsubsection{Symmetric vs.\ Asymmetric Sparse Configurations}\label{sec:eval_sparse_sym}
 Sparsity speeds up the asymmetric layouts in every cell of
@@ -207,14 +178,20 @@ loss nor the 16-thread gain; their source is not isolated.
 \begin{figure}[t]
     \centering
     \includegraphics[width=\columnwidth]
+    {hpca2027-latex-template/fig/paper_sparse_nvidia_compare_ab.pdf}
+    \caption{Warp-level 2:4 sparsity on FourShadow and NVIDIA GPUs, FP16,
+    $64{\times}64{\times}K$: (a)~dense-over-sparse speedup against $K$, dashed
+    lines the bounds $1/(1-f/2)$; (b)~halvable share $f$, with the bound as bar label.}
+    \label{fig:sparse_nvidia}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]
     {hpca2027-latex-template/fig/sparse_wg_halvable.pdf}
-    \caption{Warp-group MMA with 2:4 sparsity on FourShadow and an H100, FP16.
-    (a)~Dense-over-sparse speedup of the warp-group GEMM against $K$
-    (FourShadow: $128{\times}128{\times}K$ at (IW-4, NW-4), 32 threads,
-    $\mathit{NRC}{=}8$; H100: one warpgroup's $64{\times}16{\times}K$ loop, staging pipelined);
-    dashed lines: bounds $1/(1-f/2)$.
-    (b)~Halvable share $f$ against tile width $N$ (FourShadow NRC in
-    parentheses; FourShadow at $N{=}16$ and 32 only).}
+    \caption{Warp-group MMA with 2:4 sparsity on FourShadow and an H100, FP16:
+    (a)~speedup against $K$, dashed lines the bounds; (b)~halvable share $f$
+    against the tile width $N$.}
     \label{fig:sparse_wg_halvable}
 \end{figure}
 
@@ -243,11 +220,6 @@ On both machines $f$ falls as the tile widens (Fig.~\ref{fig:sparse_wg_halvable}
 The same parts halve in RS and SS mode on both machines, the math and $A$ but not $B$, yet in this loop the H100 gains more in RS than in SS mode, by 8 to 22 points of $f$, while FourShadow gains about equally in both, within 2 points. On FourShadow the share also depends on how exposed the staging of $A$ is: at $N{=}16$ it is 68--70\% with synchronous staging and 27--31\% with double-buffered DXA staging, which hides the transfer of $A$ so that only the micro-ops of the warp-group MMA halve; the two machines therefore agree in how $f$ falls with $N$, not in its size.
 
 \answerbox{Answer \#3 for Q1}{2:4 sparsity halves the $A$ operand of a warp-group MMA GEMM but not $B$, which grows with the tile width $N$, so the halvable share falls as the tile widens, on both the H100 (pipelined loop) and FourShadow.}
-
-\subsubsection{An Early Metadata Load Hides Behind Independent Work}\label{sec:eval_sparse_meta}
-2:4 sparsity needs metadata that marks the kept elements of $A$. On NVIDIA GPUs the sparse MMA takes it as an operand (\texttt{mma.sp}~\cite{nvidia2026ptxisa}), and \texttt{HMMA.SP} in our compiled kernels reads it from a register, so a kernel loads the metadata before the MMA, an overhead that sparsity adds. We measure this overhead in a loop of a sparse FP16 MMA and $n\in\{0,4,16,64\}$ dependent integer filler operations, independent of the MMA and its metadata. The metadata load sits in one of three places, as the compiled code confirms: once before the loop (resident), before the filler (early) or directly before the MMA (late). A reload adds the early or late minus the resident cycles per iteration at equal $n$, so the late schedule exposes its full cost.
-
-On the RTX 5080 (Fig.~\ref{fig:sparse_nvidia}(c)), one warp's late reload adds 363.1 to 364.2 cycles at every $n$, and its early reload 326.2 cycles at $n{=}0$ and 0.3 at $n{=}64$. The warp issues the filler while the load is pending, so an early reload costs the larger of the load and the filler and a late one their sum; both rules hold within 0.13\% for FP16 and 0.72\% over six data formats. An H100 follows them within 0.45\%: one warp's late reload adds 293.9 to 295.1 cycles, and its early reload falls from 246.1 cycles at $n{=}0$ to 2.1 at $n{=}64$. Independent work that outlasts the load therefore hides an early reload. FourShadow at (IW-1, NW-4) shows the same hiding when four one-warp CTAs share the issue lane at 32 threads per warp: the early reload's added cycles fall from 28.7 per CTA at $n{=}4$ to 7.6 at $n{=}64$, while the late reload's stay at 58.0 to 62.1.
 
 \subsection{FPGA Design Flow}\label{sec:eval_fpga}
 

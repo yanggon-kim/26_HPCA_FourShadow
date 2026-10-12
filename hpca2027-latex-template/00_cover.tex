@@ -40,7 +40,8 @@
 %      counterpart, V-A2 staging on the integer/load-store units, V-C3 DXA staging hides A; the paper does
 %      not state the cause in V-A3 and shows no DXA FLOP/cycle gain); [C] inherited vs new; [D] Figure ??,
 %      fonts; [E] NT changes several things (E W3); [F] issue width, design-only Sec. III, mapping figure,
-%      A-D/M,N,K, sparsity intro, metadata latency, cores/socket
+%      A-D/M,N,K, sparsity intro, metadata latency (2026-10-11: answered by the design, sec:design_sparse (III-C) metadata
+%      flow; V-C4 removed; NOT "once before the loop": the warp-level kernels reload per K tile), cores/socket
 %
 % NOT CLAIMED (open; never printed on this page):
 %   B2/D1/E1 packed-SIMT baseline (B (2));
@@ -122,8 +123,7 @@ With four warps, the kernel issues 0.42--0.44 instructions per cycle and uses 1.
 shared-memory bank bandwidth; with warps grown to match an issue width of 4 or 8, the core
 schedules a warp in 93--99\% of cycles, and sparsity shortens the fixed part of a
 step from 72 to 53 cycles in RS mode (\ref{sec:eval_iw}). The SS delay is traced to the $A$ path
-(\ref{sec:eval_delay_a}); an early metadata load hides behind independent work
-(\ref{sec:eval_sparse_meta}). On skinny GEMMs, tall and wide with one output side of 16 to 64 (\ref{sec:skinny_method}), the diminishing issue-width
+(\ref{sec:eval_delay_a}). On skinny GEMMs, tall and wide with one output side of 16 to 64 (\ref{sec:skinny_method}), the diminishing issue-width
 return (\ref{sec:skinny_iw}) and the 1.42--1.54$\times$ warp-group sparsity gain (\ref{sec:skinny_sparse}) hold, as do the sparse findings of \ref{sec:large_sym}--\ref{sec:large_wg} at $256{\times}256{\times}K$
 and $512{\times}512{\times}K$.
 
@@ -181,8 +181,8 @@ Section~\ref{sec:intro} bounds how far FourShadow's best point carries over to a
 Section~\ref{sec:design} is design only; its trade-off studies are
 \ref{sec:eval_nrc}--\ref{sec:eval_desc}. The mapping figure sits in \ref{sec:bg_tcu}, which
 defines $A$--$D$ and $M$, $N$, $K$ before Eq.~(\ref{eq:fedp}). \ref{sec:design_sparse} opens with 2:4
-sparsity, \ref{sec:eval_sparse_meta} times the metadata load, and the cores-per-socket
-study is removed.\par
+sparsity and loads the metadata into a per-warp SRAM before the sparse MMAs; the
+cores-per-socket study is removed.\par
 
 \clearpage
 \pagenumbering{arabic}
