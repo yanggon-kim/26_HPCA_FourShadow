@@ -68,10 +68,9 @@
 \thispagestyle{empty}
 \pagenumbering{Alph}
 
-\noindent We thank the reviewers. The revision gave priority to the reviewers' \emph{Questions for
-revision/rebuttal}: items 1--9 answer them one by one. Beyond these, we also addressed the
-\emph{Comments for authors} (item 10). [A]--[F] name the reviews; every reference links into the
-revised paper.
+\noindent We thank the reviewers. Items 1--9 answer the \emph{Questions for revision/rebuttal}
+and item 10 the \emph{Comments for authors}; [A]--[F] name the reviews, and every reference links
+into the revised paper.
 
 \vspace{3pt}
 \noindent\textbf{\emph{Addressing questions for revision/rebuttal.}}
@@ -94,94 +93,91 @@ the warp-group tile widens, on the H100 too.\par
 
 \vspace{1pt}
 \noindent\textbf{2. Every result has one stated baseline.} [B][D][E] The FPGA end-to-end
-speedups are over the dense base TCU, alike in the abstract, Section~\ref{sec:intro} and
+speedups are over the dense base TCU in the abstract, Section~\ref{sec:intro} and
 Fig.~\ref{fig:e2e_fpga}: WGMMA gives 10.18$\times$ and 7.76$\times$ for Llama-3.2-1B prefill and
-decode, and 12.39$\times$ and 8.57$\times$ with 2:4 sparsity. The ASIC threads-per-warp study
-(Fig.~\ref{fig:asic_nt}) uses the BF16 SGEMM speedups over scalar FP32 of Fig.~\ref{fig:threads_sweep}(a), as its caption states. Table~\ref{tab:config} states each platform's configuration and enabled features,
-and each Evaluation part names its baseline (\ref{sec:method_sw}).
-In the E2E evaluation, the FPGA build configuration and the workloads were redefined (Table~\ref{tab:fpga-config}), so these numbers are not directly comparable with the submitted ones. The WMMA baseline loads its operands directly from global memory, so part of WGMMA's gain comes from DXA hiding memory latency (\ref{sec:eval_fpga}).
+decode, 12.39$\times$ and 8.57$\times$ with 2:4 sparsity. Table~\ref{tab:config} gives each
+platform's configuration and features, and each Evaluation part names its baseline
+(\ref{sec:method_sw}). The FPGA build and workloads were redefined (Table~\ref{tab:fpga-config}),
+so these numbers are not comparable with the submitted ones; the WMMA baseline loads operands
+from global memory, so part of WGMMA's gain is DXA hiding memory latency (\ref{sec:eval_fpga}).
 
 \vspace{1pt}
 \noindent\textbf{3. End-to-end workloads are specified and their gains separated.} [C][D]
-Table~\ref{tab:fpga-config} gives the models and input sizes of all seven workloads, and
-Fig.~\ref{fig:e2e_fpga} separates WGMMA, sparsity and both over the base TCU: WGMMA alone gives 1.05--10.28$\times$, sparsity alone 1.02--1.51$\times$,
-and both 1.76--12.74$\times$.
+Table~\ref{tab:fpga-config} gives the models and input sizes of all seven workloads;
+Fig.~\ref{fig:e2e_fpga} separates the gains over the base TCU: WGMMA 1.05--10.28$\times$, sparsity
+1.02--1.51$\times$, both 1.76--12.74$\times$. Sparse inputs are weights 2:4-pruned offline by
+magnitude; timing covers device execution only, and cycles do not depend on the kept values.
 
 \vspace{1pt}
 \noindent\textbf{4. FourShadow is measured beside two NVIDIA GPUs.} [B][C]
 Section~\ref{sec:methodology} adds an RTX 5080 and an H100. Over 17 shapes, FourShadow's FP16
 sparse speedup differs from the RTX 5080's by a median of 6.2\% at 32 threads per warp and 9.0\%
-at 8 (\ref{sec:eval_sparse_halves}). The H100's WGMMA scales with $K$ like FourShadow
-at $\mathit{NRC}{=}32$ (\ref{sec:eval_nrc}) and shows the same delay for $A$ (\ref{sec:eval_delay_a}) and the same falling
-halvable share (\ref{sec:eval_sparse_wg}). Table~\ref{tab:tcu-parts} gives the tensor core's
-resources per part, and \ref{sec:eval_asic} its synthesized area against performance
-(Figs.~\ref{fig:asic_nt} and~\ref{fig:iw_area_scaling}); every synthesized core meets 1\,GHz, and Fig.~\ref{fig:asic_breakdown} gives the area each extension adds.
+at 8 (\ref{sec:eval_sparse_halves}). The H100's WGMMA scales with $K$ like FourShadow at
+$\mathit{NRC}{=}32$ (\ref{sec:eval_nrc}) and shows the same delay for $A$ (\ref{sec:eval_delay_a})
+and the same falling halvable share (\ref{sec:eval_sparse_wg}). \ref{sec:eval_asic} gives
+synthesized area against performance and per extension; every synthesized core meets 1\,GHz.
 
 \vspace{1pt}
 \noindent\textbf{5. Attributions rest on cycle-level evidence.} [D][E] A warp-group step costs a
 fixed micro-op sequence plus about one cycle per 64-byte operand line (\ref{sec:eval_threads}).
-With four warps, the kernel issues 0.42--0.44 instructions per cycle and uses 1.5--1.7\% of the
-shared-memory bank bandwidth; with warps grown to match an issue width of 4 or 8, the core
-schedules a warp in 93--99\% of cycles, and sparsity shortens the fixed part of a
-step from 72 to 53 cycles in RS mode (\ref{sec:eval_iw}). The SS delay is traced to the $A$ path
-(\ref{sec:eval_delay_a}). On skinny GEMMs, tall and wide with one output side of 16 to 64 (\ref{sec:skinny_method}), the diminishing issue-width
-return (\ref{sec:skinny_iw}) and the 1.42--1.54$\times$ warp-group sparsity gain (\ref{sec:skinny_sparse}) hold, as do the sparse findings of \ref{sec:large_sym}--\ref{sec:large_wg} at $256{\times}256{\times}K$
-and $512{\times}512{\times}K$.
+With four warps the kernel issues 0.42--0.44 instructions per cycle and uses 1.5--1.7\% of the
+shared-memory bank bandwidth; with warps grown to an issue width of 4 or 8, a warp is scheduled
+in 93--99\% of cycles; sparsity shortens a step's fixed part from 72 to 53 cycles
+(\ref{sec:eval_iw}). The SS delay is traced to the $A$ path (\ref{sec:eval_delay_a}). On skinny
+GEMMs (\ref{sec:skinny_method}) the issue-width trend (\ref{sec:skinny_iw}) and the
+1.42--1.54$\times$ sparsity gain (\ref{sec:skinny_sparse}) hold, as do the sparse findings
+(\ref{sec:large_sym}--\ref{sec:large_wg}) at $256^2{\times}K$ and $512^2{\times}K$.
 
 \vspace{1pt}
 \noindent\textbf{6. Sparse speedups are plotted raw and explained.} [D][E]
-Fig.~\ref{fig:sparse_sym_sweep} prints raw speedups from total kernel cycles: the asymmetric
-layouts gain 1.24--1.78$\times$ (\ref{sec:eval_sparse_sym}). A cost model fitted to measured $K$
-sweeps replaces the analytic one (\ref{sec:eval_sparse_halves}). With dense and sparse kernels
-staged alike, warp-group sparsity gains 1.41--1.53$\times$ (\ref{sec:eval_sparse_wg}); the
-submitted ratios above 2$\times$ compared differently staged kernels.
+Fig.~\ref{fig:sparse_sym_sweep} prints raw speedups: the asymmetric layouts gain
+1.24--1.78$\times$ (\ref{sec:eval_sparse_sym}). A cost model fitted to measured $K$ sweeps
+replaces the analytic one (\ref{sec:eval_sparse_halves}). Staged alike, dense and sparse
+warp-group kernels differ by 1.41--1.53$\times$ (\ref{sec:eval_sparse_wg}); the submitted ratios
+above 2$\times$ compared differently staged kernels.
 
 \vspace{1pt}
 \noindent\textbf{7. The 16-thread optimum follows from each lane's dot product.} [B][D]
 Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc}) give 4, 8 and 8 FP16 MACs per lane at 8, 16 and
-32 threads: from 16 to 32 threads only $\mathit{tcM}$ doubles (\ref{sec:eval_threads}, Answer \#1
-for Q2), and neither equation has a register term. Fig.~\ref{fig:q2_nt_iw}(a) compares per-lane
-FP16 throughput across thread counts at one precision. FourShadow's 32 registers per thread (24 for tensor core (\ref{sec:bg_tcu})) match an H100 SM at full occupancy (64K registers over 2,048 threads); There can only be 8 active lanes in a 32-thread warp at the 255-register maximum limit.
+32 threads; neither has a register term (\ref{sec:eval_threads}). Fig.~\ref{fig:q2_nt_iw}(a)
+compares per-lane FP16 throughput across thread counts. FourShadow's 32 registers per thread (24
+for the tensor core, \ref{sec:bg_tcu}) match an H100 SM at full occupancy (64K registers over
+2,048 threads); at its 255-register maximum only 8 of 64 warps fit.
 
 \vspace{1pt}
-\noindent\textbf{8. The roofline plots each mode's achieved point.} [B]
-\ref{sec:eval_roofline} places WMMA, WGMMA, sparse and FEDP2K execution by achieved
-intensity and throughput. WGMMA raises intensity from WMMA's 4.54 to 16.04 FLOP/byte and
-throughput from 71.22 to 179.17 FLOP/cycle, and an SS
-step reads one $B$ tile per warpgroup, as in the RTL (\ref{sec:design_wgmma}).
+\noindent\textbf{8. The roofline is re-measured and its counting stated.} [B] The submitted 2.31
+(WGMMA) against 23.21 FLOP/cycle (WMMA) came from register-staged copies without DXA, our TMA
+counterpart (\ref{sec:bg_smem}), at $128^3$. Re-measured at $512^3$ with DXA and dense-equivalent
+counting, WGMMA raises intensity from 4.54 to 16.04 FLOP/byte and throughput from 71.22 to 179.17
+FLOP/cycle (\ref{sec:eval_roofline}).
 
 \vspace{1pt}
 \noindent\textbf{9. The artifact will be released.} [B] The page-1 footnote commits to releasing
-the RTL, simulator, kernels and figure scripts in a public repository, with its URL in the
-camera-ready version. Table~\ref{tab:config} and \ref{sec:method_hw} name each swept build option
-and its default, and \ref{sec:method_sw} the sweeps' kernels and shapes.
+the RTL, simulator, kernels and figure scripts, with the URL in the camera-ready version.
+Table~\ref{tab:config} and \ref{sec:method_hw} name each build option and its default, and
+\ref{sec:method_sw} the sweeps' kernels and shapes.
 
 \vspace{3pt}
 \noindent\textbf{\emph{Addressing comments for authors.}}
 
 \vspace{1pt}
-\noindent\textbf{10. We also addressed these, review by review.}
-\par\noindent\hangindent=1em\hangafter=1 \textbf{[A]}~The limits are measured, not assumed: \ref{sec:eval_iw} traces the diminishing
-issue-width return to the front end, which fetches one warp instruction per cycle.
-\par\noindent\hangindent=1em\hangafter=1 \textbf{[B]}~Table~\ref{tab:related_work_comparison} places FourShadow among prior platforms,
+\noindent\textbf{10.} \textbf{[A]}~\ref{sec:eval_iw} measures the diminishing issue-width return
+and traces it to the front end, which fetches one warp instruction per cycle.
+\textbf{[B]}~Table~\ref{tab:related_work_comparison} places FourShadow among prior platforms,
 Accel-Sim and GPGPU-Sim included; the symmetric/asymmetric result is plotted raw
-(\ref{sec:eval_sparse_sym}); ``Figure~??'', the typos and the overlapping labels of submitted
-Figs.~19/20 are fixed (Figs.~\ref{fig:asic_nt} and~\ref{fig:iw_area_scaling}). The submitted
-2.31 FLOP/cycle for WGMMA against 23.21 for WMMA came from register-staged copies without DXA,
-our TMA counterpart (\ref{sec:bg_smem}), at $128^3$; re-measured at $512^3$ with DXA and
-dense-equivalent counting, WGMMA reaches 179.17 against WMMA's 71.22 FLOP/cycle (\ref{sec:eval_roofline}).
-\par\noindent\hangindent=1em\hangafter=1 \textbf{[C]}~Section~\ref{sec:background} describes what FourShadow inherits from Vortex and
-Ten-Four, and \ref{sec:design_overview} names the two components it adds.
-\par\noindent\hangindent=1em\hangafter=1 \textbf{[D]}~``Figure~??'' now points to Fig.~\ref{fig:figure_integration}, and ten evaluation
-figures print their labels at 6.5\,pt or more. Sparse inputs are weights 2:4-pruned offline by magnitude; timing covers device execution only, and cycle counts do not depend on the kept values, so accuracy on pruned models does not affect the speedups.
-\par\noindent\hangindent=1em\hangafter=1 \textbf{[E]}~\ref{sec:eval_threads} states the block shape at each thread count, and
-Section~\ref{sec:intro} bounds how far FourShadow's best point carries over to a commercial design.
-\par\noindent\hangindent=1em\hangafter=1 \textbf{[F]}~Issue width is defined (\ref{sec:bg_issue}, \ref{sec:method_hw}).
+(\ref{sec:eval_sparse_sym}). \textbf{[B][D][F]}~``Figure~??'' now points to
+Fig.~\ref{fig:figure_integration}; the typos and the overlapping labels of submitted Figs.~19/20
+are fixed (Figs.~\ref{fig:asic_nt} and~\ref{fig:iw_area_scaling}); evaluation figures print labels
+at 6.5\,pt or more. \textbf{[C]}~Section~\ref{sec:background} describes what FourShadow inherits
+from Vortex and Ten-Four, and \ref{sec:design_overview} names the two components it adds.
+\textbf{[E]}~\ref{sec:eval_threads} states the block shape at each thread count, and
+Section~\ref{sec:intro} bounds how far FourShadow's best point carries over.
+\textbf{[F]}~Issue width is defined (\ref{sec:bg_issue}, \ref{sec:method_hw}).
 Section~\ref{sec:design} is design only; its trade-off studies are
-\ref{sec:eval_nrc}--\ref{sec:eval_desc}. The mapping figure sits in \ref{sec:bg_tcu}, which
-defines $A$--$D$ and $M$, $N$, $K$ before Eq.~(\ref{eq:fedp}). \ref{sec:design_sparse} opens with 2:4
-sparsity and loads the metadata into a per-warp SRAM before the sparse MMAs; the
-cores-per-socket study is removed.\par
+\ref{sec:eval_nrc}--\ref{sec:eval_desc}. \ref{sec:bg_tcu} shows the mapping and defines $A$--$D$
+and $M$, $N$, $K$ before Eq.~(\ref{eq:fedp}). \ref{sec:design_sparse} opens with 2:4 sparsity and
+loads the metadata into a per-warp SRAM before the sparse MMAs; the cores-per-socket study is
+removed.\par
 
 \clearpage
 \pagenumbering{arabic}
