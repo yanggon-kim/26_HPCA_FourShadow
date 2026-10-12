@@ -124,6 +124,7 @@ In the symmetric case, panel~(b) with $\mathit{NT}{=}4$, a dense block of $B$, $
 
 FourShadow exposes WMMA, WGMMA, and 2:4 structured sparsity as composable primitives selected almost entirely at compile time. Input/output format (\texttt{ITYPE}/\texttt{OTYPE}), NRC, and RS-versus-SS mode (Section~\ref{sec:design_wgmma}) are all template parameters on \texttt{wgmma\_config\_t} and \texttt{wgmma\_context} (Figure~\ref{fig:sw_integrationv4}), so the same kernel source compiles down to dense WMMA, dense WGMMA, or sparse WGMMA execution depending on how it is instantiated.
 
+\begin{comment}
 \begin{table}[t]
 \centering
 \caption{RISC-V encoding of the tensor-core instructions (R-type, opcode 0x0B, funct7 0x02).}
@@ -145,6 +146,7 @@ $B$ & \texttt{f24}--\texttt{f31} & \texttt{x11} & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
+\end{comment}
 
 \textbf{Instruction encoding.} The three tensor-core instructions are 32-bit RISC-V R-type instructions in the CUSTOM-0 opcode space (0x0B) with funct7 0x02, and funct3 selects the instruction (Table~\ref{tab:isa}). In WMMA and WGMMA the rd, rs1 and rs2 fields hold immediates, not register numbers: the output format, the input format and flags that mark a sparse instruction and, for WGMMA, select $\mathit{NRC}$ and SS or RS mode. The operands sit in fixed registers (last three rows); for WGMMA, \texttt{x10} and \texttt{x11} hold the shared-memory descriptors of Section~\ref{sec:design_wgmma}. The sequencer expands an instruction into micro-ops in the loop order of Figs.~\ref{fig:tiling_equations} and~\ref{fig:wgmma_tiling_equations}, and each micro-op names four registers: $A$ or its descriptor in rs1, $B$ or its descriptor in rs2, and the accumulator in rs3 as $C$ and in rd as $D$. \texttt{TCU\_LD} reads its one register operand, the metadata address, from rs1 (Section~\ref{sec:design_sparse}).
 
@@ -152,4 +154,4 @@ $B$ & \texttt{f24}--\texttt{f31} & \texttt{x11} & -- \\
 
 \textbf{Operand and metadata delivery.} In the kernel, \texttt{load\_sp\_metadata} loads the packed mask in both RS and SS mode (Section~\ref{sec:design_sparse}), and $A$ reaches the instruction as Section~\ref{sec:design_wgmma} describes, through \texttt{load\_matrix\_sync} in RS mode and through a descriptor built by \texttt{vx\_make\_smem\_desc} in SS mode; both modes call the same \texttt{wgmma\_sync} entry point.
 
-\textbf{Tile Stride.} Each warp's private $A$ section is padded to the shared-memory bank-row width ($\mathit{NT}\times\mathrm{XLEN}/8$ bytes) so warp $w{+}1$'s stripe always starts on a fresh bank row. Without this, the $A$ buffer's single-row fetch can walk into the previous warp's region.
+%\textbf{Tile Stride.} Each warp's private $A$ section is padded to the shared-memory bank-row width ($\mathit{NT}\times\mathrm{XLEN}/8$ bytes) so warp $w{+}1$'s stripe always starts on a fresh bank row. Without this, the $A$ buffer's single-row fetch can walk into the previous warp's region.
