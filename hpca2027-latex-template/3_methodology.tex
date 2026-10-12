@@ -20,10 +20,12 @@ FourShadow adds two components to the base tensor core of Section~\ref{sec:bg_tc
 
 \textbf{Tile and micro-ops.} Each warp's sequencer expands its WGMMA instruction into micro-ops, and one micro-op computes one $\mathit{tcM}{\times}\mathit{tcN}$ block of the output over $\mathit{fedpK}$ words of $K$ ($\mathit{fedpK}{=}\mathit{tcK}$ for the standard FEDP). The per-warp tile is two blocks deep in $M$ and two in $K$, and the number of accumulator registers, $\mathit{NRC}\in\{8,16,32\}$, sets its extent in $N$:
 \begin{equation}\label{eq:wg_tile}
-\mathit{xtileN}_{\mathrm{wg}} = \tfrac{\mathit{NRC}\,\mathit{NT}}{2\,\mathit{tcM}},\;\;
-m_{\mathrm{steps}} = 2,\;\;
-n_{\mathrm{steps}} = \tfrac{\mathit{xtileN}_{\mathrm{wg}}}{\mathit{tcN}} = \tfrac{\mathit{NRC}}{2},\;\;
+\begin{aligned}
+&\mathit{xtileN}_{\mathrm{wg}} = \tfrac{\mathit{NRC}\,\mathit{NT}}{2\,\mathit{tcM}},\;\;
+m_{\mathrm{steps}} = 2,\\
+&n_{\mathrm{steps}} = \tfrac{\mathit{xtileN}_{\mathrm{wg}}}{\mathit{tcN}} = \tfrac{\mathit{NRC}}{2},\;\;
 k_{\mathrm{steps}} = \tfrac{2\,\mathit{tcK}}{\mathit{fedpK}}.
+\end{aligned}
 \end{equation}
 $\mathit{NRC}{=}8$ is the accumulator count of the base tensor core. The micro-ops run with $k$ outermost, then $n$, then $m$ innermost, and micro-op $(m,n)$ accumulates into register \texttt{f}$(2n{+}m)$ (Fig.~\ref{fig:wgmma_operation}(c)). For $\mathit{NT}{=}32$, $\mathit{IW}{=}4$ and FP16 inputs, the warpgroup tile ($M{\times}N{\times}K$) is $64{\times}16{\times}16$ with 16 micro-ops per warp at $\mathit{NRC}{=}8$, and $64{\times}64{\times}16$ with 64 at $\mathit{NRC}{=}32$.
 

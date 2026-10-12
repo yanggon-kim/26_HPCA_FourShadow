@@ -286,7 +286,7 @@ alone gives at most 1.12$\times$, except 1.51$\times$ for attention;
 on top of WGMMA it adds 1.03--1.30$\times$, reaching 12.74$\times$ for
 MoE, 12.39$\times$ for prefill and 4.72$\times$ for attention. The
 speedups are smaller for workloads whose runtime is not GEMM-dominated,
-such as FlashAttention and NeRF.
+such as FlashAttention and NeRF. The WMMA baseline loads its operands directly from global memory without DXA, so part of WGMMA's gain is DXA hiding memory latency, as the 50-cycle experiment below shows.
 Surprisingly, these end-to-end speedups exceed the single-tile
 speedups. This is mainly because the FPGA's memory system has a higher
 latency than the simulation model, which omits the FPGA's interconnect and HBM controller. WMMA is sensitive to global memory
@@ -319,7 +319,7 @@ We synthesize the whole core (one cluster with one core, including its L1 caches
 \end{figure}
 
 \subsubsection{Threads/Warp Area--Performance Tradeoff}
-The TCU grows by 1.95$\times$, 3.43$\times$ and 2.00$\times$ from 4 to 8, 16 and 32 threads (Fig.~\ref{fig:asic_nt}): each step doubles the FEDP units, and from 8 to 16 threads each unit's dot product doubles too (Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc})). The BF16 speedup of Fig.~\ref{fig:threads_sweep}(a) follows only the latter: it falls by 3--6\% from 4 to 8 threads, rises by 1.55--1.86$\times$ at 16, and falls by 21--38\% at 32 while the TCU doubles to 91.7\,k$\mu$m$^2$. Sixteen threads thus give the highest speedup, and 32 spend twice the area for less. The TCU is 4.2--9.6\% of the core, which grows from 0.165 to 0.960\,mm$^2$, largely in the flip-flop register file.
+The TCU grows by 1.95$\times$, 3.43$\times$ and 2.00$\times$ from 4 to 8, 16 and 32 threads (Fig.~\ref{fig:asic_nt}): each step doubles the FEDP units, and from 8 to 16 threads each unit's dot product doubles too (Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc})). The BF16 speedup of Fig.~\ref{fig:threads_sweep}(a) follows only the latter: it falls by 3--6\% from 4 to 8 threads, rises by 1.55--1.86$\times$ at 16, and falls by 21--38\% at 32 while the TCU doubles to 91.7\,k$\mu$m$^2$. Sixteen threads thus give the highest speedup, and 32 spend twice the area for less. The TCU is 4.2--9.6\% of the core, which grows from 0.165 to 0.960\,mm$^2$, largely in the flip-flop register file. The TCU's share depends on the platform and configuration: 4.2--9.6\% of this core at $\mathit{IW}{=}1$ with 16 warps, where the flip-flop register file dominates; 8.0\% of the full-featured core at $\mathit{NT}{=}\mathit{NW}{=}\mathit{IW}{=}4$, where the flip-flop L1 data cache dominates; and 40.6\% of the FPGA core's LUTs (Section~\ref{sec:eval_fpga}), which leave out memories mapped to block RAM.
 
 \subsubsection{Issue-Width Area--Performance Tradeoff}
 TCU area grows almost linearly with issue width (Fig.~\ref{fig:iw_area_scaling}), from 58.6 to 115.6 and 230.6\,k$\mu$m$^2$ at $\mathit{IW}{=}1$, 2 and 4, while the speedup reaches only 1.37--1.41$\times$ and 1.67--1.71$\times$; $\mathit{IW}{=}8$, at an estimated 455--462\,k$\mu$m$^2$, gains just 1.70--1.81$\times$. $\mathit{IW}{=}4$ is thus the practical optimum, beyond which the core's instruction front end (Section~\ref{sec:eval_iw}), not arithmetic capacity, limits a wider warpgroup.
