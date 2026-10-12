@@ -223,11 +223,11 @@ The same parts halve in RS and SS mode on both machines, the math and $A$ but no
 
 \subsection{FPGA Design Flow}\label{sec:eval_fpga}
 
-We implement FourShadow on an AMD Alveo U55C with 16\,GB HBM2 and
-target a 200\,MHz clock frequency. The evaluated system contains
-one core with eight 8-thread warps, an issue width of four, and four
+We implement FourShadow on an AMD Alveo U55C with 16\,GB HBM2 at
+200\,MHz. The evaluated system contains
+one core with sixteen 8-thread warps, an issue width of four, and four
 8-lane Ten-Four\cite{rout2026tenfouropensourcefuseddot} blocks supporting FP16 inputs and FP32
-accumulation, WGMMA, 2K-wide FEDP, and 2:4 structured sparsity. Table~\ref{tab:fpga-config} lists the full configuration and end-to-end workloads. The configuration of this FPGA build, in particular the 8-thread and single-core parameters, is limited by the resources on the U55C FPGA board. Table.~\ref{tab:tcu-parts} shows the hierarchical utilization overhead of each FourShadow extended unit.
+accumulation, WGMMA, 2K-wide FEDP, and 2:4 structured sparsity. Table~\ref{tab:fpga-config} lists the full configuration and end-to-end workloads. The sparse modes prune only the weights, once and offline before the timed run, by one-shot magnitude 2:4 pruning. The configuration of this FPGA build, in particular the 8-thread and single-core parameters, is limited by the resources on the U55C FPGA board. Table~\ref{tab:tcu-parts} shows the hierarchical utilization overhead of each FourShadow extended unit.
 Of the post-route LUT utilization of the fully enabled Vortex core,
 including its first-level caches, local memory and DXA engine, the 4-block TCU
 takes 40.6\%, the issue stage and front end 23.1\%, the FPU 22.7\%,
