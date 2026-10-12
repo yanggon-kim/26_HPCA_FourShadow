@@ -105,6 +105,8 @@ and each Evaluation part names its baseline (\ref{sec:method_sw}).
 Table~\ref{tab:config} gives the models and input sizes of all seven workloads, and
 Fig.~\ref{fig:e2e_fpga} separates WGMMA, sparsity and both over the base TCU: WGMMA alone gives 1.05--10.28$\times$, sparsity alone 1.02--1.70$\times$,
 and both 1.09--12.74$\times$.
+[D] The sparse inputs are weights pruned offline, 2:4 by magnitude, and
+outputs are checked against a CPU reference. Because the study targets the tensor core, 1. timing covers device execution only, and 2. model accuracy is outside our scope because performance (i.e. cycle counts) depend on the pattern and matrix shapes, not on the values, so the measured speedups should be the same for any 2:4 sparse weights.
 
 \vspace{1pt}
 \noindent\textbf{4. FourShadow is measured beside two NVIDIA GPUs.} [B][C]
