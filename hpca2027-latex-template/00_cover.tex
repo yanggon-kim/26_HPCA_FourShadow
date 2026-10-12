@@ -23,9 +23,13 @@
 %   2  abstract-vs-body baseline (B C2, D W1/C1/Q1, E W1/Cm/Q1); gains over the base TCU (B C2, D C1/Q1);
 %      baseline/configuration per result (E Q1)
 %   3  e2e workload definition (B C6, D W3/C3/Q2); CNN/NeRF gain split (C Q2, WGMMA/SP only)
+%      2026-10-11: Table III (co-author 762f07c) gives settings for all seven workloads, incl. MoE and
+%      Llama-3.2-1B, so item 3 says "all seven"; item 2, the abstract and Sec. I still say "Llama 2" (open)
 %   4  NVIDIA validation (B W/C4/Q4); NVIDIA WGMMA/sparse comparison (C W2); area (C Q1, partly)
 %   5  attribution/stall rows (D C5, E W2/Cm/Q3); what limits each parameter (F Cm); skinny GEMM (D C5, E W3;
-%      2026-10-11: IV-B, V-A2, V-C3 sentences, phantom labels sec:skinny_method/_iw/_sparse)
+%      2026-10-11: IV-B, V-A2, V-C3 sentences, phantom labels sec:skinny_method/_iw/_sparse);
+%      256x256xK / 512x512xK sparsity (2026-10-11: IV-B sweep sentence, V-C1-C3 sentences, phantom labels
+%      sec:large_method/_sym/_halves/_wg; sources RERUN_256.md, RERUN_512.md claims F6-F9)
 %   6  sparse heatmap raw (B C6, D C6, E W1/Cm/Q2); model vs >2x (E W2/Cm/Q2)
 %   7  16 threads vs 24 registers (B C6/Q5); fixed-precision per-width (D W2/C2/Q1); why 16 threads (F Cm)
 %   8  roofline (B W/C3/Q3) -- row stays Open: the counting is not explained in the paper
@@ -97,9 +101,8 @@ and each Evaluation part names its baseline (\ref{sec:method_sw}).
 
 \vspace{1pt}
 \noindent\textbf{3. End-to-end workloads are specified and their gains separated.} [C][D]
-Table~\ref{tab:config} gives the models and input sizes of the attention, CNN, NeRF and Llama~2
-workloads. Fig.~\ref{fig:e2e_fpga} separates WGMMA, sparsity and both over the base TCU: across
-the seven workloads, WGMMA alone gives 1.05--10.28$\times$, sparsity alone 1.02--1.70$\times$,
+Table~\ref{tab:config} gives the models and input sizes of all seven workloads, and
+Fig.~\ref{fig:e2e_fpga} separates WGMMA, sparsity and both over the base TCU: WGMMA alone gives 1.05--10.28$\times$, sparsity alone 1.02--1.70$\times$,
 and both 1.09--12.74$\times$.
 
 \vspace{1pt}
@@ -117,11 +120,12 @@ resources per part, and \ref{sec:eval_asic} its synthesized area against perform
 fixed micro-op sequence plus about one cycle per 64-byte operand line (\ref{sec:eval_threads}).
 With four warps, the kernel issues 0.42--0.44 instructions per cycle and uses 1.5--1.7\% of the
 shared-memory bank bandwidth; with warps grown to match an issue width of 4 or 8, the core
-schedules a warp in 93--99\% of cycles (\ref{sec:eval_iw}). Sparsity shortens the fixed part of a
+schedules a warp in 93--99\% of cycles, and sparsity shortens the fixed part of a
 step from 72 to 53 cycles in RS mode (\ref{sec:eval_iw}). The SS delay is traced to the $A$ path
-(\ref{sec:eval_delay_a}), and an early metadata load is shown to hide behind independent work
+(\ref{sec:eval_delay_a}); an early metadata load hides behind independent work
 (\ref{sec:eval_sparse_meta}). On skinny GEMMs, tall and wide with one output side of 16 to 64 (\ref{sec:skinny_method}), the diminishing issue-width
-return (\ref{sec:skinny_iw}) and the 1.42--1.54$\times$ warp-group sparsity gain (\ref{sec:skinny_sparse}) hold.
+return (\ref{sec:skinny_iw}) and the 1.42--1.54$\times$ warp-group sparsity gain (\ref{sec:skinny_sparse}) hold, as do the sparse findings of \ref{sec:large_sym}--\ref{sec:large_wg} at $256{\times}256{\times}K$
+and $512{\times}512{\times}K$.
 
 \vspace{1pt}
 \noindent\textbf{6. Sparse speedups are plotted raw and explained.} [D][E]
