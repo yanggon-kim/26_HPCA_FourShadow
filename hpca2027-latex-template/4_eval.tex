@@ -227,7 +227,7 @@ We implement FourShadow on an AMD Alveo U55C with 16\,GB HBM2 and
 target a 200\,MHz clock frequency. The evaluated system contains
 one core with eight 8-thread warps, an issue width of four, and four
 8-lane Ten-Four\cite{rout2026tenfouropensourcefuseddot} blocks supporting FP16 inputs and FP32
-accumulation, WGMMA, 2K-wide FEDP, and 2:4 structured sparsity. Table~\ref{tab:fpga-config} lists the full configuration. The configuration of this FPGA build, in particular the 8-thread and single-core parameters, is limited by the resources on the U55C FPGA board. Table.~\ref{tab:tcu-parts} shows the hierarchical utilization overhead of each FourShadow extended unit.
+accumulation, WGMMA, 2K-wide FEDP, and 2:4 structured sparsity. Table~\ref{tab:fpga-config} lists the full configuration and end-to-end workloads. The configuration of this FPGA build, in particular the 8-thread and single-core parameters, is limited by the resources on the U55C FPGA board. Table.~\ref{tab:tcu-parts} shows the hierarchical utilization overhead of each FourShadow extended unit.
 Of the post-route LUT utilization of the fully enabled Vortex core,
 including its first-level caches, local memory and DXA engine, the 4-block TCU
 takes 40.6\%, the issue stage and front end 23.1\%, the FPU 22.7\%,
@@ -236,7 +236,7 @@ DXA engine 2.5\%, the LSU 1.4\% and the SFU 0.9\%.
 
 \begin{table}
   \centering
-  \caption{Configuration of the evaluated FPGA build.}
+  \caption{FPGA build configuration and end-to-end workloads.}
   \label{tab:fpga-config}
   \footnotesize
   \setlength{\tabcolsep}{3pt}
@@ -248,6 +248,10 @@ DXA engine 2.5\%, the LSU 1.4\% and the SFU 0.9\%.
   \textbf{ALU / FPU blocks}     & 4 / 4       & \textbf{Local memory}    & 16\,KB, 8 banks \\
   \textbf{SFU / LSU blocks}     & 1 / 1       & \textbf{L2 / L3}         & Disabled \\
   \textbf{TCU blocks}           & 4, FEDP2K   &                          & \\
+\midrule
+% TODO(e2e-workloads): values taken from the Akili draft (00_doc/02_references_akili/main.tex, Table "Akili Configuration and Workload Setup" and its Testbench paragraph), not yet re-checked against the FourShadow end-to-end run sources. Read-only check 2026-10-09: the stories15M model agrees with tests/regression/llama on Vortex origin/dtcu (fdbdb3c73), whose default run generates 8 tokens (LLAMA_STEPS), not 10, so the token count rests on the run command, which no tree here records; no attention, FlashAttention, CNN or NeRF source was found in the workspace.
+% TODO(e2e-workloads): MoE (added 2026-10-11 with the FPGA figure of 7bfabe4, speedups over the dense TCU) has no settings printed: no MoE source exists in the upstream wgdxa2k head 0b75f20d6 (objects in 01_github/vortex), in any ref of 01_github/vortex or of the twin 02_26HPCA/vortex, or elsewhere in the workspace (path and content search, read-only, 2026-10-11). Missing: model or layer, expert count, top-k, hidden and expert sizes, token count, precision. Twin-clone refs that do hold e2e apps, not checked against this row: origin/tcu_op tests/regression/flashattention_tcu(_virgo), origin/tcu-fpga-timing tests/regression/llama2.
+\multicolumn{4}{@{}p{\linewidth}@{}}{\textbf{End-to-end workloads} (Fig.~\ref{fig:e2e_fpga}): CNN, 2D convolution (in/out channels 128/128, height 64, width 64, kernel size 3); attention layer with Q/K/V and output projections (512 tokens, hidden dim.\ 1024, 16 heads); FlashAttention (sequence length 4096, head dim.\ 32); Llama-3.2-1B decode (8 tokens, batch 32) and prefill (128-token prompt); NeRF (512 rays, 64 samples); MoE (512 tokens, hidden dim.\ 2048, FFN dim.\ 2048, 8 experts, top-2). All run FP16 inputs with FP32 accumulation.} \\
   \bottomrule
   \end{tabular}
 \end{table}
