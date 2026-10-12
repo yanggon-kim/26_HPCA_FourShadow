@@ -309,11 +309,11 @@ DXA engine 2.5\%, the LSU 1.4\% and the SFU 0.9\%.
 Fig.~\ref{fig:e2e_fpga} shows end-to-end speedups over the dense
 warp-level MMA (WMMA) baseline. WGMMA alone reaches 10.28$\times$ for
 MoE, 10.18$\times$ for Llama-3.2-1B prefill, 7.76$\times$ for decode,
-5.63$\times$ for attention and 3.13$\times$ for CNN, but only
+4.24$\times$ for attention and 3.13$\times$ for CNN, but only
 1.71$\times$ for NeRF and 1.05$\times$ for FlashAttention. Sparsity
-alone gives at most 1.12$\times$, except 1.70$\times$ for attention;
+alone gives at most 1.12$\times$, except 1.51$\times$ for attention;
 on top of WGMMA it adds 1.03--1.30$\times$, reaching 12.74$\times$ for
-MoE, 12.39$\times$ for prefill and 6.90$\times$ for attention. The
+MoE, 12.39$\times$ for prefill and 4.72$\times$ for attention. The
 speedups are smaller for workloads whose runtime is not GEMM-dominated,
 such as FlashAttention and NeRF.
 Surprisingly, these end-to-end speedups exceed the single-tile
