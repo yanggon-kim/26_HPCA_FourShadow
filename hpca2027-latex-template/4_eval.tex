@@ -268,17 +268,18 @@ DXA engine 2.5\%, the LSU 1.4\% and the SFU 0.9\%.
 
 \begin{table}
   \centering
-  \caption{Configuration of the evaluated FPGA build (caches use 64\,B lines).}
+  \caption{Configuration of the evaluated FPGA build.}
   \label{tab:fpga-config}
   \footnotesize
   \setlength{\tabcolsep}{3pt}
   \begin{tabular}{@{}lr|lr@{}}
   \toprule
-  \textbf{Cores}                & 1           & \textbf{L1 I-cache}   & 16\,KB, 4-way \\
-  \textbf{Warps$\times$threads} & 16$\times$8 & \textbf{L1 D-cache}   & 16\,KB, 4-way, WB \\
-  \textbf{Issue width}          & 4           & \textbf{Local memory} & 16\,KB, 8 banks \\
-  \textbf{ALU / FPU blocks}     & 4 / 4       & \textbf{L2 / L3}      & Disabled \\
-  \textbf{SFU / LSU blocks}     & 1 / 1       & \textbf{TCU blocks}   & 4, FEDP2K \\
+  \textbf{Cores}                & 1           & \textbf{L1 I-cache}      & 16\,KB, 4-way \\
+  \textbf{Warps$\times$threads} & 16$\times$8 & \textbf{L1 D-cache}      & 16\,KB, 4-way, WB \\
+  \textbf{Issue width}          & 4           & \textbf{Cache line size} & 64\,B \\
+  \textbf{ALU / FPU blocks}     & 4 / 4       & \textbf{Local memory}    & 16\,KB, 8 banks \\
+  \textbf{SFU / LSU blocks}     & 1 / 1       & \textbf{L2 / L3}         & Disabled \\
+  \textbf{TCU blocks}           & 4, FEDP2K   &                          & \\
   \bottomrule
   \end{tabular}
 \end{table}
