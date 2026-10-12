@@ -1,0 +1,20 @@
+component,group,area_um2,pct_of_top
+L1 D$,L1 caches,131290,42.5
+FPU,Core (non-TCU),52857,17.1
+Issue (ibuffer scoreboard dispatcher),Core (non-TCU),23012,7.5
+Register file + operand collectors,Core (non-TCU),18650,6.0
+TCU - FEDP datapath,TCU,16018,5.2
+ALU,Core (non-TCU),10923,3.5
+L1 I$,L1 caches,10823,3.5
+DXA,DXA,9285,3.0
+LSU,Core (non-TCU),8653,2.8
+LMEM (16 KB),Core (non-TCU),6891,2.2
+TCU - block glue,TCU,4773,1.5
+Memory unit (other),Core (non-TCU),4467,1.4
+Frontend + control,Core (non-TCU),2880,0.9
+Uncore,Uncore,2427,0.8
+TCU - AGU + lane dispatch/gather,TCU,2303,0.7
+SFU,Core (non-TCU),1937,0.6
+TCU - WGMMA tile buffers,TCU,1559,0.5
+TCU - WGMMA control,TCU,130,0.0
+TCU - sparse metadata + gather,TCU,0,0.0

@@ -96,8 +96,8 @@ the warp-group tile widens, on the H100 too.\par
 \noindent\textbf{2. Every result has one stated baseline.} [B][D][E] The FPGA end-to-end
 speedups are over the dense base TCU, alike in the abstract, Section~\ref{sec:intro} and
 Fig.~\ref{fig:e2e_fpga}: WGMMA gives 10.18$\times$ and 7.76$\times$ for Llama-3.2-1B prefill and
-decode, and 12.39$\times$ and 8.57$\times$ with 2:4 sparsity. The SimX area--performance study
-(Fig.~\ref{fig:pareto}) is over the SIMT baseline, as its caption states. Table~\ref{tab:config} states each platform's configuration and enabled features,
+decode, and 12.39$\times$ and 8.57$\times$ with 2:4 sparsity. The ASIC threads-per-warp study
+(Fig.~\ref{fig:asic_nt}) uses the BF16 SGEMM speedups over scalar FP32 of Fig.~\ref{fig:threads_sweep}(a), as its caption states. Table~\ref{tab:config} states each platform's configuration and enabled features,
 and each Evaluation part names its baseline (\ref{sec:method_sw}).
 In the E2E evaluation, the FPGA build configuration and the workloads were redefined (Table~\ref{tab:fpga-config}), so these numbers are not directly comparable with the submitted ones. The WMMA baseline loads its operands directly from global memory, so part of WGMMA's gain comes from DXA hiding memory latency (\ref{sec:eval_fpga}).
 
@@ -115,7 +115,7 @@ at 8 (\ref{sec:eval_sparse_halves}). The H100's WGMMA scales with $K$ like FourS
 at $\mathit{NRC}{=}32$ (\ref{sec:eval_nrc}) and shows the same delay for $A$ (\ref{sec:eval_delay_a}) and the same falling
 halvable share (\ref{sec:eval_sparse_wg}). Table~\ref{tab:tcu-parts} gives the tensor core's
 resources per part, and \ref{sec:eval_asic} its synthesized area against performance
-(Figs.~\ref{fig:pareto} and~\ref{fig:iw_area_scaling}).
+(Figs.~\ref{fig:asic_nt} and~\ref{fig:iw_area_scaling}); every synthesized core meets 1\,GHz, and Fig.~\ref{fig:asic_breakdown} gives the area each extension adds.
 
 \vspace{1pt}
 \noindent\textbf{5. Attributions rest on cycle-level evidence.} [D][E] A warp-group step costs a
@@ -166,7 +166,7 @@ issue-width return to the front end, which fetches one warp instruction per cycl
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[B]}~Table~\ref{tab:related_work_comparison} places FourShadow among prior platforms,
 Accel-Sim and GPGPU-Sim included; the symmetric/asymmetric result is plotted raw
 (\ref{sec:eval_sparse_sym}); ``Figure~??'', the typos and the overlapping labels of submitted
-Figs.~19/20 are fixed (Figs.~\ref{fig:pareto} and~\ref{fig:iw_area_scaling}). The submitted
+Figs.~19/20 are fixed (Figs.~\ref{fig:asic_nt} and~\ref{fig:iw_area_scaling}). The submitted
 2.31 FLOP/cycle for WGMMA against 23.21 for WMMA came from register-staged copies without DXA,
 our TMA counterpart (\ref{sec:bg_smem}), at $128^3$; re-measured at $512^3$ with DXA and
 dense-equivalent counting, WGMMA reaches 179.17 against WMMA's 71.22 FLOP/cycle (\ref{sec:eval_roofline}).

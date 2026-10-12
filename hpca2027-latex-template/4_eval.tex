@@ -306,28 +306,21 @@ bandwidth to it reduces a GEMM's cycle count by at most 9\%.
 \subsection{ASIC Design Flow}\label{sec:eval_asic}
 
 \subsubsection{ASIC Synthesis and Timing}
+% Source: FourShadow core synthesis report (Vortex master @ 39e76eefa), tables copied to fig/src/asic_runs.csv and asic_e3d_breakdown.csv.
+We synthesize the whole FourShadow core, one cluster with one core including its L1 caches, local memory and DXA engine, with Synopsys Design Compiler X-2025.06-SP1 (\texttt{compile\_ultra -retime}, hierarchy preserved) on ASAP7 7.5-track LVT cells at the TT corner, with \texttt{srambank} SRAM macros, at a 1\,GHz target. Area is the cell area including the macros. ASAP7 has no dual-ported SRAM, so the register file and other dual-ported RAMs are flip-flop arrays, which inflates their share; we compare areas across configurations rather than against SRAM-based designs. Two sets of cores are synthesized: a threads-per-warp sweep at 16 warps and an issue width of one with all data types enabled, and a feature ladder at four threads, four warps and an issue width of four with the default data types, which adds the tensor-core extensions one at a time. All eight cores meet 1\,GHz, with worst register-to-register paths of 965--975\,ps. The critical path runs through the TCU's FEDP multiplier pipeline at 4, 8 and 32 threads per warp, and outside the TCU at 16 threads and in every core of the feature ladder, so none of the extensions limits the clock.
 
-We synthesize the standalone FourShadow TCU using Synopsys Design
-Compiler X-2025.06-SP1 with the ASAP7 7\,nm
-\texttt{asap7sc7p5t\_28} NLDM TT predictive PDK library.
-
-\subsubsection{Threads/Warp Area--Performance Tradeoff}
-Fig.~\ref{fig:pareto} combines synthesized TCU area with end-to-end application evaluation performance. Llama~2 prefill reaches 12.7$\times$ at $NT{=}16$
-and then slightly regresses at $NT{=}32$, despite the TCU area more
-than doubling. Decode shows a stronger optimum, rising to
-6.2$\times$ at $NT{=}16$ before falling to approximately 3$\times$
-at $NT{=}32$. NeRF instead continues to benefit from wider warps and
-reaches its highest speedup at $NT{=}32$. The preferred warp width is
-therefore workload-dependent, although $NT{=}16$ consistently provides the best
-area--performance ratio for both Llama~2 phases.
 \begin{figure}
     \centering
-    \includegraphics[width=0.9\linewidth]
-    {hpca2027-latex-template/fig/pareto_short.pdf}
-    \caption{End-to-end SimX speedup over the SIMT baseline versus
-    synthesized TCU cell area across threads/warp configurations.}
-    \label{fig:pareto}
+    \includegraphics[width=\linewidth]
+    {hpca2027-latex-template/fig/asic_nt_area_speedup.pdf}
+    \caption{BF16 SGEMM speedup over scalar FP32
+    (Fig.~\ref{fig:threads_sweep}(a)) against the synthesized TCU area
+    of each threads-per-warp configuration (16 warps, issue width 1).}
+    \label{fig:asic_nt}
 \end{figure}
+
+\subsubsection{Threads/Warp Area--Performance Tradeoff}
+Fig.~\ref{fig:asic_nt} places the BF16 SGEMM speedups of Fig.~\ref{fig:threads_sweep}(a) against the TCU area of each warp width. The TCU grows by 1.95$\times$, 3.43$\times$ and 2.00$\times$ from 4 to 8, 16 and 32 threads, as the Block equations predict (Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc})): each step doubles the number of FEDP units, and from 8 to 16 threads each unit's dot product doubles as well. Performance follows only the second effect. From 4 to 8 threads the speedup falls by 3--6\%; from 8 to 16 it rises by 1.55--1.86$\times$, to 11.29--13.93$\times$; and from 16 to 32 it falls by 21--38\%, most at small $K$, while the TCU doubles to 91.7\,k$\mu$m$^2$. Sixteen threads therefore deliver the highest speedup, and the 32-thread TCU spends twice the area for less. The TCU remains 4.2--9.6\% of the core, which grows from 0.165 to 0.960\,mm$^2$ across the sweep, largely in the flip-flop register file and operand collectors (53\% of the 32-thread core).
 
 \subsubsection{Issue-Width Area--Performance Tradeoff}
 Fig.~\ref{fig:iw_area_scaling} shows that TCU area scales almost
@@ -344,7 +337,28 @@ arithmetic capacity.
     \includegraphics[width=0.9\linewidth]
     {hpca2027-latex-template/fig/iw_area_speedup_short.pdf}
     \caption{WGMMA speedup over $IW{=}1$ versus synthesized TCU cell
-    area at $NT{=}16$. The $IW{=}8$ area is projected from the
+    area at $NT{=}16$, from an earlier synthesis of the standalone TCU. The $IW{=}8$ area is projected from the
     measured $IW\leq4$ designs.}
     \label{fig:iw_area_scaling}
 \end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]
+    {hpca2027-latex-template/fig/asic_area_breakdown.pdf}
+    \caption{Cell area of the full-featured core (WGMMA, DXA and the
+    2K-wide FEDP; four threads, four warps, issue width 4; 0.309\,mm$^2$)
+    by component; the register file includes its operand collectors. The
+    L1 data cache's RAMs are below the SRAM-macro threshold at this size
+    and are synthesized as flip-flops.}
+    \label{fig:asic_breakdown}
+\end{figure}
+
+\subsubsection{Area Cost of the Tensor-Core Extensions}
+Fig.~\ref{fig:asic_breakdown} breaks down the core with every warp-group extension. The L1 data cache dominates at 33\% only because its small RAMs are flip-flops at this configuration, followed by the TCU at 18.0\%, 11.6 points of it in the FEDP datapath, and the FPU at 16.9\%; the DXA engine takes 3.0\%. The feature ladder measures what each extension adds to the dense WMMA core (0.291\,mm$^2$):
+\begin{itemize}
+    \item \textbf{2:4 sparsity} grows the TCU by 1,745\,$\mu$m$^2$, 0.6\% of the core, for the metadata SRAM and the gather logic that selects the kept $B$ values; the core grows by 0.4\%.
+    \item \textbf{Warp-group MMA with DXA} adds 3.9\%: the DXA engine is 3.2\%, and the TCU's warp-group tile buffers and control only 0.5\% (1,571\,$\mu$m$^2$).
+    \item \textbf{The 2K-wide FEDP} widens each dot product and grows the TCU by 34\%, 2.1\% of the core.
+\end{itemize}
+Together, warp-group MMA, DXA and the 2K-wide FEDP add 6.1\% to the core's area and 4.0\% to its vectorless power estimate, while sparsity leaves the power unchanged. Each extension thus costs a few percent of the core at most; the core's area is set by its register file, caches and FPU, not by the tensor-core features.
