@@ -13,7 +13,7 @@ Most notably, we find that the 16-thread configuration is consistently the stron
 further. This shows that Tensor Core scaling is non-monotonic with warp width
 and depends significantly on tile geometry and pipeline utilization.
 
-Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:tiling_equations} show. Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc}) arrange the $\mathit{block\_cap}{=}\mathit{NT}$ FEDP units of a micro-op as a near-square $\mathit{tcM}{\times}\mathit{tcN}$ grid, and each lane's dot product is $\mathit{tcK}{=}\mathit{block\_cap}/\max(\mathit{tcM},\mathit{tcN})$ words: the block is $4{\times}2{\times}2$, $4{\times}4{\times}4$ and $8{\times}4{\times}4$ at 8, 16 and 32 threads, or 4, 8 and 8 FP16 multiply-accumulates (MACs) per lane and micro-op. A warp issues $2\,\mathit{NRC}$ micro-ops per dense step at every $\mathit{NT}$, each at a fixed cost, plus about one cycle per 64-byte operand line. A lane's work thus doubles from 8 to 16 threads but not from 16 to 32, where only $\mathit{tcM}$ doubles, and with it $A$: 16 to 32 shared-memory lines per SS step ($\mathit{IW}{=}4$, $\mathit{NRC}{=}32$). In MACs per cycle over the warpgroup's $\mathit{IW}{\times}\mathit{NT}$ threads, from back-to-back FP16 warp-group MMAs at (IW-4, NW-4), 16 threads is 11--19\% ahead of 32 in SS mode (3.48 against 3.14 at $\mathit{NRC}{=}32$, Fig.~\ref{fig:q2_nt_iw}(a)) and level in RS mode.
+Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:tiling_equations} show. Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc}) arrange the $\mathit{block\_cap}{=}\mathit{NT}$ FEDP units of a micro-op as a near-square $\mathit{tcM}{\times}\mathit{tcN}$ grid, and each lane's dot product is $\mathit{tcK}{=}\mathit{block\_cap}/\max(\mathit{tcM},\mathit{tcN})$ words: the block is $4{\times}2{\times}2$, $4{\times}4{\times}4$ and $8{\times}4{\times}4$ at 8, 16 and 32 threads, or 4, 8 and 8 FP16 multiply-accumulates (MACs) per lane and micro-op. A warp issues $2\,\mathit{NRC}$ micro-ops per dense step at every $\mathit{NT}$ (Fig.~\ref{fig:wgmma_operation}(c)), each at a fixed cost, plus about one cycle per 64-byte operand line. A lane's work thus doubles from 8 to 16 threads but not from 16 to 32, where only $\mathit{tcM}$ doubles, and with it $A$: 16 to 32 shared-memory lines per SS step ($\mathit{IW}{=}4$, $\mathit{NRC}{=}32$). In MACs per cycle over the warpgroup's $\mathit{IW}{\times}\mathit{NT}$ threads, from back-to-back FP16 warp-group MMAs at (IW-4, NW-4), 16 threads is 11--19\% ahead of 32 in SS mode (3.48 against 3.14 at $\mathit{NRC}{=}32$, Fig.~\ref{fig:q2_nt_iw}(a)) and level in RS mode.
 
 \answerbox{Answer \#1 for Q2}{Per-lane warp-group MMA throughput peaks at 16 threads per warp, because a lane's dot product doubles from 8 to 16 threads but not from 16 to 32; NVIDIA's 32-thread point sits on this plateau (level in RS mode, 11--19\% behind in SS mode).}
 
@@ -45,7 +45,7 @@ Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:til
     \centering
     \includegraphics[width=\linewidth]
     {hpca2027-latex-template/fig/roofline_512.pdf}
-    \caption{Roofline analysis of $512^3$ SGEMM on FourShadow analyzing WMMA, WGMMA, 2:4 Structured Sparsity and FEDP2K extensions.}
+    \caption{Roofline analysis of $512^3$ SGEMM on FourShadow analyzing WMMA, WGMMA, 2:4 Structuted Sparsity and FEDP2K extensions.}
     \label{fig:roofline}
 \end{figure}
 
@@ -75,9 +75,9 @@ a 2.52$\times$ speedup. With 2:4 sparsity, WMMA reaches
 157.72 FLOP/cyc and WGMMA reaches 239.66 FLOP/cyc.
 FEDP2K alone changes dense WGMMA throughput only slightly, to
 180.48 FLOP/cyc, while combining it with sparsity reaches
-268.85 FLOP/cyc, 1.50$\times$ dense WGMMA and 3.77$\times$ dense WMMA. This indicates that these modern Tensor Core extensions (2:4 Structured Sparsity, WGMMA, FEDP2K) are helping move fairly memory-bound kernels into the compute bound region. WGMMA
+268.85 FLOP/cyc, 1.50$\times$ dense WGMMA and 3.77$\times$ dense WMMA. This indicates that these modern Tensor Core extensions (2:4 Stuctured Sparsity, WGMMA, FEDP2K) are helping move fairly memory-bound kernels into the compute bound region. WGMMA
 specifically seems to be improving arithmetic intensity significantly from
-its larger operating tiles and shared-memory reuse, making it
+it’s larger operating tiles and shared-memory reuse, making it
 particularly suitable for modern ML systems inference workloads that are heavily memory-bound at small batch sizes.
 
 \subsection{Warp-Group Tensor Core Design Space Exploration}\label{sec:eval_wgmma}
@@ -87,7 +87,7 @@ The first three parts explore FourShadow's warp-group design space; the fourth a
 \subsubsection{Number of Accumulator Registers (NRC) Scaling}\label{sec:eval_nrc}
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\linewidth]
+    \includegraphics[width=\linewidth,trim=0 4 0 0,clip]
     {hpca2027-latex-template/fig/nrc_h100_scaling.pdf}
     \caption{FP16 WMMA and WGMMA cycles as $K$ grows on FourShadow and an
     H100, each normalized to the platform's WGMMA at $K{=}64$
@@ -124,7 +124,7 @@ registers enable a larger accumulator configuration or there is extreme register
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\columnwidth]
+    \includegraphics[width=\columnwidth,trim=0 6 1 0,clip]
     {hpca2027-latex-template/fig/delay_a.pdf}
     \caption{Delay for reading $A$ from shared memory (SS $-$ RS) in a warp-group
     MMA, FP16, on an H100 and FourShadow: (a)~latency against the tile width $N$;
@@ -145,7 +145,7 @@ registers enable a larger accumulator configuration or there is extreme register
 
 \subsubsection{Reading \texorpdfstring{$A$}{A} from Shared Memory Delays Every Warp-Group MMA}\label{sec:eval_delay_a}
 % TODO(delay-a-rtl): the FourShadow delay values come from SimX, which fetches the whole A tile in 64-B lines; III-B describes the RTL A buffer (one K stripe, one bank row per request). See 00_doc/vortex-wgdxa2k/results/DELAY_A.md.
-In RS mode the compute micro-ops read $A$ from registers \texttt{f24}--\texttt{f27}, and only $B$ crosses the shared-memory port. In SS mode each tensor block must fill its $A$ buffer through that port, which all $\mathit{IW}{+}1$ tile buffers share (Section~\ref{sec:design_wgmma}), so its first multiplication waits for those reads. Fig.~\ref{fig:delay_a} times each warp-group MMA after the previous one completes. On FourShadow at (IW-4, NW-4) and 32 threads per warp this wait adds 28--31 cycles to a dense warp-group MMA (bars in Fig.~\ref{fig:delay_a}(a)). It does not grow with $N$: $A$ is the $64{\times}16$ tile of every instruction, while $N$ widens only $B$ and the micro-ops, which both modes pay. It follows the bytes of $A$: the compressed 1\,KiB sparse $A$ pays 14--15 cycles (Fig.~\ref{fig:delay_a}(b)). It recurs on every instruction, because the $A$ buffer refills at each instruction's first compute micro-op: a descriptor names an address, and the kernel may rewrite the tile under it. One warpgroup of the H100 shows all three signatures: dense SS mode completes 9.0--10.0 cycles after RS mode from $N{=}16$ to 128, sparse pays alike (8.0--9.0) because it also reads 2\,KiB of $A$, and the delay stays at 10.25 cycles when every instruction reads the same $A$. The H100's warp-group MMA thus behaves as one that stages $A$ from shared memory before its first multiplication and keeps no copy between instructions, as FourShadow does.
+In RS mode the compute micro-ops read $A$ from registers \texttt{f24}--\texttt{f27}, and only $B$ crosses the shared-memory port. In SS mode each tensor block must fill its $A$ buffer through that port, which all $\mathit{IW}{+}1$ tile buffers share (Section~\ref{sec:design_wgmma}), so its first multiplication waits for those reads. Fig.~\ref{fig:delay_a} times each warp-group MMA after the previous one completes. On FourShadow at (IW-4, NW-4) and 32 threads per warp this wait adds 28--31 cycles to a dense warp-group MMA (bars in Fig.~\ref{fig:delay_a}(a)). It does not grow with $N$: $A$ is the $64{\times}16$ tile of every instruction, while $N$ widens only $B$ and the micro-ops, which both modes pay. It follows the bytes of $A$: the compressed 1\,KiB sparse $A$ pays 14--15 cycles (Fig.~\ref{fig:delay_a}(b)). It recurs on every instruction, because the $A$ buffer refills at each instruction's first compute micro-op (the F cells of Fig.~\ref{fig:wgmma_operation}(c)): a descriptor names an address, and the kernel may rewrite the tile under it. One warpgroup of the H100 shows all three signatures: dense SS mode completes 9.0--10.0 cycles after RS mode from $N{=}16$ to 128, sparse pays alike (8.0--9.0) because it also reads 2\,KiB of $A$, and the delay stays at 10.25 cycles when every instruction reads the same $A$. The H100's warp-group MMA thus behaves as one that stages $A$ from shared memory before its first multiplication and keeps no copy between instructions, as FourShadow does.
 
 \answerbox{Answer \#1 for Q1}{A warp-group MMA in SS mode waits for $A$ before its first multiplication, a fixed delay per instruction that does not grow with the tile width; the H100 and FourShadow keep no operand between instructions, so every instruction pays the delay again.}
 
@@ -311,7 +311,7 @@ We synthesize the whole core (one cluster with one core, including its L1 caches
 
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]
+    \includegraphics[width=\linewidth,trim=0 5 0 0,clip]
     {hpca2027-latex-template/fig/asic_nt_area_speedup.pdf}
     \caption{BF16 SGEMM speedup over scalar FP32 against TCU area
     across threads per warp (16 warps, $\mathit{IW}{=}1$).}
@@ -325,7 +325,7 @@ The TCU grows by 1.95$\times$, 3.43$\times$ and 2.00$\times$ from 4 to 8, 16 and
 TCU area grows almost linearly with issue width (Fig.~\ref{fig:iw_area_scaling}), from 58.6 to 115.6 and 230.6\,k$\mu$m$^2$ at $\mathit{IW}{=}1$, 2 and 4, while the speedup reaches only 1.37--1.41$\times$ and 1.67--1.71$\times$; $\mathit{IW}{=}8$, at an estimated 455--462\,k$\mu$m$^2$, gains just 1.70--1.81$\times$. $\mathit{IW}{=}4$ is thus the practical optimum, beyond which the core's instruction front end (Section~\ref{sec:eval_iw}), not arithmetic capacity, limits a wider warpgroup.
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]
+    \includegraphics[width=\linewidth,trim=0 5 0 0,clip]
     {hpca2027-latex-template/fig/iw_area_speedup_short.pdf}
     \caption{WGMMA speedup over $\mathit{IW}{=}1$ against standalone-TCU
     area at $\mathit{NT}{=}16$.}
@@ -334,14 +334,14 @@ TCU area grows almost linearly with issue width (Fig.~\ref{fig:iw_area_scaling})
 
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]
+    \includegraphics[width=\linewidth,trim=11 16 0 4,clip]
     {hpca2027-latex-template/fig/asic_area_breakdown.pdf}
     \caption{Sub-core area breakdown of a full-featured FourShadow TCU}
     \label{fig:asic_breakdown}
 \end{figure}
 
 \subsubsection{Area Cost of the Tensor-Core Extensions}
-The feature ladder adds each extension to the dense WMMA core:
+Fig.~\ref{fig:asic_breakdown} illustrates the ASIC cell area breakdown of a full FourShadow extended Vortex SIMT core. Key findings from adding each extension include:
 \begin{itemize}
     \item \textbf{2:4 sparsity} adds 1,745\,$\mu$m$^2$ (10\%) to the TCU for the metadata SRAM and the gather logic that selects the kept $B$ values; the core grows by 0.4\%
     \item \textbf{Warp-group MMA with DXA} adds 11,419\,$\mu$m$^2$ (3.9\%) and 3.2\% power, of which the DXA engine is 9,285\,$\mu$m$^2$ and the TCU's tile buffers and control 1,571\,$\mu$m$^2$.

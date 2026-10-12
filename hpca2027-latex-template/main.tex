@@ -19,6 +19,25 @@
 \pdfpagewidth=8.5in
 \pdfpageheight=11in
 
+% Tighter spacing around floats, captions and displayed equations
+% (IEEEtran defaults: textfloatsep 18.6pt, floatsep/intextsep 10.2pt,
+% abovecaptionskip 6pt, display skips 6.75pt).
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 1pt minus 1pt}
+\setlength{\dblfloatsep}{6pt plus 1pt minus 1pt}
+\setlength{\intextsep}{6pt plus 1pt minus 1pt}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{2pt}
+% \normalsize resets the display skips every time it runs, so extend it.
+\makeatletter
+\g@addto@macro\normalsize{%
+  \setlength{\abovedisplayskip}{3pt plus 2pt minus 1pt}%
+  \setlength{\belowdisplayskip}{3pt plus 2pt minus 1pt}%
+  \setlength{\abovedisplayshortskip}{0pt plus 2pt}%
+  \setlength{\belowdisplayshortskip}{3pt plus 2pt minus 1pt}}
+\makeatother
+
 \newcommand{\hpcayear}{2027}
 
 % Cells of the related-work comparison table

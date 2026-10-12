@@ -9,87 +9,29 @@ FourShadow adds two components to the base tensor core of Section~\ref{sec:bg_tc
 
 \subsection{Warp-group Tensor Core}\label{sec:design_wgmma}
 
-\begin{figure}
-\small
-\hrule
-\vspace{3pt}
- 
-{\raggedright
-\textit{Given:}\ $M,\,N,\,K,\,\mathit{NT},\,\mathit{IW},\,\mathit{NRC}$,\quad
-$\rho=\tfrac{4}{\mathrm{sizeof}(\texttt{input\_dtype})}$\par
-\textit{Standard WGMMA:}\ $\mathit{fedpK}=\mathit{tcK}$\par}
- 
-\centering
-\textbf{\textsc{WGMMA tile (per-warp work chunk)}}
-\begin{flalign}
-&\mathit{xtileM}_{\mathrm{wg}} = 2\mathit{tcM},\quad
-\mathit{xtileK}_{\mathrm{wg}} = 2\mathit{tcK} & \\
-&\mathit{tileK}_{\mathrm{wg}}
- = \mathit{xtileK}_{\mathrm{wg}}\rho
- = 2\mathit{tcK}\rho & \\
-&\mathit{xtileN}_{\mathrm{wg}}
- = \tfrac{\mathit{NRC}\times\mathit{NT}}
-         {\mathit{xtileM}_{\mathrm{wg}}}
- = \tfrac{\mathit{NRC}\times\mathit{NT}}
-         {2\mathit{tcM}} &
-\end{flalign}
- 
-\noindent
-\textbf{\textsc{WGMMA steps (micro-ops per warp)}} 
-\begin{flalign}
-&m_{\mathrm{steps}}
- = \tfrac{\mathit{xtileM}_{\mathrm{wg}}}{\mathit{tcM}}
- = 2 & \\
-&n_{\mathrm{steps}}
- = \tfrac{\mathit{xtileN}_{\mathrm{wg}}}{\mathit{tcN}}
- = \tfrac{\mathit{NRC}\times\mathit{NT}}
-         {2\mathit{tcM}\mathit{tcN}}
- = \tfrac{\mathit{NRC}}{2} & \\
-&k_{\mathrm{steps}}
- = \tfrac{\mathit{xtileK}_{\mathrm{wg}}}{\mathit{fedpK}}
- = 2 &
-\end{flalign}
-{\raggedright
-\noindent\hspace{0.5em}\textbf{for} $k$ in $0$ \textbf{to} $k_{\mathrm{steps}}{-}1$:\\
-\hspace{2em}\textbf{for} $n$ in $0$ \textbf{to} $n_{\mathrm{steps}}{-}1$:\\
-\hspace{3.5em}\textbf{for} $m$ in $0$ \textbf{to} $m_{\mathrm{steps}}{-}1$:\\
-\hspace{5em}one micro-op: accumulator \texttt{f}$(2n{+}m)$
-\par}
- 
-\hrule
-\vspace{3pt}
- 
-\noindent
-\textbf{\textsc{Warp-group tile}}
-\begin{flalign}
-&\mathit{wgTileM}
- = \mathit{IW}\times\mathit{xtileM}_{\mathrm{wg}}
- = 2\mathit{IW}\mathit{tcM} & \\
-&\mathit{wgTileN}
- = \mathit{xtileN}_{\mathrm{wg}} & \\
-&\mathit{wgTileK}
- = \mathit{tileK}_{\mathrm{wg}}
- = 2\mathit{tcK}\rho &
-\end{flalign}
- 
-\hrule
- 
-\caption{Warp-group MMA tiling and micro-op order for an issue
-width of \(\mathit{IW}\). Every warp runs the same sequence of \((k,n,m)\)
-micro-ops on its own tensor block; warp \(w\) supplies its own rows of $A$ and
-all warps consume the same $B$ tile.}
-\label{fig:wgmma_tiling_equations}
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{hpca2027-latex-template/fig/wgmma_operation.pdf}
+    \caption{Warp-group MMA on FourShadow at an issue width of 4, SS mode, 8 or 32 threads per warp, standard FEDP. (a)~Block-major shared-memory layout of one CTA: each warp's slice of $A$ under its \texttt{x10} descriptor, one $B$ tile under \texttt{x11}. (b)~The engine: four $A$ buffers and one shared $B$ buffer behind one direct-access port, the tensor blocks and the CTA gate; $\mathit{ready}[b]$ combines the three consistency checks. (c)~The 16 micro-ops of one warp at $\mathit{NRC}{=}8$ with the accumulator of each, the $A$- and $B$-buffer fetches (F) and hits (H), and the span of the issue-slot lock and CTA ownership. In RS mode $A$ comes from \texttt{f24}--\texttt{f27} and bypasses the $A$ buffer; dense RS with the 2K-wide FEDP adds one setup micro-op.}
+    \label{fig:wgmma_operation}
 \end{figure}
 
-\textbf{Warpgroup and tensor blocks.} The warp-group tensor core executes the warp-group MMA (WGMMA) instruction, with which the warps of a warpgroup compute one matrix product, each warp on its own tensor block. The core has one tensor block per issue slot, $\mathit{IW}$ blocks for an issue width of $\mathit{IW}$, and a warp runs on the block selected by its warp index modulo $\mathit{IW}$. Software forms the warpgroup: the kernel launches a cooperative thread array (CTA) of $\mathit{IW}$ warps, and warp $w$ of the CTA owns the $2\,\mathit{tcM}$ output rows that start at row $2w\,\mathit{tcM}$. All warps read the same $B$ tile, so a warpgroup extends the operation in the $M$ dimension only (Figure~\ref{fig:wgmma_tiling_equations}, warp-group tile: only $\mathit{wgTileM}$ grows with $\mathit{IW}$). With $\mathit{NT}{=}32$ and $\mathit{IW}{=}4$, four $8{\times}4$ blocks compute a 64-row tile.
+\textbf{Warpgroup and tensor blocks.} The warp-group tensor core executes the warp-group MMA (WGMMA) instruction, with which the warps of a warpgroup compute one matrix product, each warp on its own tensor block. The core has one tensor block per issue slot, $\mathit{IW}$ blocks for an issue width of $\mathit{IW}$, and a warp runs on the block selected by its warp index modulo $\mathit{IW}$. Software forms the warpgroup: the kernel launches a cooperative thread array (CTA) of $\mathit{IW}$ warps, and warp $w$ of the CTA owns the $2\,\mathit{tcM}$ output rows that start at row $2w\,\mathit{tcM}$. All warps read the same $B$ tile, so a warpgroup extends the operation in the $M$ dimension only (Fig.~\ref{fig:wgmma_operation}(a): each warp supplies its own slice of $A$ and all warps read the same $B$ tile, so only the $M$ extent of the warp-group tile, $2\,\mathit{IW}\,\mathit{tcM}$, grows with $\mathit{IW}$). With $\mathit{NT}{=}32$ and $\mathit{IW}{=}4$, four $8{\times}4$ blocks compute a 64-row tile.
 
-\textbf{Tile and micro-ops.} Each warp's sequencer expands its WGMMA instruction into micro-ops, and one micro-op computes one $\mathit{tcM}{\times}\mathit{tcN}$ block of the output. The per-warp tile is two blocks deep in $M$ and two in $K$; the number of accumulator registers, $\mathit{NRC}\in\{8,16,32\}$, sets its extent in $N$ to $n_{\mathrm{steps}}=\mathit{NRC}/2$ blocks. $\mathit{NRC}{=}8$ is the accumulator count of the base tensor core. The micro-ops run with $k$ outermost, then $n$, then $m$ innermost, and micro-op $(m,n)$ accumulates into register \texttt{f}$(2n{+}m)$. For $\mathit{NT}{=}32$, $\mathit{IW}{=}4$ and FP16 inputs, the warpgroup tile ($M{\times}N{\times}K$) is $64{\times}16{\times}16$ with 16 micro-ops per warp at $\mathit{NRC}{=}8$, and $64{\times}64{\times}16$ with 64 at $\mathit{NRC}{=}32$.
+\textbf{Tile and micro-ops.} Each warp's sequencer expands its WGMMA instruction into micro-ops, and one micro-op computes one $\mathit{tcM}{\times}\mathit{tcN}$ block of the output over $\mathit{fedpK}$ words of $K$ ($\mathit{fedpK}{=}\mathit{tcK}$ for the standard FEDP). The per-warp tile is two blocks deep in $M$ and two in $K$, and the number of accumulator registers, $\mathit{NRC}\in\{8,16,32\}$, sets its extent in $N$:
+\begin{equation}\label{eq:wg_tile}
+\mathit{xtileN}_{\mathrm{wg}} = \tfrac{\mathit{NRC}\,\mathit{NT}}{2\,\mathit{tcM}},\;\;
+m_{\mathrm{steps}} = 2,\;\;
+n_{\mathrm{steps}} = \tfrac{\mathit{xtileN}_{\mathrm{wg}}}{\mathit{tcN}} = \tfrac{\mathit{NRC}}{2},\;\;
+k_{\mathrm{steps}} = \tfrac{2\,\mathit{tcK}}{\mathit{fedpK}}.
+\end{equation}
+$\mathit{NRC}{=}8$ is the accumulator count of the base tensor core. The micro-ops run with $k$ outermost, then $n$, then $m$ innermost, and micro-op $(m,n)$ accumulates into register \texttt{f}$(2n{+}m)$ (Fig.~\ref{fig:wgmma_operation}(c)). For $\mathit{NT}{=}32$, $\mathit{IW}{=}4$ and FP16 inputs, the warpgroup tile ($M{\times}N{\times}K$) is $64{\times}16{\times}16$ with 16 micro-ops per warp at $\mathit{NRC}{=}8$, and $64{\times}64{\times}16$ with 64 at $\mathit{NRC}{=}32$.
 
-\textbf{Operands and descriptors.} Operand $B$ always comes from shared memory. Operand $A$ comes from shared memory in shared-memory/shared-memory (SS) mode and from four registers, \texttt{f24}--\texttt{f27}, in register/shared-memory (RS) mode. A shared-memory operand is named by a 32-bit descriptor: a 16-bit byte offset from the base of shared memory and a 16-bit row stride. A stride of zero selects the block-major layout, in which the tile is stored as the blocks that the micro-ops consume; a non-zero stride selects a row-major layout for $A$ and a K-major layout for $B$, from which the tile buffer gathers a block row by row. Software places the two descriptors in integer registers \texttt{x10} and \texttt{x11}, and each tensor block latches them at the first compute micro-op of the instruction. The accumulators occupy \texttt{f0} to \texttt{f}$(\mathit{NRC}{-}1)$, so $\mathit{NRC}{=}32$ fills the floating-point register file and is available in SS mode only; RS mode supports $\mathit{NRC}\le 16$. The kernel stages the tiles into shared memory with ordinary loads and stores or with DXA (Section~\ref{sec:bg_smem}), whose row-major output the non-zero-stride layout reads.
+\textbf{Operands and descriptors.} Operand $B$ always comes from shared memory. Operand $A$ comes from shared memory in shared-memory/shared-memory (SS) mode and from four registers, \texttt{f24}--\texttt{f27}, in register/shared-memory (RS) mode. A shared-memory operand is named by a 32-bit descriptor: a 16-bit byte offset from the base of shared memory and a 16-bit row stride. A stride of zero selects the block-major layout, in which the tile is stored as the blocks that the micro-ops consume (Fig.~\ref{fig:wgmma_operation}(a)); a non-zero stride selects a row-major layout for $A$ and a K-major layout for $B$, from which the tile buffer gathers a block row by row. Software places the two descriptors in integer registers \texttt{x10} and \texttt{x11}, and each tensor block latches them at the first compute micro-op of the instruction. The accumulators occupy \texttt{f0} to \texttt{f}$(\mathit{NRC}{-}1)$, so $\mathit{NRC}{=}32$ fills the floating-point register file and is available in SS mode only; RS mode supports $\mathit{NRC}\le 16$. The kernel stages the tiles into shared memory with ordinary loads and stores or with DXA (Section~\ref{sec:bg_smem}), whose row-major output the non-zero-stride layout reads.
 
-\textbf{Tile buffers and the shared-memory port.} Each tensor block has a private $A$ buffer that holds one $K$ stripe of its warp's tile, both $m$ blocks, so the two $m$ micro-ops of a stripe read it without another shared-memory access. The $A$ buffer refills at every new $k$ and at the first compute micro-op of every instruction, because the kernel rewrites the tile in place under an unchanged descriptor. One $B$ buffer is shared: it holds the $B$ block of the current $(k,n)$ and broadcasts it to all tensor blocks. Residency of the $B$ block does not depend on $m$, so one refill serves both $m$ micro-ops of all $\mathit{IW}$ blocks, eight tensor operations for $\mathit{IW}{=}4$, as long as the blocks request the same $(k,n)$. This describes the RTL design, and the simulated runs of Section~\ref{sec:eval_wgmma} realize this sharing: the shared-memory reads of an SS step amount to one $B$ tile per warpgroup, 1.00 at an issue width of four. The $\mathit{IW}{+}1$ buffers share, through a fixed-priority arbiter (the SMEM Read Arbiter of Figure~\ref{fig:figure_integration}), one port that reads a full bank row of $\mathit{NT}$ words per request. This port is the direct-access port of shared memory that DXA writes through, and it has priority over the load/store unit at every bank.
+\textbf{Tile buffers and the shared-memory port.} Each tensor block has a private $A$ buffer that holds one $K$ stripe of its warp's tile, both $m$ blocks, and one $B$ buffer is shared by all tensor blocks: it holds the bank row that contains the $B$ block of the current $(k,n)$ and broadcasts it (Fig.~\ref{fig:wgmma_operation}(b)). The F and H rows of Fig.~\ref{fig:wgmma_operation}(c) give the fetch pattern: the $A$ buffer refills at every new $k$ and at the first compute micro-op of every instruction, because the kernel rewrites the tile in place under an unchanged descriptor, and one $B$ refill serves both $m$ micro-ops of all $\mathit{IW}$ blocks, eight tensor operations for $\mathit{IW}{=}4$, as long as the blocks request the same $(k,n)$. The simulated runs of Section~\ref{sec:eval_wgmma} realize this sharing: the shared-memory reads of an SS step amount to one $B$ tile per warpgroup, 1.00 at an issue width of four. The $\mathit{IW}{+}1$ buffers share, through a fixed-priority arbiter (the SMEM Read Arbiter of Figure~\ref{fig:figure_integration}), one port that reads a full bank row of $\mathit{NT}$ words per request. This port is the direct-access port of shared memory that DXA writes through, and it has priority over the load/store unit at every bank.
 
-\textbf{Consistency without a barrier.} The warps of a warpgroup are not synchronized cycle by cycle: each warp's sequencer advances independently, and three checks keep the shared state consistent. \emph{(i)~Issue-slot lock.} The first micro-op of an instruction locks its issue slot and the last releases it, so only that warp issues on the slot in between. \emph{(ii)~Single-CTA gate} (the Lockstep block of Figure~\ref{fig:figure_integration}). Each tensor block records the CTA of the instruction it executes from the first to the last compute micro-op, and a WGMMA micro-op waits while another block is inside an instruction of a different CTA. \emph{(iii)~$B$-key match.} The lowest-indexed active block sets the key of the shared $B$ buffer: the offset of the $B$ descriptor, $k$, $n$ and $\mathit{NRC}$. A block whose key differs stalls until the keys agree, and an idle block matches any key, so a CTA with fewer than $\mathit{IW}$ active warps runs unchanged. Each tensor block carries its results through its own result queue to commit.
+\textbf{Consistency without a barrier.} The warps of a warpgroup are not synchronized cycle by cycle: each warp's sequencer advances independently, and three checks, combined in the $\mathit{ready}[b]$ condition of Fig.~\ref{fig:wgmma_operation}(b), keep the shared state consistent. \emph{(i)~Issue-slot lock.} The first micro-op of an instruction locks its issue slot and the last releases it, so only that warp issues on the slot in between. \emph{(ii)~Single-CTA gate} (the Lockstep block of Figure~\ref{fig:figure_integration}). Each tensor block records the CTA of the instruction it executes from the first to the last compute micro-op, and a WGMMA micro-op waits while another block is inside an instruction of a different CTA. \emph{(iii)~$B$-key match.} The lowest-indexed active block sets the key of the shared $B$ buffer: the offset of the $B$ descriptor, $k$, $n$ and $\mathit{NRC}$. A block whose key differs stalls until the keys agree, and an idle block matches any key, so a CTA with fewer than $\mathit{IW}$ active warps runs unchanged. Each tensor block carries its results through its own result queue to commit.
 
 \textbf{2K-wide FEDP.} The 2K-wide FEDP doubles the dot-product length from $\mathit{tcK}$ to $2\,\mathit{tcK}$ words for every input format, so one micro-op consumes both $K$ blocks of the tile and the dense $K$ steps go from two to one.
 
@@ -116,7 +58,7 @@ In the symmetric case, panel~(b) with $\mathit{NT}{=}4$, a dense block of $B$, $
 \subsection{Programming Model}
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]{hpca2027-latex-template/fig/sw_integrationv4.pdf}
+    \includegraphics[width=\linewidth,trim=18 12 19 16,clip]{hpca2027-latex-template/fig/sw_integrationv4.pdf}
     \caption{FourShadow Programming Model}
     \label{fig:sw_integrationv4}
 \end{figure}
