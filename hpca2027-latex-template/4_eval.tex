@@ -252,7 +252,7 @@ On the RTX 5080 (Fig.~\ref{fig:sparse_nvidia}(c)), one warp's late reload adds 3
 \subsection{FPGA Design Flow}\label{sec:eval_fpga}
 
 We implement FourShadow on an AMD Alveo U55C with 16\,GB HBM2 and
-target a 250\,MHz clock frequency. The evaluated system contains
+target a 200\,MHz clock frequency. The evaluated system contains
 one core with eight 8-thread warps, an issue width of four, and four
 8-lane Ten-Four\cite{rout2026tenfouropensourcefuseddot} blocks supporting FP16 inputs and FP32
 accumulation, WGMMA, 2K-wide FEDP, and 2:4 structured sparsity. Table~\ref{tab:fpga-config} lists the full configuration. The configuration of this FPGA build, in particular the 8-thread and single-core parameters, is limited by the resources on the U55C FPGA board. Table.~\ref{tab:tcu-parts} shows the hierarchical utilization overhead of each FourShadow extended unit.
