@@ -1,0 +1,218 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Figure 3 v2 prototype</title>
+<style>html,body{margin:0;padding:0;background:#fff}svg{display:block}</style></head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="1048" height="278" viewBox="0 0 1048 278" font-family="Helvetica, Arial, 'Liberation Sans', sans-serif">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 L2.5,5 z" fill="#000"/></marker></defs>
+<rect x="0" y="0" width="1048" height="278" fill="#fff"/>
+<rect id="socket" x="4" y="4" width="242" height="270" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+<text x="242" y="21.73" font-size="18" font-weight="bold" fill="#000000" text-anchor="end">Socket</text>
+<rect id="core0" x="12" y="26" width="226" height="220" fill="#E8E8E8" stroke="#000000" stroke-width="1.2"/>
+<text x="233" y="41.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="end">core [0]</text>
+<rect id="ws" x="20" y="46" width="210" height="17" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="125.0" y="59.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Warp Scheduler</text>
+<rect id="fetch" x="20" y="66" width="210" height="17" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="125.0" y="79.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Fetch</text>
+<rect id="decode" x="20" y="86" width="210" height="17" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="125.0" y="99.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Decode</text>
+<rect id="issue" x="20" y="106" width="210" height="17" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="125.0" y="119.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Issue (Uop Sequencer)</text>
+<rect id="dispatch" x="20" y="126" width="210" height="17" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="125.0" y="139.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Dispatch</text>
+<rect id="lsu" x="20" y="146" width="34" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="37.0" y="159.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">LSU</text>
+<rect id="sfu" x="57" y="146" width="34" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="74.0" y="159.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">SFU</text>
+<rect id="alu" x="94" y="146" width="34" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="111.0" y="159.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">ALU</text>
+<rect id="fpu" x="131" y="146" width="34" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="148.0" y="159.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">FPU</text>
+<rect id="tcu_fu" x="168" y="146" width="62" height="18" fill="#CFE2F3" stroke="#2B5FA8" stroke-width="2.0"/>
+<text x="199.0" y="160.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">TCU</text>
+<rect id="gather" x="20" y="167" width="210" height="17" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="125.0" y="180.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Gather</text>
+<rect id="rf" x="20" y="187" width="210" height="17" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="125.0" y="200.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Register File</text>
+<rect id="smem" x="20" y="207" width="210" height="36" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="226" y="220.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="end">Shared Memory</text>
+<rect id="bank_dots" x="24" y="224" width="36" height="16" fill="#E8E8E8" stroke="#000000" stroke-width="1.0"/>
+<text x="42.0" y="236.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">...</text>
+<rect id="bank2" x="64" y="224" width="50" height="16" fill="#E8E8E8" stroke="#000000" stroke-width="1.0"/>
+<text x="89.0" y="236.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">Bank 2</text>
+<rect id="bank1" x="118" y="224" width="50" height="16" fill="#E8E8E8" stroke="#000000" stroke-width="1.0"/>
+<text x="143.0" y="236.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">Bank 1</text>
+<rect id="bank0" x="172" y="224" width="54" height="16" fill="#E8E8E8" stroke="#000000" stroke-width="1.0"/>
+<text x="199.0" y="236.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">Bank 0</text>
+<rect id="core1" x="12" y="250" width="226" height="18" fill="#E8E8E8" stroke="#000000" stroke-width="1.2"/>
+<text x="125.0" y="264.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">core [1...]</text>
+<rect id="tcu" x="258" y="4" width="786" height="270" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+<text x="1038" y="22.73" font-size="18" font-weight="bold" fill="#000000" text-anchor="end">Tensor Core Unit</text>
+<polyline id="zoom_tcu_top" points="230,146 258,4" fill="none" stroke="#808080" stroke-width="1.2" stroke-dasharray="4 3"/>
+<polyline id="zoom_tcu_bot" points="230,164 258,274" fill="none" stroke="#808080" stroke-width="1.2" stroke-dasharray="4 3"/>
+<rect id="wg" x="264" y="8" width="449" height="108" fill="#CFE2F3" stroke="#2B5FA8" stroke-width="1.5"/>
+<text x="272" y="25.04" font-size="16" font-weight="bold" fill="#000000" text-anchor="start">Warp-Group Tile Buffer Subsystem</text>
+<rect id="abuf0" x="272" y="32" width="77" height="56" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="310.5" y="47.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">A Buffer 0</text>
+<text x="310.5" y="65.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">(Block 0)</text>
+<rect id="abuf0_agu" x="312" y="70" width="34" height="15" fill="#E03127" stroke="#E03127" stroke-width="1.0"/>
+<text x="329.0" y="82.17" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">AGU</text>
+<rect id="abuf1" x="353" y="32" width="77" height="56" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="391.5" y="47.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">A Buffer 1</text>
+<text x="391.5" y="65.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">(Block 1)</text>
+<rect id="abuf1_agu" x="393" y="70" width="34" height="15" fill="#E03127" stroke="#E03127" stroke-width="1.0"/>
+<text x="410.0" y="82.17" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">AGU</text>
+<rect id="abuf2" x="434" y="32" width="77" height="56" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="472.5" y="47.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">A Buffer 2</text>
+<text x="472.5" y="65.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">(Block 2)</text>
+<rect id="abuf2_agu" x="474" y="70" width="34" height="15" fill="#E03127" stroke="#E03127" stroke-width="1.0"/>
+<text x="491.0" y="82.17" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">AGU</text>
+<rect id="abuf3" x="515" y="32" width="77" height="56" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="553.5" y="47.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">A Buffer 3</text>
+<text x="553.5" y="65.69" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">(Block 3)</text>
+<rect id="abuf3_agu" x="555" y="70" width="34" height="15" fill="#E03127" stroke="#E03127" stroke-width="1.0"/>
+<text x="572.0" y="82.17" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">AGU</text>
+<rect id="bbuf" x="596" y="12" width="111" height="100" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="651.5" y="39.04" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">Shared B Buffer</text>
+<text x="651.5" y="55.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">(broadcast to all</text>
+<text x="651.5" y="72.64" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">tensor blocks)</text>
+<rect id="bbuf_agu" x="669" y="92" width="34" height="15" fill="#E03127" stroke="#E03127" stroke-width="1.0"/>
+<text x="686.0" y="104.17" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">AGU</text>
+<rect id="arbiter" x="272" y="92" width="180" height="20" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="362.0" y="107.36" font-size="15.5" font-weight="bold" fill="#000000" text-anchor="middle">SMEM Read Arbiter</text>
+<rect id="lockstep" x="456" y="92" width="133" height="20" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="522.5" y="107.36" font-size="15.5" font-weight="bold" fill="#000000" text-anchor="middle">Lockstep</text>
+<rect id="selmux" x="719" y="8" width="161" height="108" fill="#FFFFFF" stroke="#2B5FA8" stroke-width="1.5"/>
+<text x="799.5" y="23.02" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">Selection MUX</text>
+<text x="773" y="40.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="end">meta:</text>
+<rect id="meta_b0" x="776" y="29" width="15" height="15" fill="#000000" stroke="#000000" stroke-width="1.0"/>
+<text x="783.5" y="41.17" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">1</text>
+<rect id="meta_b1" x="791" y="29" width="15" height="15" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="798.5" y="41.17" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">0</text>
+<rect id="meta_b2" x="806" y="29" width="15" height="15" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="813.5" y="41.17" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">0</text>
+<rect id="meta_b3" x="821" y="29" width="15" height="15" fill="#000000" stroke="#000000" stroke-width="1.0"/>
+<text x="828.5" y="41.17" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">1</text>
+<polygon id="sel_mux" points="795,47 815,60.2 815,99.8 795,113" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<polyline id="sel_meta_arrow" points="805,44 805,49.6" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect id="grp_in0" x="731" y="48" width="26" height="30" fill="#FFFFFF" stroke="#000000" stroke-width="1.0" stroke-dasharray="4 3"/>
+<rect id="grp_in1" x="731" y="81" width="26" height="30" fill="#FFFFFF" stroke="#000000" stroke-width="1.0" stroke-dasharray="4 3"/>
+<rect id="b0_in" x="733" y="49" width="22" height="14" fill="#000000" stroke="#000000" stroke-width="1.0"/>
+<text x="744.0" y="60.67" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">b0</text>
+<rect id="b1_in" x="733" y="63" width="22" height="14" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="744.0" y="74.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">b1</text>
+<rect id="b2_in" x="733" y="82" width="22" height="14" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="744.0" y="93.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">b2</text>
+<rect id="b3_in" x="733" y="96" width="22" height="14" fill="#000000" stroke="#000000" stroke-width="1.0"/>
+<text x="744.0" y="107.67" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">b3</text>
+<polyline id="sel_in0" points="757,63 795,63" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="sel_in1" points="757,96 795,96" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect id="grp_out" x="838" y="64" width="26" height="32" fill="#FFFFFF" stroke="#000000" stroke-width="1.0" stroke-dasharray="4 3"/>
+<rect id="b0_out" x="840" y="66" width="22" height="14" fill="#000000" stroke="#000000" stroke-width="1.0"/>
+<text x="851.0" y="77.67" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">b0</text>
+<rect id="b3_out" x="840" y="80" width="22" height="14" fill="#000000" stroke="#000000" stroke-width="1.0"/>
+<text x="851.0" y="91.67" font-size="13.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle">b3</text>
+<polyline id="sel_out" points="815,80 838,80" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect id="fedp_detail" x="892" y="30" width="146" height="86" fill="#FFFFFF" stroke="#2B5FA8" stroke-width="1.5"/>
+<rect id="stage0" x="902" y="35" width="126" height="17" fill="#E8E8E8" stroke="#000000" stroke-width="1.0"/>
+<text x="965.0" y="48.52" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">MULTIPLY</text>
+<rect id="stage1" x="902" y="55" width="126" height="17" fill="#E8E8E8" stroke="#000000" stroke-width="1.0"/>
+<text x="965.0" y="68.52" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">ALIGN</text>
+<rect id="stage2" x="902" y="75" width="126" height="17" fill="#E8E8E8" stroke="#000000" stroke-width="1.0"/>
+<text x="965.0" y="88.52" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">ACCUMULATE</text>
+<rect id="stage3" x="902" y="95" width="126" height="17" fill="#E8E8E8" stroke="#000000" stroke-width="1.0"/>
+<text x="965.0" y="108.52" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">NORM &amp; ROUND</text>
+<rect id="rs_sel" x="266" y="148" width="68" height="54" fill="#FFFFFF" stroke="#000000" stroke-width="1.0" stroke-dasharray="4 3"/>
+<text x="300.0" y="179.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">RS/SS?</text>
+<polygon id="rs_mux" points="312,210 330,219.6 330,248.4 312,258" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<polyline id="rs_sel_arrow" points="321,202 321,214.8" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<text x="266" y="215.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="start">RF</text>
+<polyline id="rf_in" points="266,220 312,220" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<text x="266" y="243.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="start">SMEM</text>
+<polyline id="smem_in" points="266,248 312,248" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="rs_out" points="330,234 337,234" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect id="sp" x="344" y="122" width="448" height="146" fill="#CFE2F3" stroke="#2B5FA8" stroke-width="1.5"/>
+<text x="352" y="139.04" font-size="16" font-weight="bold" fill="#000000" text-anchor="start">2:4 Structured Sparsity Subsystem</text>
+<g id="x_meta"><rect x="337.0" y="158.0" width="14" height="14" fill="#fff" stroke="#000" stroke-width="1"/><path d="M337.0,158.0 L351.0,172.0 M351.0,158.0 L337.0,172.0" stroke="#000" stroke-width="1"/></g>
+<g id="x_b"><rect x="337.0" y="189.0" width="14" height="14" fill="#fff" stroke="#000" stroke-width="1"/><path d="M337.0,189.0 L351.0,203.0 M351.0,189.0 L337.0,203.0" stroke="#000" stroke-width="1"/></g>
+<g id="x_a"><rect x="337.0" y="227.0" width="14" height="14" fill="#fff" stroke="#000" stroke-width="1"/><path d="M337.0,227.0 L351.0,241.0 M351.0,227.0 L337.0,241.0" stroke="#000" stroke-width="1"/></g>
+<g id="x_c"><rect x="337.0" y="249.0" width="14" height="14" fill="#fff" stroke="#000" stroke-width="1"/><path d="M337.0,249.0 L351.0,263.0 M351.0,249.0 L337.0,263.0" stroke="#000" stroke-width="1"/></g>
+<text x="355" y="159.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="start">sp meta</text>
+<text x="355" y="191.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="start">matrix B</text>
+<text x="355" y="229.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="start">matrix A</text>
+<text x="355" y="251.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="start">matrix C</text>
+<rect id="meta_agu" x="416" y="146" width="82" height="38" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="457.0" y="161.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Metadata</text>
+<text x="457.0" y="179.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">AGU Load</text>
+<rect id="meta_sram" x="514" y="146" width="86" height="38" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="557.0" y="161.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Metadata</text>
+<text x="557.0" y="179.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">TCU SRAM</text>
+<rect id="spmux" x="624" y="146" width="92" height="38" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="670.0" y="161.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Sparse MUX</text>
+<text x="670.0" y="179.19" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">Array</text>
+<polyline id="e_meta" points="351,165 416,165" fill="none" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+<polyline id="e_agu_sram" points="498,165 514,165" fill="none" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+<polyline id="e_sram_spmux" points="600,165 624,165" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polygon id="sp_mux" points="736,155 754,165.4 754,196.6 736,207" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<rect id="sp_sel" x="668" y="212" width="88" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0" stroke-dasharray="4 3"/>
+<text x="712.0" y="225.84" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">Sparse?</text>
+<polyline id="sp_sel_arrow" points="745,212 745,201.8" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="e_spmux_mux" points="716,165 736,165" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="e_b" points="351,196 736,196" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="e_b_branch" points="670,196 670,184" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect id="pb" x="768" y="146" width="20" height="118" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="778.0" y="210.36" font-size="15.5" font-weight="bold" fill="#000000" text-anchor="middle" transform="rotate(-90 778.0 205.0)">Pipeline Buffer</text>
+<polyline id="e_mux_pb" points="754,181 768,181" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="e_a" points="351,234 768,234" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="e_c" points="351,256 768,256" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect id="arr00" x="796" y="136" width="88" height="62" fill="#CFE2F3" stroke="#2B5FA8" stroke-width="1.2"/>
+<rect id="fedp0000" x="799" y="139" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="819.0" y="152.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp0001" x="842" y="139" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="862.0" y="152.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp0010" x="799" y="159" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="819.0" y="172.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp0011" x="842" y="159" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="862.0" y="172.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<text x="840.0" y="193.02" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP Array</text>
+<rect id="arr01" x="888" y="136" width="88" height="62" fill="#CFE2F3" stroke="#2B5FA8" stroke-width="1.2"/>
+<rect id="fedp0100" x="891" y="139" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="911.0" y="152.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp0101" x="934" y="139" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="954.0" y="152.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp0110" x="891" y="159" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="911.0" y="172.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp0111" x="934" y="159" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="954.0" y="172.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<text x="932.0" y="193.02" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP Array</text>
+<rect id="arr10" x="796" y="204" width="88" height="62" fill="#CFE2F3" stroke="#2B5FA8" stroke-width="1.2"/>
+<rect id="fedp1000" x="799" y="207" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="819.0" y="220.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp1001" x="842" y="207" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="862.0" y="220.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp1010" x="799" y="227" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="819.0" y="240.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp1011" x="842" y="227" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="862.0" y="240.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<text x="840.0" y="261.02" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP Array</text>
+<rect id="arr11" x="888" y="204" width="88" height="62" fill="#CFE2F3" stroke="#2B5FA8" stroke-width="1.2"/>
+<rect id="fedp1100" x="891" y="207" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="911.0" y="220.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp1101" x="934" y="207" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="954.0" y="220.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp1110" x="891" y="227" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="911.0" y="240.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<rect id="fedp1111" x="934" y="227" width="40" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="1.0"/>
+<text x="954.0" y="240.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP</text>
+<text x="932.0" y="261.02" font-size="14.5" font-weight="bold" fill="#000000" text-anchor="middle">FEDP Array</text>
+<polyline id="e_pb_arr0" points="788,167 796,167" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="e_pb_arr1" points="788,235 796,235" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<polyline id="e_arr0_d" points="976,167 981,167 981,201" fill="none" stroke="#000000" stroke-width="1.2"/>
+<polyline id="e_arr1_d" points="976,235 981,235 981,201" fill="none" stroke="#000000" stroke-width="1.2"/>
+<polyline id="e_d" points="981,201 1044,201" fill="none" stroke="#000000" stroke-width="1.2" marker-end="url(#arr)"/>
+<text x="1040" y="192.67" font-size="13.5" font-weight="bold" fill="#000000" text-anchor="end">matrix D</text>
+<polyline id="zoom_sel_l" points="624,146 719,116" fill="none" stroke="#808080" stroke-width="1.2" stroke-dasharray="4 3"/>
+<polyline id="zoom_sel_r" points="716,146 880,116" fill="none" stroke="#808080" stroke-width="1.2" stroke-dasharray="4 3"/>
+<polyline id="zoom_fedp_l" points="934,139 892,116" fill="none" stroke="#808080" stroke-width="1.2" stroke-dasharray="4 3"/>
+<polyline id="zoom_fedp_r" points="974,139 1038,116" fill="none" stroke="#808080" stroke-width="1.2" stroke-dasharray="4 3"/>
+</svg>
+</body></html>
