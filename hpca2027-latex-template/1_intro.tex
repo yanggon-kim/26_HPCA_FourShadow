@@ -56,5 +56,5 @@ In summary, this paper makes the following contributions:
 
     \item We report RISC-V design findings: the sparse speedup depends on symmetric versus asymmetric configurations, a 2K-wide FEDP outweighs its deeper pipeline, and WGMMA descriptors belong in the register file rather than TCU SRAM (Sections~\ref{sec:eval_wgmma} and~\ref{sec:eval_sparse_sym}).
 
-    \item We validate FourShadow by FPGA implementation and ASIC synthesis. On an AMD Alveo U55C FPGA at 200\,MHz, WGMMA speeds up Llama~2 prefill and decode end to end by $10.18\times$ and $7.76\times$ over the dense base tensor core, and with 2:4 sparsity added by $12.39\times$ and $8.57\times$; the combined extensions reach $12.74\times$ on MoE.
+    \item We validate FourShadow by FPGA implementation and ASIC synthesis. On an AMD Alveo U55C FPGA at 200\,MHz, WGMMA speeds up Llama-3.2-1B prefill and decode end to end by $10.18\times$ and $7.76\times$ over the dense base tensor core, and with 2:4 sparsity added by $12.39\times$ and $8.57\times$; the combined extensions reach $12.74\times$ on MoE.
 \end{itemize}
