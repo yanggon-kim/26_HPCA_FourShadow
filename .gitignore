@@ -1,0 +1,11 @@
+/evaluation/
+/nik_expts/
+
+# LaTeX build output
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+auto/
