@@ -336,13 +336,12 @@ TCU area grows almost linearly with issue width (Fig.~\ref{fig:iw_area_scaling})
     \centering
     \includegraphics[width=\linewidth]
     {hpca2027-latex-template/fig/asic_area_breakdown.pdf}
-    \caption{Area breakdown of the full-featured core
-    ($\mathit{NT}{=}\mathit{NW}{=}\mathit{IW}{=}4$).}
+    \caption{Cell Area Breakdown of a FourShadow SIMT Core)}
     \label{fig:asic_breakdown}
 \end{figure}
 
 \subsubsection{Area Cost of the Tensor-Core Extensions}
-Fig.~\ref{fig:asic_breakdown} breaks down the core with every warp-group extension. The L1 data cache dominates at 33\% only because its small RAMs are flip-flops at this configuration, followed by the TCU at 18.0\%, 11.6 points of it in the FEDP datapath, and the FPU at 16.9\%; the DXA engine takes 3.0\%. The feature ladder measures what each extension adds to the dense WMMA core (0.291\,mm$^2$):
+The feature ladder measures what each extension adds to the dense WMMA core (0.291\,mm$^2$):
 \begin{itemize}
     \item \textbf{2:4 sparsity} grows the TCU by 1,745\,$\mu$m$^2$, 0.6\% of the core, for the metadata SRAM and the gather logic that selects the kept $B$ values; the core grows by 0.4\%.
     \item \textbf{Warp-group MMA with DXA} adds 3.9\%: the DXA engine is 3.2\%, and the TCU's warp-group tile buffers and control only 0.5\% (1,571\,$\mu$m$^2$).
