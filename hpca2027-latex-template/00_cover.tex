@@ -105,8 +105,6 @@ and each Evaluation part names its baseline (\ref{sec:method_sw}).
 Table~\ref{tab:fpga-config} gives the models and input sizes of all seven workloads, and
 Fig.~\ref{fig:e2e_fpga} separates WGMMA, sparsity and both over the base TCU: WGMMA alone gives 1.05--10.28$\times$, sparsity alone 1.02--1.51$\times$,
 and both 1.76--12.74$\times$.
-[D] The sparse inputs are weights pruned offline, 2:4 by magnitude, and
-outputs are checked against a CPU reference. Because the study targets the tensor core, 1. timing covers device execution only, and 2. model accuracy is outside our scope because performance (i.e. cycle counts) depend on the pattern and matrix shapes, not on the values, so the measured speedups should be the same for any 2:4 sparse weights.
 
 \vspace{1pt}
 \noindent\textbf{4. FourShadow is measured beside two NVIDIA GPUs.} [B][C]
@@ -176,7 +174,8 @@ revision adds DXA staging, which hides the transfer of $A$ (\ref{sec:eval_sparse
 Ten-Four, and \ref{sec:design_overview} names the two components it adds, encoded in
 Table~\ref{tab:isa}.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[D]}~``Figure~??'' now points to Fig.~\ref{fig:figure_integration}, and ten evaluation
-figures print their labels at 6.5\,pt or more.
+figures print their labels at 6.5\,pt or more. The sparse inputs are weights pruned offline, 2:4 by magnitude, and
+outputs are checked against a CPU reference. Because the study targets the tensor core, 1. timing covers device execution only, and 2. model accuracy is outside our scope because performance (i.e. cycle counts) depend on the pattern and matrix shapes, not on the values, so the measured speedups should be the same for any 2:4 sparse weights.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[E]}~\ref{sec:eval_threads} states the block shape at each thread count, and
 Section~\ref{sec:intro} bounds how far FourShadow's best point carries over to a commercial design.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[F]}~Issue width is defined (\ref{sec:bg_issue}, \ref{sec:method_hw}).
