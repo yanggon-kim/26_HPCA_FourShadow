@@ -31,7 +31,7 @@ SPEEDUP = {  # Fig. eval_nt_iw_heatmaps (b), NT=16
 STYLE = {128: ("#1f77b4", "o"), 256: ("#ff7f0e", "s"),
          512: ("#2ca02c", "^"), 1024: ("#d62728", "D")}
 
-fig, ax = plt.subplots(figsize=(3.4, 1.45))
+fig, ax = plt.subplots(figsize=(3.4, 1.7))
 for k, ys in SPEEDUP.items():
     c, m = STYLE[k]
     ax.plot(TCU_K, ys, "--", marker=m, color=c, lw=1.2, ms=3.5, label=f"$K$={k}")
