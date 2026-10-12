@@ -164,11 +164,10 @@ issue-width return to the front end, which fetches one warp instruction per cycl
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[B]}~Table~\ref{tab:related_work_comparison} places FourShadow among prior platforms,
 Accel-Sim and GPGPU-Sim included; the symmetric/asymmetric result is plotted raw
 (\ref{sec:eval_sparse_sym}); ``Figure~??'', the typos and the overlapping labels of submitted
-Figs.~19/20 are fixed (Figs.~\ref{fig:pareto} and~\ref{fig:iw_area_scaling}). WGMMA's 2.31
-FLOP/cycle against WMMA's 23.21 (\ref{sec:eval_roofline}) counts staging: lacking DXA, our TMA
-counterpart (\ref{sec:bg_smem}), warps copy $A$ and $B$ via registers into shared memory before
-each warp-group MMA (\ref{sec:eval_iw}), while WMMA computes from registers. The
-revision adds DXA staging, which hides the transfer of $A$ (\ref{sec:eval_sparse_wg}).
+Figs.~19/20 are fixed (Figs.~\ref{fig:pareto} and~\ref{fig:iw_area_scaling}). The submitted
+2.31 FLOP/cycle for WGMMA against 23.21 for WMMA came from register-staged copies without DXA,
+our TMA counterpart (\ref{sec:bg_smem}), at $128^3$; re-measured at $512^3$ with DXA and
+dense-equivalent counting, WGMMA reaches 179.17 against WMMA's 71.22 FLOP/cycle (\ref{sec:eval_roofline}).
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[C]}~Section~\ref{sec:background} describes what FourShadow inherits from Vortex and
 Ten-Four, and \ref{sec:design_overview} names the two components it adds.
 \par\noindent\hangindent=1em\hangafter=1 \textbf{[D]}~``Figure~??'' now points to Fig.~\ref{fig:figure_integration}, and ten evaluation
