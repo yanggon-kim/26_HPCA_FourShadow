@@ -258,24 +258,27 @@ DXA engine 2.5\%, the LSU 1.4\% and the SFU 0.9\%.
   \caption{Configuration of the evaluated FPGA build.}
   \label{tab:fpga-config}
   \renewcommand{\arraystretch}{1.15}
-  \begin{tabular}{@{}llr@{}}
+  \begin{tabular}{@{}lr@{}}
   \toprule
-  \textbf{Category} & \textbf{Parameter} & \textbf{Value} \\
+  \textbf{Parameter} & \textbf{Value} \\
   \midrule
-  Core            & Clusters $\times$ cores & 1 $\times$ 1 \\
-                  & Warps $\times$ threads  & 16 $\times$ 8 \\
-                  & Issue width             & 4 \\
+  \multicolumn{2}{@{}l}{\textit{Core}} \\
+  Clusters $\times$ cores & 1 $\times$ 1 \\
+  Warps $\times$ threads  & 16 $\times$ 8 \\
+  Issue width             & 4 \\
   \midrule
-  Execution units & ALU & 4 blocks \\
-                  & FPU & 4 blocks \\
-                  & SFU & 1 block \\
-                  & LSU & 1 block \\
-                  & TCU & 4 blocks, FEDP2K enabled \\
+  \multicolumn{2}{@{}l}{\textit{Execution units}} \\
+  ALU & 4 blocks \\
+  FPU & 4 blocks \\
+  SFU & 1 block \\
+  LSU & 1 block \\
+  TCU & 4 blocks, FEDP2K enabled \\
   \midrule
-  Memory          & L1 I-cache   & 16\,KB, 4-way, 64\,B lines \\
-                  & L1 D-cache   & 16\,KB, 4-way, 64\,B lines, write-back \\
-                  & L2 / L3      & Disabled \\
-                  & Local memory & 16\,KB, 8 banks \\
+  \multicolumn{2}{@{}l}{\textit{Memory}} \\
+  L1 I-cache   & 16\,KB, 4-way, 64\,B lines \\
+  L1 D-cache   & 16\,KB, 4-way, 64\,B lines, write-back \\
+  L2 / L3      & Disabled \\
+  Local memory & 16\,KB, 8 banks \\
   \bottomrule
   \end{tabular}
 \end{table}
