@@ -45,13 +45,15 @@ Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:til
 \end{figure}
 
 % float placed early: renders at the top of the right column beside Section V-A3
-% TODO(roofline): WGMMA points 2.31/5.85 not yet from the final SimX runs
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]
-    {hpca2027-latex-template/fig/roofline_128_compare.png}
-    \caption{Roofline comparison of scalar, WMMA, WGMMA, and
-    2:4 sparse execution for a $128^3$ SGEMM kernel.}
+    {hpca2027-latex-template/fig/roofline_512.pdf}
+    \caption{SimX roofline comparison of six WMMA and WGMMA
+    configurations for $512^3$ SGEMM, including
+    2:4 sparsity and FEDP2K. Light red triangles show ideal matrix-data
+    arithmetic intensity at the measured throughput; dashed lines show
+    the gap from measured intensity.}
     \label{fig:roofline}
 \end{figure}
 
@@ -70,10 +72,21 @@ At the instruction level, the warp-group MMA of FourShadow scales nearly linearl
 
 
 \subsubsection{Roofline Model Performance Analysis}\label{sec:eval_roofline}
-Fig.~\ref{fig:roofline} shows that WMMA raises arithmetic intensity from
-0.25 to 3.61 FLOP/byte and throughput from 2.65 to 23.21 FLOP/cycle.
-Sparse WMMA further reaches 33.49 FLOP/cycle. On the other hand, while WGMMA has the highest achieved operational intensities at 5.82 and 7.11 FLOP/byte, it only reaches 2.31 and
-5.85 FLOP/cycle for dense and sparse execution respectively. This indicates that Tensor Core designs, especially with sparsity enabled are able to move fairly memory-bound kernels into the compute bound region. In the simulated kernels the shared-memory reads of an SS step amount to one $B$ tile per warpgroup, 1.00 per step, as in the RTL design (Section~\ref{sec:design_wgmma}).
+Fig.~\ref{fig:roofline} compares six FP16-input, FP32-output configurations
+on SimX at $512^3$, with 8 threads per warp, 16 warps per core, and issue
+width 4. Throughput and arithmetic intensity use the same dense-equivalent
+operation count, $2MNK$, for dense and 2:4 sparse execution. WMMA achieves
+26.20 FLOP/cycle, while sparse WMMA reaches 47.22 FLOP/cycle.
+Deep-buffered SS WGMMA raises measured arithmetic intensity to
+9.14 FLOP/byte and throughput to 50.74 FLOP/cycle. Sparsity raises WGMMA
+throughput to 76.16 FLOP/cycle, while FEDP2K alone reaches 56.63 FLOP/cycle.
+Combining FEDP2K with sparsity reaches 92.89 FLOP/cycle.
+All six runs pass their numerical checks.
+The ideal-intensity triangles count one read of each input and one
+write of the output, including compressed $A$ and the kernel's padded
+metadata for sparse execution. Their gap from measured intensity shows
+traffic beyond this compulsory matrix-data lower bound; measured traffic
+includes all off-chip requests reported by SimX.
 
 \subsection{Warp-Group Tensor Core Design Space Exploration}\label{sec:eval_wgmma}
 

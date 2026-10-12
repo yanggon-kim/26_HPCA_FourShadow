@@ -73,7 +73,7 @@ revision/rebuttal}: items 1--9 answer them one by one. Beyond these, we also add
 revised paper.
 
 \vspace{3pt}
-\noindent\textbf{\emph{Questions for revision/rebuttal (prioritized).}}
+\noindent\textbf{\emph{Addressing questions for revision/rebuttal.}}
 
 \vspace{1pt}
 \noindent\textbf{1. Five boxed findings answer the two questions.} [A][F] FourShadow is the
@@ -141,6 +141,7 @@ Eqs.~(\ref{eq:block_cap})--(\ref{eq:block_tc}) give 4, 8 and 8 FP16 MACs per lan
 32 threads: from 16 to 32 threads only $\mathit{tcM}$ doubles (\ref{sec:eval_threads}, Answer \#1
 for Q2), and neither equation has a register term. Fig.~\ref{fig:q2_nt_iw}(a) compares per-lane
 FP16 throughput across thread counts at one precision.
+\todo{explain how NVIDIA has 32 registers/thread as well. can go up to 255 only when only 8 of the 32 threads in a warp are active}
 
 \vspace{1pt}
 \noindent\textbf{8. The roofline plots each mode's achieved point.} [B]
@@ -155,7 +156,7 @@ camera-ready version. Table~\ref{tab:config} and \ref{sec:method_hw} name each s
 and its default, and \ref{sec:method_sw} the sweeps' kernels and shapes.
 
 \vspace{3pt}
-\noindent\textbf{\emph{Comments for authors.}}
+\noindent\textbf{\emph{Addressing comments for authors.}}
 
 \vspace{1pt}
 \noindent\textbf{10. We also addressed these, review by review.}
