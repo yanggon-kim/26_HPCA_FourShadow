@@ -99,6 +99,7 @@ Fig.~\ref{fig:e2e_fpga}: WGMMA gives 10.18$\times$ and 7.76$\times$ for Llama-3.
 decode, and 12.39$\times$ and 8.57$\times$ with 2:4 sparsity. The SimX area--performance study
 (Fig.~\ref{fig:pareto}) is over the SIMT baseline, as its caption states. Table~\ref{tab:config} states each platform's configuration and enabled features,
 and each Evaluation part names its baseline (\ref{sec:method_sw}).
+In the E2E evaluation, the FPGA build configuration and the workloads were redefined (Table~\ref{tab:fpga-config}), so these numbers are not directly comparable with the submitted ones. The WMMA baseline loads its operands directly from global memory, so part of WGMMA's gain comes from DXA hiding memory latency (\ref{sec:eval_fpga}).
 
 \vspace{1pt}
 \noindent\textbf{3. End-to-end workloads are specified and their gains separated.} [C][D]
