@@ -341,7 +341,7 @@ TCU area grows almost linearly with issue width (Fig.~\ref{fig:iw_area_scaling})
 \end{figure}
 
 \subsubsection{Area Cost of the Tensor-Core Extensions}
-The feature ladder adds each extension to the dense WMMA core (0.291\,mm$^2$):
+The feature ladder adds each extension to the dense WMMA core:
 \begin{itemize}
     \item \textbf{2:4 sparsity} adds 1,745\,$\mu$m$^2$ (10\%) to the TCU for the metadata SRAM and the gather logic that selects the kept $B$ values; the core grows by 0.4\% and its power is unchanged.
     \item \textbf{Warp-group MMA with DXA} adds 11,419\,$\mu$m$^2$ (3.9\%) and 3.2\% power, of which the DXA engine is 9,285\,$\mu$m$^2$ and the TCU's tile buffers and control 1,571\,$\mu$m$^2$.
