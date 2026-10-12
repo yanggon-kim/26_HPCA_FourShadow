@@ -318,7 +318,7 @@ speedups are smaller for workloads whose runtime is not GEMM-dominated,
 such as FlashAttention and NeRF.
 Surprisingly, these end-to-end speedups exceed the single-tile
 speedups. This is mainly because the FPGA's memory system has a higher
-latency than the simulation model. WMMA is sensitive to global memory
+latency than the simulation model, which omits the FPGA's interconnect and HBM controller. WMMA is sensitive to global memory
 latency, whereas WGMMA is less so because it overlaps computation with
 data movement from global memory. The FPGA's HBM also has far higher
 bandwidth than the simulated memory, but matching the simulator's
