@@ -17,7 +17,7 @@ FourShadow is implemented in Vortex~\cite{vortex}, the open-source RISC-V GPU, a
  & \textbf{FourShadow} & \textbf{RTX 5080} & \textbf{H100 SXM} \\
 \midrule
 Threads/warp (NT) & 4, 8, 16, 32 (\ref{sec:eval_threads}) & 32 & 32 \\
-Warps/core (NW) & 4, \textbf{16} & 4 per CTA & 4 per CTA \\
+Warps/core (NW) & 4, 16 & 4 per CTA & 4 per CTA \\
 Issue width (IW) & 1, 2, 4, 8 (\ref{sec:eval_iw}) & -- & 4 (warpgroup) \\
 Accum.\ regs.\ ($\mathit{NRC}$) & 8, 16, 32 (\ref{sec:eval_nrc}) & -- & -- \\
 FEDP width & $K$, $2K$ (\ref{sec:eval_fedp2k}) & not visible & not visible \\
@@ -25,7 +25,7 @@ Warp-level MMA & TCU, dense, 2:4 & \texttt{mma(.sp)} & \texttt{mma(.sp)} \\
 Warp-group MMA & WGMMA, RS, SS & -- & \texttt{wgmma(.sp)} \\
 \midrule
 Cycles & simulated & \texttt{clock64} & \texttt{clock64} \\
-Tech. Node. & ASAP 7\,nm & TSMC 4NP\,nm & TSMC 4N\,nm \\
+Tech. Node. & ASAP7 & TSMC 4NP & TSMC 4N \\
 Clock Freq. & 1.0 GHz & 2.295 GHz & 1.59 GHz \\
 Toolchain & \makecell[l]{VOLT~\cite{10.1145/3771775.3786275},\\\texttt{Vortex 3.0}} & \makecell[l]{CUDA 13.0,\\\texttt{sm\_120a}} & \makecell[l]{CUDA 12.4.131,\\\texttt{sm\_90a}} \\
 
