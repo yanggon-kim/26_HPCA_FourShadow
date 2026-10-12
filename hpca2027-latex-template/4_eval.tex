@@ -84,23 +84,18 @@ particularly suitable for modern ML systems inference workloads that are heavily
 
 The first three parts explore FourShadow's warp-group design space; the fourth answers Q1 (Section~\ref{sec:intro}) for warp-group MMA against an H100, and Section~\ref{sec:eval_sparse} continues Q1 for sparsity.
 
-\begin{figure}
+\subsubsection{Number of Accumulator Registers (NRC) Scaling}\label{sec:eval_nrc}
+\begin{figure}[t]
     \centering
     \includegraphics[width=\linewidth]
-    {hpca2027-latex-template/fig/nrc_cycles_short.pdf}
-    \caption{WGMMA execution cycles as the number of accumulator
-    registers is increased in RS and SS modes.}
-    \label{fig:nrc_sweep}
+    {hpca2027-latex-template/fig/nrc_h100_scaling.pdf}
+    \caption{FP16 WMMA and WGMMA cycles as $K$ grows on FourShadow and an
+    H100, each normalized to the platform's WGMMA at $K{=}64$
+    ($\mathit{NRC}{=}8$ on FourShadow).}
+    \label{fig:nrc_h100}
 \end{figure}
 
-\subsubsection{Number of Accumulator Registers (NRC) Scaling}\label{sec:eval_nrc}
-As shown in Fig.~\ref{fig:nrc_sweep}, at (IW-2, NW-4) and 32 threads per warp, increasing NRC from 8 to 16 reduces
-cycles by 33--34\% in both RS and SS modes, and extending SS to NRC${}=32$
-reduces cycles by approximately 50\% over NRC${}=8$; at (IW-4, NW-4) the two reductions are 40.0--40.3\% and 60.1--60.6\%. One H100 SM computing the same GEMM saves 19--50\% from $N{=}16$ to 32 and 41--65\% from 16 to 64, which brackets the FourShadow values. In these GEMM kernels SS is only 1--4\%
-faster than RS at the same NRC, a property of how the kernels stage the operands, since per instruction an SS step costs 1.32--1.45$\times$ an RS step at (IW-4, NW-4); its main advantage is mostly enabling the
-largest accumulator tile size possible. However, the gains remain sublinear because memory,
-control, and outer $K$-loop work do not shrink with accumulator capacity.
-
+Fig.~\ref{fig:nrc_h100} compares how FP16 WMMA and WGMMA scale with $K$ on FourShadow and an H100, each platform normalized to its WGMMA cycles at $K{=}64$. It suggests that limited accumulator capacity is one reason WMMA attains only about 63\% of peak throughput on Hopper, against over 95\% for WGMMA~\cite{luo2025dissectingnvidiahopperarchitecture}. With $\mathit{NRC}{=}8$, the accumulator count of WMMA, FourShadow's normalized cycles grow from 1.00$\times$ to 5.52$\times$ as $K$ grows to 2048, close to the H100's WMMA curve; with $\mathit{NRC}{=}32$ they reach only 3.00$\times$, nearly the H100 WGMMA's 3.05$\times$ ($\mathit{NRC}{=}16$ reaches 5.09$\times$). Hopper's WGMMA performance gains over WMMA thus appear to primarily come from a larger effective accumulator tile size rather than just direct SMEM load.
 \subsubsection{K vs.\ 2K-Wide FEDP}\label{sec:eval_fedp2k}
 % TODO(fig10): FEDP bars not from the final runs; NRC-16 K-wide lat-4 bars differ from Fig. 9
 Fig.~\ref{fig:fedp2k_sweep} shows that the 2K-wide FEDP is able to reduce instruction count by 31--33\% and execution cycles by 28--30\% in both
