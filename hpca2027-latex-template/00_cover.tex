@@ -144,8 +144,9 @@ FP16 throughput across thread counts at one precision. FourShadow's 32 registers
 
 \vspace{1pt}
 \noindent\textbf{8. The roofline plots each mode's achieved point.} [B]
-\ref{sec:eval_roofline} places scalar, WMMA, WGMMA and sparse execution by achieved
-intensity and throughput. WGMMA reaches the highest intensity, 5.82--7.11 FLOP/byte, and an SS
+\ref{sec:eval_roofline} places WMMA, WGMMA, sparse and FEDP2K execution by achieved
+intensity and throughput. WGMMA raises intensity from WMMA's 4.54 to 16.04 FLOP/byte and
+throughput from 71.22 to 179.17 FLOP/cycle, and an SS
 step reads one $B$ tile per warpgroup, as in the RTL (\ref{sec:design_wgmma}).
 
 \vspace{1pt}
