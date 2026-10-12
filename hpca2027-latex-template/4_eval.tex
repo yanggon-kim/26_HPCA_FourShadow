@@ -296,7 +296,7 @@ Surprisingly, these end-to-end speedups exceed the single-tile
 speedups. This is mainly because the FPGA's memory system has a higher
 latency than the simulation model, which omits the FPGA's interconnect and HBM controller. WMMA is sensitive to global memory
 latency, whereas WGMMA is less so because it overlaps computation with
-data movement from global memory. The FPGA's HBM also has far higher
+data movement from global memory: in RTL simulation, modeling a flat additional 50-cycle delay in the memory controller slows Llama-3.2-1B decode's $512{\times}32{\times}2048$ K/V projection by 1.75$\times$ with WMMA but by only 1.01$\times$ with WGMMA. The FPGA's HBM also has far higher
 bandwidth than the simulated memory, but matching the simulator's
 bandwidth to it reduces a GEMM's cycle count by at most 9\%.
 \begin{figure}
