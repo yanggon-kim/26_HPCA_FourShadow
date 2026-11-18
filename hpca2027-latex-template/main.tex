@@ -6,7 +6,6 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage[hyphens]{url}
-\usepackage{fancyhdr}
 \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{colortbl,pifont,makecell}
@@ -38,8 +37,6 @@
   \setlength{\belowdisplayshortskip}{3pt plus 2pt minus 1pt}}
 \makeatother
 
-\newcommand{\hpcayear}{2027}
-
 % Cells of the related-work comparison table
 \newcommand{\cyes}{\ding{51}~\textbf{Yes}}
 \newcommand{\cno}{\ding{55}~No}
@@ -52,8 +49,7 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%% -- UPDATE -- %%%%%%%%%%%%%%%
-\newcommand{\hpcasubmissionnumber}{2126}
+%%%%%%%%%%%%%%% -- TITLE -- %%%%%%%%%%%%%%%
 \title{FourShadow: 
 Investigating SIMT Tensor Core Scaling Across Hierarchies of a RISC-V GPU}
 %Scaling Across Multiple RISC-V GPU Hierarchies}
@@ -61,35 +57,17 @@ Investigating SIMT Tensor Core Scaling Across Hierarchies of a RISC-V GPU}
 % alt: FourCast, FourSight
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%% -- ONLY FOR CAMERA READY -- %%%%%%%%
-%\def\hpcacameraready{} % Uncomment to build camera-ready version
-\newcommand{\hpcapubid}{0000--0000/00\$00.00}
-\newcommand\hpcaauthors{First Author$\dagger$ and Second Author$\ddagger$}
-\newcommand\hpcaaffiliation{First Affiliation$\dagger$, Second Affiliation$\ddagger$}
-\newcommand\hpcaemail{Email(s)}
-
-%%%%% -- ARTEFACT EVALUATION RESULTS -- %%%%%%
-% Uncomment the following based on the badges that were awarded to this paper
-%\def\aeopen{}           % The artifact is publically available
-%\def\aereviewed{}     % The artefact has been reviewed
-%\def\aereproduced{} % The results have been reproduced
+%%%%%%%%%%%%% -- AUTHORS -- %%%%%%%%%%%%%%
+% ISPASS 2027 reviews double-blind: no author names or affiliations in the submission.
+\author{\IEEEauthorblockN{Anonymous Author(s)}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% INTERNAL review tracker (temporary, typeset before the cover page): delete the
-% \trackerpagetrue line below before submission and the tracker page disappears.
-\newif\iftrackerpage
-%\trackerpagetrue
-\iftrackerpage\usepackage{longtable}\fi
-
-% Revision cover page: the first page of the PDF. hpca-template.tex (DO NOT MODIFY) opens the
-% document and calls \maketitle, so the cover is typeset from the begin-document hook, before
-% the title page; it ends with \clearpage and restarts the page numbers at 1.
-%\AddToHook{begindocument/end}{\iftrackerpage\input{hpca2027-latex-template/00_review_tracker}\fi
- % \input{hpca2027-latex-template/00_cover}}
-
-\input{hpca-template}
+\begin{document}
+\maketitle
+% ISPASS requires numbered pages; IEEEtran's conference mode prints none by default.
+\thispagestyle{plain}
+\pagestyle{plain}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%% -- PAPER CONTENT STARTS -- %%%%%%%%%
@@ -97,6 +75,7 @@ Investigating SIMT Tensor Core Scaling Across Hierarchies of a RISC-V GPU}
 \input{hpca2027-latex-template/0_abstract}
 \input{hpca2027-latex-template/1_intro}
 \input{hpca2027-latex-template/2_background}
+\input{hpca2027-latex-template/2_5_related_work}
 \input{hpca2027-latex-template/3_methodology}
 \input{hpca2027-latex-template/3_5_experimental_methodology}
 \input{hpca2027-latex-template/4_eval}

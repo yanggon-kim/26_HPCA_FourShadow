@@ -40,7 +40,7 @@ Warp-group MMA keeps this advantage, as the Block equations of Fig.~\ref{fig:til
     \label{fig:q2_nt_iw}
 \end{figure}
 
-% float placed early: renders at the top of the right column beside Section V-A3
+% float placed early: renders at the top of the right column beside the roofline subsection (sec:eval_roofline)
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]
@@ -55,7 +55,7 @@ width of one. An issue width of two provides 1.21--1.48$\times$ speedup,
 while four reaches up to 1.84$\times$. Increasing to eight only peaks at 2.02$\times$, with the 8- and 16-thread designs largely saturating after
 four. The returns diminish because instruction issue, not the tensor core or shared memory, bounds the kernel. In the dense warp-group GEMM loop at (IW-4, NW-4), 8 threads per warp and $\mathit{NRC}{=}8$, the warp-group MMA is 2.1--2.5\% of a $K$ step, and the rest stages $A$ and $B$ into shared memory on the integer and load/store units. With four warps per core, the kernel issues 0.42--0.44 instructions per cycle at every issue width and uses 1.5--1.7\% of the shared-memory bank bandwidth, so a wider issue gains only the instructions saved by staging $B$ once for a larger warpgroup. Growing the warps with the issue width, to (IW-2, NW-8), (IW-4, NW-16) and (IW-8, NW-32), speeds up a $K$ step over (IW-1, NW-4) by 2.4--2.5$\times$, 3.2--3.5$\times$ and 3.6--3.9$\times$ rather than 2, 4 and 8$\times$: from (IW-4, NW-16) on, the core schedules a warp in 93--99\% of cycles, because its front end fetches one warp instruction per cycle whatever the issue width. The warp-group MMA escapes this bound because each instruction expands into $2\,\mathit{NRC}$ micro-ops that keep its warp's tensor block busy.
 % Sources: 00_doc/vortex-wgdxa2k/results/SMEM_BW_IW.md (staging IPC, banks), IW_NW_SWEEP.md sections 2 and 4 (NW-4 IPC 0.416-0.437, bank use 0.015-0.017) + iw_nw_sweep.json (diagonal, sched. busy); fetch: SimX core.cpp:330-358.
-% TODO(fig6b-iw8): the printed IW-8 row (1.18--2.02x over IW 1) is not reproduced; the final SimX (IW-8, NW-8) cell gives 2.80--3.20x per K step (IW_NW_SWEEP.md section 3).
+% TODO(ispass): fig:iw_sweep(b) -- the printed IW-8 row (1.18--2.02x over IW 1) is not reproduced; the final SimX (IW-8, NW-8) cell gives 2.80--3.20x per K step (IW_NW_SWEEP.md section 3).
 
 At the instruction level, the warp-group MMA of FourShadow scales nearly linearly with the issue width. Fig.~\ref{fig:q2_nt_iw}(b) streams back-to-back warp-group MMAs at 32 threads per warp, four warps per core and issue widths of 1, 2 and 4, a narrower range than the whole-kernel sweep of Fig.~\ref{fig:iw_sweep}(b), which extends to 8. Each doubling of the issue width raises throughput by $\times$2.00 and again by $\times$2.00 in RS mode at $\mathit{NRC}{=}16$, and by $\times$1.89 and then $\times$1.80 in SS mode at $\mathit{NRC}{=}32$. As the issue width grows, the sparse per-$K$ speedup stays at 1.275$\times$ in RS mode and rises from 1.349$\times$ to 1.417$\times$ in SS mode. Sparsity shortens the fixed micro-op part of a step, from 72 to 53 cycles in RS mode at $\mathit{NRC}{=}16$. The issue-width results are measured on FourShadow alone; a commercial GPU fixes its warpgroup at four warps. \phantomsection\label{sec:skinny_iw}The instruction-issue bound holds for skinny GEMMs: (IW-8, NW-32) speeds up a $K$ step over (IW-1, NW-4) by 3.84--3.91$\times$ on wide shapes at 8 threads per warp, and by 2.88--3.74$\times$ on tall shapes with $N{=}16$, where fewer warps have work.
 % Source (skinny): SKINNY.md section 5.4 row 16 and skinny.json families.128 claim F3.diag8.avail (w64 = 64x128xK, NT 8 RS/SS only: the 32-thread IW-8 CTA (M 128) cannot tile M = 64; t16 = 128x16xK, NT 8/32 RS/SS); idle warps at t16: SKINNY.md 5.3 finding 2.
@@ -97,12 +97,12 @@ The first three parts explore FourShadow's warp-group design space; the fourth a
 
 Fig.~\ref{fig:nrc_h100} compares how FP16 WMMA and WGMMA scale with $K$ on FourShadow and an H100, each platform normalized to its WGMMA cycles at $K{=}64$. It suggests that limited accumulator capacity is one reason WMMA attains only about 63\% of peak throughput on Hopper, against over 95\% for WGMMA~\cite{luo2025dissectingnvidiahopperarchitecture}. With $\mathit{NRC}{=}8$, the accumulator count of WMMA, FourShadow's normalized cycles grow from 1.00$\times$ to 5.52$\times$ as $K$ grows to 2048, close to the H100's WMMA curve; with $\mathit{NRC}{=}32$ they reach only 3.00$\times$, nearly the H100 WGMMA's 3.05$\times$ ($\mathit{NRC}{=}16$ reaches 5.09$\times$). Hopper's WGMMA performance gains over WMMA thus appear to primarily come from a larger effective accumulator tile size rather than just direct SMEM load.
 \subsubsection{K vs.\ 2K-Wide FEDP}\label{sec:eval_fedp2k}
-% TODO(fig10): FEDP bars not from the final runs; NRC-16 K-wide lat-4 bars differ from Fig. 9
+% TODO(ispass): fig:fedp2k_sweep -- FEDP bars not from the final runs; NRC-16 K-wide lat-4 bars differ from fig:nrc_h100
 Fig.~\ref{fig:fedp2k_sweep} shows that the 2K-wide FEDP is able to reduce instruction count by 31--33\% and execution cycles by 28--30\% in both
 operand-staging modes. Our evaluations also show that increasing FEDP pipeline latency from four to eight
 cycles adds at most 3.1\% overhead. Halving the number of $K$-dimension
 micro-ops therefore considerably outweighs the deeper pipeline and extra descriptor-setup micro-op cost.
-% REVIEW(2026-10-01): the next sentence moved here from the design section (a measurement); its source run is not identified in the pinned branch d6426cca1 -- coauthors confirm.
+% TODO(ispass): the next sentence moved here from the design section (a measurement); its source run is not identified in the pinned branch d6426cca1 -- coauthors confirm.
 The setup micro-op that dense RS mode adds with the 2K-wide FEDP increases the end-to-end cycle count by under 1\%.
 \begin{figure}
     \centering
@@ -113,7 +113,7 @@ The setup micro-op that dense RS mode adds with the 2K-wide FEDP increases the e
     \label{fig:fedp2k_sweep}
 \end{figure}
 
-% Removed for the 12-page limit (2026-10-12); restore by uncommenting.
+% Descriptor-load study, removed for length; restore by uncommenting.
 % \subsubsection{TCU SRAM vs.\ Register File WGMMA Descriptor Load}\label{sec:eval_desc}
 % Moving the WGMMA descriptors into TCU SRAM increases cycles by
 % 1.2--6.5\% relative to register-file delivery. The penalty is largest for short SS kernels
@@ -145,7 +145,7 @@ The setup micro-op that dense RS mode adds with the 2K-wide FEDP increases the e
 \end{figure}
 
 \subsubsection{Reading \texorpdfstring{$A$}{A} from Shared Memory Delays Every Warp-Group MMA}\label{sec:eval_delay_a}
-% TODO(delay-a-rtl): the FourShadow delay values come from SimX, which fetches the whole A tile in 64-B lines; III-B describes the RTL A buffer (one K stripe, one bank row per request). See 00_doc/vortex-wgdxa2k/results/DELAY_A.md.
+% TODO(ispass): the FourShadow delay values come from SimX, which fetches the whole A tile in 64-B lines; sec:design_wgmma describes the RTL A buffer (one K stripe, one bank row per request). See 00_doc/vortex-wgdxa2k/results/DELAY_A.md.
 In RS mode the compute micro-ops read $A$ from registers \texttt{f24}--\texttt{f27}, and only $B$ crosses the shared-memory port. In SS mode each tensor block must fill its $A$ buffer through that port, which all $\mathit{IW}{+}1$ tile buffers share (Section~\ref{sec:design_wgmma}), so its first multiplication waits for those reads. Fig.~\ref{fig:delay_a} times each warp-group MMA after the previous one completes. On FourShadow at (IW-4, NW-4) and 32 threads per warp this wait adds 28--31 cycles to a dense warp-group MMA (bars in Fig.~\ref{fig:delay_a}(a)). It does not grow with $N$: $A$ is the $64{\times}16$ tile of every instruction, while $N$ widens only $B$ and the micro-ops, which both modes pay. It follows the bytes of $A$: the compressed 1\,KiB sparse $A$ pays 14--15 cycles (Fig.~\ref{fig:delay_a}(b)). It recurs on every instruction, because the $A$ buffer refills at each instruction's first compute micro-op (the F cells of Fig.~\ref{fig:wgmma_operation}(c)): a descriptor names an address, and the kernel may rewrite the tile under it. One warpgroup of the H100 shows all three signatures: dense SS mode completes 9.0--10.0 cycles after RS mode from $N{=}16$ to 128, sparse pays alike (8.0--9.0) because it also reads 2\,KiB of $A$, and the delay stays at 10.25 cycles when every instruction reads the same $A$. The H100's warp-group MMA thus behaves as one that stages $A$ from shared memory before its first multiplication and keeps no copy between instructions, as FourShadow does.
 
 \answerbox{Answer \#1 for Q1}{A warp-group MMA in SS mode waits for $A$ before its first multiplication, a fixed delay per instruction that does not grow with the tile width; the H100 and FourShadow keep no operand between instructions, so every instruction pays the delay again.}
@@ -162,7 +162,6 @@ $K{=}1024$ and 8 threads, and both symmetric cells sit below both
 asymmetric cells in 11 of 12 rows (the exception: TF32 at $K{=}256$,
 1.45$\times$ at 16 threads against 1.37$\times$ at 8).
 \phantomsection\label{sec:large_sym}The ordering holds at $256{\times}256{\times}K$ and $512{\times}512{\times}K$: the asymmetric cells span 1.21--1.77$\times$, and both symmetric cells sit below both asymmetric cells in 17 of 18 rows and in all 18.
-% Source (256/512): RERUN_256.md / RERUN_512.md claims F6.asym (256: 1.21-1.77, 512: 1.23-1.77) and F6.order (0.944 / 1.0 of rows); recomputed 2026-10-11 from runs-bfix2-r256-f6.jsonl and runs-bfix2-r512-f6.jsonl: 18 rows = TF32/BF16/FP8 x K {128, 256, 512, 768, 1024, 1536}, 17 below at 256 (exception TF32 K 256: 16 thr. 1.497 vs 8 thr. 1.484), 18 at 512; unchanged on the upstream head (UPSTREAM_FULL.md 4.3).
 At 4 threads
 sparsity loses in nine of 12 cells (0.71--0.83$\times$); at 16 threads
 it gains modestly, 0.91--1.45$\times$ and above 1 in 11 of 12 cells. The
@@ -194,7 +193,6 @@ loss nor the 16-thread gain; their source is not isolated.
 \subsubsection{Only Part of the Sparse Cost Halves}\label{sec:eval_sparse_halves}
 
 For the $64{\times}64{\times}K$ FP16 GEMM of Fig.~\ref{fig:sparse_nvidia}(a), the dense-over-sparse speedup rises with $K$ but stays below 2$\times$: from 1.16$\times$ at $K{=}32$ to 1.50$\times$ at $K{=}512$ on the RTX 5080, and from 1.07$\times$ to 1.56$\times$ on FourShadow at 32 threads per warp. Over issue widths of 1, 2 and 4 with 4 or 16 warps, at 8 and 32 threads, FourShadow stays below 2$\times$: its maximum is 1.92$\times$, for the INT8 $128{\times}128{\times}1024$ GEMM at (IW-1, NW-16) and 32 threads. \phantomsection\label{sec:large_halves}At $256{\times}256{\times}K$ and $512{\times}512{\times}K$ the maximum is 1.79$\times$ and 1.77$\times$.
-% Source (256/512): RERUN_256.md claim F7.max.region (region cycles, the boundary of the printed 1.92: 256 1.785, 512 1.77); recomputed 2026-10-11 from runs-bfix2-r{256,512}-f7/f10.jsonl: 256 max 1.78506 (FP16 K 1024, (IW-1, NW-16), 32 thr.) -> 1.79, 512 max 1.76992 (TF32 K 1536, (IW-1, NW-4), 8 thr.); unchanged on the upstream head (UPSTREAM_FULL.md 4.3).
 
 We fit the cycles of each $K$ sweep as $C_{\mathrm{dense}} = c + (a+d)K$ and $C_{\mathrm{sparse}} = c' + (a/2+d)K$, where $a$ is the per-$K$ cost that 2:4 sparsity is assumed to halve exactly, and $d$ the per-$K$ cost that it leaves unchanged ($c$ and $c'$ do not depend on $K$). The fitted slopes $s_{\mathrm{dense}} = a+d$ and $s_{\mathrm{sparse}} = a/2+d$ give the halvable share $f = a/(a+d) = 2(1 - s_{\mathrm{sparse}}/s_{\mathrm{dense}})$, and as $K$ grows the speedup approaches the bound $1/(1-f/2) = s_{\mathrm{dense}}/s_{\mathrm{sparse}}$. For FP16, $f$ is 69.7\% on the RTX 5080 and 78.5\% on FourShadow at 32 threads, which gives the dashed lines of Fig.~\ref{fig:sparse_nvidia}(a) at 1.53$\times$ and 1.65$\times$. Here $a$ contains the tensor-core math and the $A$ load, which halve together, and $d$ the $B$ load and the metadata. At 8 threads per warp FourShadow's instruction counts confirm this split: the halved $A$-fragment loads and WMMA micro-ops predict $a$ within 2.2\%.
 
@@ -206,7 +204,6 @@ Sparsity is faster in each of the 17 shapes measured on both FourShadow and the 
 
 With identical staging in the dense and sparse kernels, 2:4 sparsity speeds up FourShadow's warp-group GEMM by 1.41--1.53$\times$ and the H100's by 1.28--1.51$\times$, below 2$\times$ at every $K$ (Fig.~\ref{fig:sparse_wg_halvable}(a)). \phantomsection\label{sec:large_wg}The same pair at $256{\times}256{\times}K$ and $512{\times}512{\times}K$ gains 1.39--1.53$\times$, and its halvable shares, under synchronous or double-buffered DXA staging, stay within 1 point of those at $128{\times}128{\times}K$. \phantomsection\label{sec:skinny_sparse}On skinny shapes FourShadow's sparsity speedup is 1.42--1.54$\times$, and 1.51--1.53$\times$ on the decode-like tall $128{\times}32{\times}1536$ GEMM.
 % Source (skinny): skinny.json families.128 claim F8.1 (t32 1.44-1.53, t64 1.43-1.54, w64 1.42-1.53; SKINNY.md 5.4 row 9) and SKINNY.md 5.3 finding 7 (t32, K 1536: 1.51-1.53); rechecked from runs-bfix2-skinny-128-f8.jsonl (dense / res, 32 thr., NRC 8, RS+SS) on 2026-10-11.
-% Source (256/512): RERUN_256.md / RERUN_512.md claims F8.1 (256 1.40-1.52, 512 1.39-1.53; rerun256.json items f8 fits: 1.396-1.524 / 1.387-1.526), F8.f.* and F9.f16 (rerun256.json f8/f9 fits, 32 and 8 thr., NRC 8/16, RS/SS, packed double-buffered DXA = the printed 27-31%: largest |f - f_128| 0.89 points, RS NRC 16 at 512, every fit valid); unchanged on the upstream head (UPSTREAM_FULL.md 4.3). Warp-level F10 fits are invalid at 256/512 and not printed.
 FourShadow runs the $128{\times}128{\times}K$ GEMM at (IW-4, NW-4), 32 threads per warp and $\mathit{NRC}{=}8$, timed in total kernel cycles, with the metadata loaded once before the loop and the warps copying $A$ and $B$ into shared memory before each warp-group MMA (synchronous staging); its dense and sparse kernels differ only in the length of $A$ per $K$ step and in the MMA instruction. The H100 runs one warpgroup's $64{\times}16{\times}K$ loop, the tile of equal $N$ (Section~\ref{sec:method_hw}) and pipelines its operand staging, overlapping it with the warp-group MMA. Both speedups rise with $K$ toward their bounds.
 
 The halvable-share model of Section~\ref{sec:eval_sparse_halves} fits these sweeps as well, with positive intercepts and seven (H100) or eight (FourShadow) values of $K$; at $N{=}16$ its bounds are the dashed lines of Fig.~\ref{fig:sparse_wg_halvable}(a), 1.44--1.54$\times$.
@@ -245,8 +242,7 @@ DXA engine 2.5\%, the LSU 1.4\% and the SFU 0.9\%.
   \textbf{SFU / LSU blocks}     & 1 / 1       & \textbf{L2 / L3}         & Disabled \\
   \textbf{TCU blocks}           & 4, FEDP2K   &                          & \\
 \midrule
-% TODO(e2e-workloads): values taken from the Akili draft (00_doc/02_references_akili/main.tex, Table "Akili Configuration and Workload Setup" and its Testbench paragraph), not yet re-checked against the FourShadow end-to-end run sources. Read-only check 2026-10-09: the stories15M model agrees with tests/regression/llama on Vortex origin/dtcu (fdbdb3c73), whose default run generates 8 tokens (LLAMA_STEPS), not 10, so the token count rests on the run command, which no tree here records; no attention, FlashAttention, CNN or NeRF source was found in the workspace.
-% TODO(e2e-workloads): MoE (added 2026-10-11 with the FPGA figure of 7bfabe4, speedups over the dense TCU) has no settings printed: no MoE source exists in the upstream wgdxa2k head 0b75f20d6 (objects in 01_github/vortex), in any ref of 01_github/vortex or of the twin 02_26HPCA/vortex, or elsewhere in the workspace (path and content search, read-only, 2026-10-11). Missing: model or layer, expert count, top-k, hidden and expert sizes, token count, precision. Twin-clone refs that do hold e2e apps, not checked against this row: origin/tcu_op tests/regression/flashattention_tcu(_virgo), origin/tcu-fpga-timing tests/regression/llama2.
+% TODO(ispass): the end-to-end workload settings below were filled in by the co-authors and are not yet checked against the FPGA run sources (Llama decode token count, attention/FlashAttention/CNN/NeRF/MoE settings).
 \multicolumn{4}{@{}p{\linewidth}@{}}{\textbf{End-to-end workloads} (Fig.~\ref{fig:e2e_fpga}): CNN, 2D convolution (in/out channels 128/128, height 64, width 64, kernel size 3); attention layer with Q/K/V and output projections (512 tokens, hidden dim.\ 1024, 16 heads); FlashAttention (sequence length 4096, head dim.\ 32); Llama-3.2-1B decode (8 tokens, batch 32) and prefill (128-token prompt); NeRF (512 rays, 64 samples); MoE (512 tokens, hidden dim.\ 2048, FFN dim.\ 2048, 8 experts, top-2). All run FP16 inputs with FP32 accumulation.} \\
   \bottomrule
   \end{tabular}
