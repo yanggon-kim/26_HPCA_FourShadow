@@ -56,7 +56,7 @@ Turing/Ampere reverse engineering extended to Blackwell.
 - **[bg-nv-registers]** "Registers per thread."
   - Message: A RISC-V thread has a fixed 32 + 32 registers that Vortex builds for every warp, against up to 255 allocated from a shared per-SM file on NVIDIA, and on the same GEMM source this budget alone sets where register tiling stops.
   - Floats: —
-  - Numbers: 32 int + 32 FP [S, `VX_gpu_pkg.sv:52-65`, `VX_opc_unit.sv:49`]; 255 per thread, 64K per SM ← nvidia2026cudaguide Table 34; 16×8 tile = 128 accumulators, 255 regs, no spill [M, T1 sm_120]; Vortex 4×4: 29/29 int + 32/32 FP, 48/41 spill ld/st [M, T1/P4 §1]; NVIDIA maxrregcount 32 at 4×4: 160 B spill stores [M, T1]
+  - Numbers: 32 int + 32 FP [S, `VX_gpu_pkg.sv:52-65`, `VX_opc_unit.sv:49`]; 255 per thread, 64K per SM ← nvidia2026cudaguide Table 34; 16×8 tile = 128 accumulators, 255 regs, no spill [M, T1 sm_120]; Vortex 4×4: 29/29 int + 32/32 FP, 48/41 spill ld/st [M, T1/P4 §1] — text says the FP file runs out at 4×4 (2×2: 15 FP regs, integer spills 11/12 already; not printed) [M, T1]; NVIDIA maxrregcount 32 at 4×4: 160 B spill stores [M, T1]
   - Cites: nvidia2026cudaguide
   - Links: → mot-setting (thread tile defined there; Background uses it with a forward pointer); mot-register-reads owns the spill-driven register reads (no datum repeated)
 - **[bg-nv-config]** "Configurability."
