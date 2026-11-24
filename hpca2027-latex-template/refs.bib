@@ -42,12 +42,13 @@
 }
 
 % PTX ISA 9.2 (CUDA 13.2.1), wgmma register fragments
+% Note was "Sections 9.7.14.6.3 and 9.7.15.5.1.1.1" while uncited; Section 1.1 (virtual ISA) verified on the 9.2 page 2026-11-23.
 @misc{nvidia2026ptxisa,
   author       = {{NVIDIA Corporation}},
   title        = {{Parallel Thread Execution ISA} Version 9.2},
   year         = {2026},
   month        = apr,
-  note         = {Sections 9.7.14.6.3 and 9.7.15.5.1.1.1},
+  note         = {Section 1.1},
   howpublished = {\url{https://docs.nvidia.com/cuda/archive/13.2.1/parallel-thread-execution/index.html}}
 }
 
@@ -659,4 +660,50 @@ numpages = {13},
 keywords = {Compiler, Divergence Management, Open GPU},
 location = {Sydney, NSW, Australia},
 series = {CC '26}
+}
+
+% Added 2026-11-23 (Background rewrite). Metadata verified: Crossref (DOIs), arXiv abstract pages, NVIDIA documentation pages.
+@inproceedings{gouk2024breaking,
+  author    = {Gouk, Donghyun and Kang, Seungkwan and Bae, Hanyeoreum and Ryu, Eojin and Lee, Sangwon and Kim, Dongpyung and Jang, Junhyeok and Jung, Myoungsoo},
+  title     = {Breaking Barriers: Expanding {GPU} Memory with Sub-Two Digit Nanosecond Latency {CXL} Controller},
+  booktitle = {Proceedings of the 16th ACM Workshop on Hot Topics in Storage and File Systems (HotStorage)},
+  pages     = {108--115},
+  year      = {2024},
+  doi       = {10.1145/3655038.3665953}
+}
+
+@article{gouk2025cxlgpu,
+  author  = {Gouk, Donghyun and Kang, Seungkwan and Lee, Seungjun and Kim, Jiseon and Nam, Kyungkuk and Ryu, Eojin and Lee, Sangwon and Kim, Dongpyung and Jang, Junhyeok and Bae, Hanyeoreum and Jung, Myoungsoo},
+  title   = {{CXL}--{GPU}: Pushing {GPU} Memory Boundaries with the Integration of {CXL} Technologies},
+  journal = {IEEE Micro},
+  volume  = {45},
+  number  = {6},
+  pages   = {108--117},
+  year    = {2025},
+  doi     = {10.1109/MM.2025.3582433}
+}
+
+@misc{pu2025warplevel,
+  author        = {Pu, Huanzhi and Ravi, Rishabh and Jeong, Shinnung and Subramanya, Udit and Chung, Euijun and Zhao, Jisheng and Ahn, Chihyo and Kim, Hyesoon},
+  title         = {Hardware vs. Software Implementation of Warp-Level Features in {Vortex} {RISC-V} {GPU}},
+  year          = {2025},
+  eprint        = {2505.03102},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AR},
+  note          = {Workshop W05.4.1 at DATE 2025},
+  url           = {https://arxiv.org/abs/2505.03102}
+}
+
+@misc{nvidia2026cudaguide,
+  author       = {{NVIDIA Corporation}},
+  title        = {{CUDA} Programming Guide, Version 13.5},
+  note         = {Section 5.1, Tables 33 and 34},
+  howpublished = {\url{https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/compute-capabilities.html}}
+}
+
+@misc{nvidia2026binutils,
+  author       = {{NVIDIA Corporation}},
+  title        = {{CUDA} Binary Utilities, Version 13.5},
+  note         = {Section 4},
+  howpublished = {\url{https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html}}
 }

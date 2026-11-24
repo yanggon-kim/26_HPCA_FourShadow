@@ -1,8 +1,76 @@
 # FourShadow (ISPASS 2027): outline
-Synced with: the commit that reorders the Section III points and redraws Fig. 1(b) by thread tile; captured so far: Section III only. The other sections carry no
-`% P:` anchors yet and are to be captured before their next structural change.
+Synced with: the commit that rewrites Section II Background (Vortex, research platform, Vortex and NVIDIA GPUs); captured so far: Sections II and III.
+The other sections carry no `% P:` anchors yet and are to be captured before their next structural change.
 Check: `main.tex` inputs files relative to the repo root, so run the check on a copy of `main.tex` placed at the repo root
 (e.g. in a scratch copy of the repo): `python3 <skill-dir>/scripts/check_outline.py outline.md main_check.tex`.
+
+## II. Background  (hpca2027-latex-template/2_background.tex)
+Sources (read-only): main's `00_doc/ispass_direction/riscv_vs_nvidia/PRELIM_REPORT.md` [PR] (§3.1 ISA, §3.2 scheduling, §3.3 T1,
+§3.3a occupancy, §3.5 configurability, §5 do-not-claim list) and `web_facts.md` [WF]; part4 `00_doc/vortex-wgdxa2k/results/RISCV_VS_NVIDIA_VORTEX_SIDE.md`
+[P4] (§1 static ISA, §3 architecture facts, pinned `d6426cca1`); part1 `02_nvidia/runs/riscv-vs-nvidia-20261118/tables.md` [T1];
+`00_doc/ispass_direction/reference_repos.md` [RR]; Vortex sources (pinned `01_github/vortex-wgdxa2k`, master README `7300bc849`).
+Rules (user, 2026-11-23): about one page; one message and its own data per paragraph; Vortex vs NVIDIA speed is never stated; Background defines and
+stops (no FourShadow design preview); FourShadow named once, last. Do-not-claim [PR §5]: Vortex slower/worse; NVIDIA has no scoreboard;
+Turing/Ampere reverse engineering extended to Blackwell.
+
+- **[bg-roadmap]** (section opener, no head)
+  - Message: Vortex is the GPU this paper builds on, and the section describes its organization, the research that builds on it, and how it differs from NVIDIA GPUs.
+  - Floats: —
+  - Numbers: —
+  - Cites: —
+  - Links: → bg-vortex-stack, bg-platform, bg-nv-frame
+- **[bg-vortex-stack]** (II-A "The Vortex GPU", `sec:bg_hierarchy`)
+  - Message: Vortex is an open-source RISC-V GPU released as a full stack of synthesizable RTL, a cycle-level simulator and an LLVM-based compiler, so a design can be prototyped in SimX and then implemented in the RTL.
+  - Floats: —
+  - Numbers: —
+  - Sources: master `README.md:5-7` (full stack, SimX, RTL simulator, FPGAs; prototype in SimX then RTL), `:44-48` (OpenCL 1.2, Vulkan, HIP), `:134` (VOLT); pinned `hw/syn/{altera,xilinx,synopsys,yosys}` [S]
+  - Cites: vortex, 10.1145/3771775.3786275 (VOLT)
+  - Links: ← bg-roadmap
+- **[bg-vortex-hierarchy]**
+  - Message: A Vortex processor nests cores in sockets and clusters, each core runs NW warps of NT threads and issues from IW warps per cycle, NT sets the width of every per-thread structure, and all of these are build-time parameters.
+  - Floats: —
+  - Numbers: — (symbols NT, NW, IW defined here)
+  - Sources: pinned `hw/rtl/VX_socket.sv:142-148,194-196` (I- and D-cache clusters per socket), `VX_cluster.sv:211-237` (L2 per cluster), `VX_config.toml:4-6,47-55,92` [S]
+  - Cites: —
+  - Links: → sec:bg_issue (issue slots), bg-nv-config
+- **[bg-platform]** (II-B "Vortex as a Research Platform", `sec:bg_platform`)
+  - Message: Prior work uses the open Vortex stack in three ways, as a base for new hardware units, as RTL to synthesize, and as a platform for design-space exploration.
+  - Floats: —
+  - Numbers: 32 cores on Stratix 10 ← vortex (MICRO'21 abstract); 16 nm commercial process ← Virgo arXiv 2408.12073 §1/§5; 4-cycle, 300 MHz, Alveo U55C ← Ten-Four arXiv 2512.00053 abstract
+  - Sources: Gouk et al.: HotStorage'24 abstract (CXL root ports, controller at RTL level) + CXL-GPU (arXiv 2506.15601v1 = IEEE Micro 45(6)) "our controller's RTL design was embedded" in Vortex; Virgo §3 "we use Vortex", §3.2 vx_core in Chipyard; CoopWarp HPCA'25 abstract; Pu et al. arXiv 2505.03102 abstract
+  - Cites: gouk2024breaking, gouk2025cxlgpu, kim2025virgo, rout2026tenfouropensourcefuseddot, vortex, nada2025cooperative, pu2025warplevel
+  - Links: ← bg-vortex-stack
+- **[bg-nv-frame]** (II-C "Vortex and NVIDIA GPUs", `sec:bg_nvidia`; opener, no head)
+  - Message: Vortex adopts the SIMT programming model of NVIDIA GPUs but not the machine beneath it, which differs in ISA, registers per thread and configurability.
+  - Floats: —
+  - Numbers: —
+  - Sources: [WF] §C items 1, 3 (abstractions borrowed on purpose); [PR] §2
+  - Cites: —
+  - Links: → bg-nv-isa, bg-nv-registers, bg-nv-config
+- **[bg-nv-isa]** "ISA."
+  - Message: Vortex runs standard RISC-V with its GPU instructions in the custom opcode space and resolves hazards with a hardware scoreboard, whereas NVIDIA's documented ISA is the virtual PTX and its machine instructions carry compiler-set scheduling fields, so NVIDIA's timing is partly in the binary and Vortex's in open RTL and SimX.
+  - Floats: —
+  - Numbers: 16 B per SASS instruction [M, sm_120 and sm_90, PR §3.1]; 4 B per Vortex instruction [M, P4 §1, RVC off]; control fields [R Huerta, Turing/Ampere; validated on sm_120/sm_90, PR §3.2]
+  - Cites: nvidia2026ptxisa (Section 1.1), nvidia2026binutils (Section 4), 10.1145/3725843.3756041 (Huerta)
+  - Links: —
+- **[bg-nv-registers]** "Registers per thread."
+  - Message: A RISC-V thread has a fixed 32 + 32 registers that Vortex builds for every warp, against up to 255 allocated from a shared per-SM file on NVIDIA, and on the same GEMM source this budget alone sets where register tiling stops.
+  - Floats: —
+  - Numbers: 32 int + 32 FP [S, `VX_gpu_pkg.sv:52-65`, `VX_opc_unit.sv:49`]; 255 per thread, 64K per SM ← nvidia2026cudaguide Table 34; 16×8 tile = 128 accumulators, 255 regs, no spill [M, T1 sm_120]; Vortex 4×4: 29/29 int + 32/32 FP, 48/41 spill ld/st [M, T1/P4 §1]; NVIDIA maxrregcount 32 at 4×4: 160 B spill stores [M, T1]
+  - Cites: nvidia2026cudaguide
+  - Links: → mot-setting (thread tile defined there; Background uses it with a forward pointer); mot-register-reads owns the spill-driven register reads (no datum repeated)
+- **[bg-nv-config]** "Configurability."
+  - Message: The warp shape and issue width of Vortex are build-time parameters, whereas every NVIDIA warp has 32 threads and each chip fixes its SM organization.
+  - Floats: Table tab:config (pointer; NT 4–32, IW 1–8)
+  - Numbers: warp size 32 ← nvidia2026cudaguide Table 33
+  - Cites: nvidia2026cudaguide
+  - Links: ← bg-vortex-hierarchy
+- **[bg-nv-bridge]** (closing, no head)
+  - Message: Because an NVIDIA GPU is a different machine, the paper evaluates FourShadow's tensor cores against the SIMT-only Vortex they extend, not against an NVIDIA GPU.
+  - Floats: —
+  - Numbers: —
+  - Cites: —
+  - Links: → sec:motivation; TODO(ispass): Intro Q1, tab:config and the evaluation still compare with RTX 5080/H100
 
 ## III. Motivation  (hpca2027-latex-template/2_3_motivation.tex)
 Sources (Part 4, read-only): `00_doc/vortex-wgdxa2k/results/MOTIVATION_MASTER.md` [MM], `MOTIV_MASTER_FQ16.md` [FQ16],
@@ -56,4 +124,4 @@ Selection rule: only inefficiencies a SIMT design cannot tune away are points; t
 ## Float map (Section III)
 | float | label | source | first-citing id | lands |
 |---|---|---|---|---|
-| Fig. 1, figure*, (a)(b)(c) in one row, `fig/motiv_simt3.pdf` (script `fig/src/motiv_simt3.py`) | fig:motiv_simt | 2_3_motivation.tex | mot-tuned-baseline ((b) mot-work-per-instr, (c) mot-load-granularity, then mot-register-reads) | PDF p. 3 top, both columns (section starts p. 2 right) |
+| Fig. 1, figure*, (a)(b)(c) in one row, `fig/motiv_simt3.pdf` (script `fig/src/motiv_simt3.py`) | fig:motiv_simt | 2_3_motivation.tex | mot-tuned-baseline ((b) mot-work-per-instr, (c) mot-load-granularity, then mot-register-reads) | PDF p. 4 top, both columns (section starts p. 3 right, after the one-page Background) |

@@ -1,9 +1,66 @@
 \section{Background}
 \label{sec:background}
+% Sources (read-only): 00_doc/ispass_direction/riscv_vs_nvidia/PRELIM_REPORT.md (sections 3.1-3.5, 5) and web_facts.md (main);
+% 00_doc/vortex-wgdxa2k/results/RISCV_VS_NVIDIA_VORTEX_SIDE.md (part4; SimX/LLVM on pinned d6426cca1);
+% 02_nvidia/runs/riscv-vs-nvidia-20261118/tables.md, table T1 (part1; RTX 5080 sm_120 measured, sm_90 compile-only);
+% 00_doc/ispass_direction/reference_repos.md (Virgo, CoopWarp); Vortex sources in 01_github/vortex-wgdxa2k (pinned) and the
+% master README (7300bc849). Never state Vortex vs NVIDIA speed; never say NVIDIA has no scoreboard; never extend the
+% Turing/Ampere reverse engineering to Blackwell (PRELIM_REPORT.md section 5).
 
-\subsection{SIMT Hierarchy and Threads per Warp}
+% P:bg-roadmap
+Vortex is the GPU on which this paper builds its tensor cores. This section describes its organization (Section~\ref{sec:bg_hierarchy}), the research that builds on it (Section~\ref{sec:bg_platform}) and how it differs from NVIDIA GPUs (Section~\ref{sec:bg_nvidia}).
+
+\subsection{The Vortex GPU}
 \label{sec:bg_hierarchy}
 
-The base tensor core is built into Vortex~\cite{vortex}, an open-source RISC-V GPU. A Vortex processor is organized as clusters of cores; inside a cluster, a socket groups the cores that share first-level caches.
+% P:bg-vortex-stack
+Vortex~\cite{vortex} is an open-source GPU built on the RISC-V instruction set architecture (ISA). It is released as a full stack: synthesizable SystemVerilog RTL with FPGA and ASIC synthesis flows, a cycle-level simulator, SimX, and an LLVM-based compiler, VOLT~\cite{10.1145/3771775.3786275}, with OpenCL, HIP and Vulkan front ends. A design is typically prototyped in SimX and then implemented in the RTL.
+% Sources: master README.md lines 5-7 (full stack; SimX, RTL simulator, Xilinx/Altera FPGAs; prototype in simx before the RTL
+% implementation), 44-48 (OpenCL 1.2, Vulkan, HIP), 134 (VOLT); pinned hw/syn/{altera,xilinx,synopsys,yosys} [S].
 
-Each core is a Single Instruction, Multiple Thread (SIMT) pipeline that runs $\mathit{NW}$ warps. A warp is a group of $\mathit{NT}$ threads that execute the same instruction on $\mathit{NT}$ lanes of the datapath, so the threads per warp ($\mathit{NT}$) set the width of every per-thread structure: the register file holds $\mathit{NT}$ entries per architectural register, and the load/store unit has $\mathit{NT}$ lanes. Both $\mathit{NW}$ and $\mathit{NT}$ are compile-time parameters.
+% P:bg-vortex-hierarchy
+A Vortex processor is organized as clusters of sockets, and a socket groups the cores that share the first-level instruction and data caches. Each core is a single-instruction, multiple-thread (SIMT) pipeline that runs $\mathit{NW}$ warps. A warp is a group of $\mathit{NT}$ threads that execute the same instruction on $\mathit{NT}$ lanes of the datapath, so the threads per warp ($\mathit{NT}$) set the width of every per-thread structure: the register file holds $\mathit{NT}$ entries per architectural register, and the load/store unit has $\mathit{NT}$ lanes. The core issues instructions from up to $\mathit{IW}$ warps in the same cycle, its issue width (Section~\ref{sec:bg_issue}). The numbers of clusters, sockets and cores, $\mathit{NT}$, $\mathit{NW}$ and $\mathit{IW}$ are all build-time parameters.
+% Sources [S, pinned]: hw/rtl/VX_socket.sv:142-148, 194-196 (I- and D-cache clusters per socket); VX_cluster.sv:211-237 (L2 per
+% cluster); VX_config.toml:4-6 (clusters, cores, socket size), 47-55 (NW, NT, issue width, SIMD width = NT), 92 (LSU lanes = SIMD width).
+
+\subsection{Vortex as a Research Platform}
+\label{sec:bg_platform}
+
+% P:bg-platform
+Because every layer of Vortex is open, prior work uses it in three ways: as a base for new hardware units, as RTL to synthesize, and as a platform for design-space exploration. As a base, Gouk et al.\ embed the RTL of their CXL controller~\cite{gouk2024breaking} in Vortex so that the GPU reaches DRAM and SSD endpoints over CXL~\cite{gouk2025cxlgpu}; Virgo~\cite{kim2025virgo} places the Vortex SIMT core in a Chipyard system-on-chip and adds matrix units at the level of a core cluster; and Ten-Four~\cite{rout2026tenfouropensourcefuseddot} implements a mixed-precision fused dot-product unit for the tensor-core extension of Vortex. As RTL, Vortex scales to 32 cores on an Altera Stratix~10 FPGA~\cite{vortex}, Virgo synthesizes its system in a commercial 16\,nm process to measure power, and Ten-Four reaches a 4-cycle latency at 300\,MHz on an AMD Alveo U55C FPGA. For design-space exploration, CoopWarp~\cite{nada2025cooperative} integrates a tensor core into Vortex and relates its utilization to the GPU's architectural parameters before proposing cooperative warp execution, and Pu et al.~\cite{pu2025warplevel} implement warp-level features in Vortex both in hardware and in software and compare the two.
+% Sources: Gouk et al. HotStorage'24 abstract (CXL root ports, controller integrated at the RTL level); Vortex embedding read in the
+% CXL-GPU article (arXiv 2506.15601v1, "Integration with the GPU was achieved using Vortex ... where our controller's RTL design was
+% embedded"; published in IEEE Micro 45(6)). Virgo arXiv 2408.12073 sections 3, 3.2 (vx_core in Chipyard), 1 and 5 (commercial 16nm,
+% active power). Ten-Four arXiv 2512.00053 abstract. Vortex MICRO'21 abstract (32 cores, Stratix 10). CoopWarp HPCA'25 abstract.
+% Pu et al. arXiv 2505.03102 abstract (DATE 2025 workshop W05.4.1). Skybox (ASPLOS'23) omitted: its Vortex basis was not readable
+% in a primary source.
+
+\subsection{Vortex and NVIDIA GPUs}
+\label{sec:bg_nvidia}
+
+% P:bg-nv-frame
+Vortex adopts the SIMT programming model of NVIDIA GPUs, with warps, thread blocks, shared memory, barriers, and warp- and warpgroup-level matrix instructions, but not the machine beneath it. The two machines differ in three ways that change how the same kernel source executes: the ISA, the registers per thread and the configurability of the core.
+% Sources: web_facts.md section C items 1 and 3 (abstractions borrowed on purpose: tensor_core_wgmma_engine.md:4 "NVIDIA-style warp /
+% warpgroup MMA"; MICRO'21 section 3.1 maps PTX warps and CTAs onto Vortex) [S].
+
+% P:bg-nv-isa
+\textbf{ISA.} Vortex executes standard RISC-V, RV32IMAF in this paper, and encodes its GPU instructions, such as thread control, tensor-core and asynchronous-copy instructions, in the custom opcode space of RISC-V. NVIDIA compiles CUDA to PTX, a virtual ISA~\cite{nvidia2026ptxisa}, which is translated to the machine ISA, SASS; NVIDIA documents SASS only as per-generation lists of opcodes~\cite{nvidia2026binutils}. A SASS instruction occupies 16 bytes and carries compiler-set stall, yield, dependence-barrier and reuse fields~\cite{10.1145/3725843.3756041}, whereas a Vortex instruction occupies 4 bytes and carries no scheduling field; a per-warp hardware scoreboard resolves hazards instead. NVIDIA's compiler thus encodes part of the instruction timing into the binary, while the timing of Vortex lives entirely in its open RTL and SimX.
+% Sources: PRELIM_REPORT.md 3.1 [M: every SASS instruction 16 B on sm_120 and sm_90; every Vortex instruction 4 B, RVC off],
+% 3.2 [R: control fields from Huerta et al. on Turing/Ampere; validated by part1 on sm_120 and sm_90 (reuse bits 154,736/154,736,
+% stall 4 = 4.06-cycle FFMA latency)]; RISCV_VS_NVIDIA_VORTEX_SIDE.md 1 (-march=rv32imaf, 4 B), 3.1 (custom-0/custom-1), 3.4
+% (VX_scoreboard.sv:101, decode.cpp:480-491: no scheduling bits) [S].
+
+% P:bg-nv-registers
+\textbf{Registers per thread.} A RISC-V thread has 32 integer and 32 floating-point registers, fixed by the ISA, and Vortex builds the full set for every warp, so a kernel's register use never lowers the number of resident warps. NVIDIA's compiler allocates each thread a per-kernel number of registers, at most 255, from a file of 64K registers per streaming multiprocessor (SM) that all resident warps share~\cite{nvidia2026cudaguide}. Compiled from the same register-tiled GEMM source, in which each thread accumulates a block of the output in registers (its thread tile, Section~\ref{sec:motivation}), NVIDIA's compiler keeps a $16{\times}8$ tile of 128 accumulators without spilling, while the Vortex compiler fills both register files and spills at the $4{\times}4$ tile, as does NVIDIA's compiler when it is limited to 32 registers per thread. The register budget, not the compiler, therefore sets the largest thread tile, and the large register tiles of SIMT kernels on NVIDIA GPUs do not carry over to a RISC-V GPU.
+% Sources: [S] VX_gpu_pkg.sv:52-65 (RV_REGS 32, NUM_REGS = 2 x 32), VX_opc_unit.sv:49 (every warp owns all registers);
+% PRELIM_REPORT.md 3.3a. [M] 02_nvidia/runs/riscv-vs-nvidia-20261118/tables.md T1: sm_120 16x8 = 255 regs, 0 spill; 4x4 with
+% maxrregcount 32 = 160 B spill stores (0 at 2x2); Vortex 4x4 = 29/29 integer and 32/32 FP registers, 48/41 sp loads/stores
+% (RISCV_VS_NVIDIA_VORTEX_SIDE.md 1, pinned d6426cca1, LLVM -O3). Motivation (mot-register-reads) owns the spill-driven reads.
+
+% P:bg-nv-config
+\textbf{Configurability.} The threads per warp, warps per core and issue width of Vortex are build-time parameters, and this paper builds cores with 4 to 32 threads per warp and issue widths of 1 to 8 (Table~\ref{tab:config}). An NVIDIA warp has 32 threads on every compute capability~\cite{nvidia2026cudaguide}, and each NVIDIA chip fixes the organization of its SM, so every NVIDIA GPU is one design point, whereas Vortex exposes the warp shape itself as a parameter to study.
+% Sources: VX_config.toml:47-55 [S]; CUDA Programming Guide 13.5 Table 33 (warp size 32 for every compute capability) [S].
+
+% P:bg-nv-bridge
+These differences make an NVIDIA GPU a different machine rather than another configuration of Vortex. We therefore evaluate FourShadow's tensor cores against the SIMT-only Vortex core they extend (Section~\ref{sec:motivation}), not against an NVIDIA GPU.
+% TODO(ispass): the Introduction (Q1), tab:config and the evaluation still compare with the RTX 5080 and H100; remove per the ISPASS redirect.
