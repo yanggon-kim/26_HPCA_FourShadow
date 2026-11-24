@@ -1,5 +1,5 @@
 # FourShadow (ISPASS 2027): outline
-Synced with: the commit that fills Section IV Related Work and moves Table I into it (II-B without tensor-core work); captured so far: Sections II, III and IV.
+Synced with: the commit that shortens the prior-work part of Section IV to one paragraph and widens the FourShadow distinction to two; captured so far: Sections II, III and IV.
 The other sections carry no `% P:` anchors yet and are to be captured before their next structural change.
 Check: `main.tex` inputs files relative to the repo root, so run the check on a copy of `main.tex` placed at the repo root
 (e.g. in a scratch copy of the repo): `python3 <skill-dir>/scripts/check_outline.py outline.md main_check.tex`.
@@ -126,42 +126,36 @@ Sources (primary, read 2026-11-24): Virgo arXiv 2408.12073v2 (= ASPLOS'25) [V]; 
 behind "request a copy", not read) [CW] and its authors' artifact repository `01_github/coopwarp-vortex` @ `4f9134cb` [CWR] (read-only clone,
 `00_doc/ispass_direction/reference_repos.md` §2); Ten-Four arXiv 2512.00053v4 [TF]; RoadBlock arXiv 2611.08526v1 (PACT'26, 2 pages) [RB].
 Rules (user via main, 2026-11-24): only tensor-core work built on Vortex, distinguished from FourShadow; all are open source; only
-FourShadow has warp-group MMA, 2:4 sparsity, and both RTL and SimX; FourShadow named once, last. Non-Vortex tensor cores (RM-STC,
+FourShadow has warp-group MMA, 2:4 sparsity, and both RTL and SimX; FourShadow named only after the prior work. Non-Vortex tensor cores (RM-STC,
 VEGETA, SIMD², Sparse TC) and the simulators stay in the Introduction only.
 
-- **[rel-frame]** (section opener, no head)
-  - Message: Tensor-core work on Vortex extends one level of the GPU, the cluster, the warp or the dot-product datapath, and Table I compares it with FourShadow.
+Rules (user, 2026-11-24, second pass): describe the prior work briefly, one or two sentences per work (mechanism and the limit FourShadow
+changes); spend the words on the distinction; superiority as capabilities and as results this paper measures (printed numbers only, with
+section pointers), never a head-to-head with Virgo/CoopWarp/Ten-Four. Ten-Four v4 overlap is open (user): the distinction does not rest on
+FEDP-2K; "Ten-Four is the dot-product unit" carries a `% TODO(user)`. RTL–SimX agreement is not printed (no printed evidence; the A fetch
+differs, `TODO(ispass)` at `sec:eval_delay_a`).
+
+- **[rel-prior]** (section opener, no head; merges the former rel-frame, rel-virgo, rel-coopwarp and rel-datapath)
+  - Message: Each prior tensor core on Vortex extends one level of the GPU: Virgo moves the matrix unit to the cluster (trading flexibility on small matrices for larger operations), CoopWarp's warps share an accumulator buffer but issue one MMA each, and Ten-Four and RoadBlock change the dot-product arithmetic.
   - Floats: Table tab:related_work_comparison (first cite in this section; the Introduction points here)
+  - Numbers: — (the power, speedup, area and clock figures of the works were dropped by the user's request; no other section uses them)
+  - Sources: [V] §3 (Vortex SIMT core, Gemmini array at cluster level), §4 (threadblock-level atom; "sacrifices flexibility for workloads that use smaller matrix dimensions"); [V] §1 for the core-coupled family limit ("restricting operation size due to register file capacity and bandwidth constraints"); [CW] abstract (integration in Vortex, cooperative warp execution); [CWR] `cooperative_kernel.cpp:80-91` (per-warp `tc_mma_acc_buf`, `vx_barrier`, `tc_flush_wg`) [source-derived]; [TF] abstract, §3.2; [RB] §1–2
+  - Cites: kim2025virgo, nada2025cooperative, rout2026tenfouropensourcefuseddot, rout2026roadblock
+  - Links: ← intro (platform sentence); → table rows Virgo, CoopWarp, Ten-Four; → rel-fs-organization
+- **[rel-fs-organization]** (no head)
+  - Message: FourShadow changes the organization itself, with the two features no other row of Table I has: a warp-group MMA that is one instruction for the warps of a warpgroup, with B (and A in SS mode) from shared memory and one B fetch shared by all tensor blocks, and 2:4 sparsity on both warp-level and warp-group MMA.
+  - Floats: Table tab:related_work_comparison (Warp-group MMA and 2:4 sparsity columns)
   - Numbers: —
-  - Cites: —
-  - Links: ← intro (platform sentence); → rel-virgo, rel-coopwarp, rel-datapath
-- **[rel-virgo]**
-  - Message: Cluster-level matrix units trade flexibility on small matrices for larger operations: Virgo moves a systolic array out of the SIMT core into the cluster and cuts active power, but has neither warp-group MMA nor sparsity and is evaluated in RTL simulation only.
-  - Floats: —
-  - Numbers: 67.3 % and 24.2 % lower active power than the Ampere-style and Hopper-style core-coupled designs ← [V] abstract, §6.1.2; 8 warps of 8 lanes per core ← [V] Table 2; commercial 16 nm ← [V] §1
-  - Sources: [V] §3 (Vortex SIMT core, Gemmini array at cluster level), §4 (threadblock-level atom; "sacrifices flexibility for workloads that use smaller matrix dimensions"), §5.1.3 (Hopper-style baseline: one warp initiates an asynchronous MMA with shared-memory operands, then waits), artifact appendix A (cycles from RTL simulation, VCS); no sparsity in [V] or its RTL (reference_repos.md §1)
-  - Cites: kim2025virgo
-  - Links: → table row Virgo
-- **[rel-coopwarp]**
-  - Message: CoopWarp couples a tensor core to the Vortex core in SimX, relates its utilization to the GPU's parameters and lets the warps of a group accumulate into one shared tile buffer, but each warp still issues its own MMA and the tensor core exists only in the simulator.
-  - Floats: —
-  - Numbers: 3× over its baseline tensor core at best ← [CW] abstract ("up to 3x"); thread counts 4, 8, 16, 32 ← [CWR] `tests/regression/tensor_core/experiments.zip` (th4/th8/th16/th32)
-  - Sources: [CW] abstract (integrated in Vortex, intrinsics, under-utilization finding, cooperative warp execution); [CWR] `sim/simx/tensor_core.cpp:42-75` (FP16 in, FP32 accumulate), `cooperative_kernel.cpp:80-91` (per-warp `tc_mma_acc_buf`, `vx_barrier`, `tc_flush_wg`), `tensor_rtl/` standalone, not referenced from `hw/rtl` [source-derived]
-  - Cites: nada2025cooperative
-  - Links: → table row CoopWarp
-- **[rel-datapath]**
-  - Message: Datapath work changes how the tensor core computes a dot product, not how it is organized: Ten-Four is a fused mixed-precision dot-product unit for the Vortex tensor-core extension, and RoadBlock extends that unit to custom microscaling formats.
-  - Floats: —
-  - Numbers: 4-cycle latency at 300 MHz on an Alveo U55C; 2.7–7.9× faster than HardFloat and FPnew at less than 60 % of their area ← [TF] abstract
-  - Sources: [TF] abstract, §3.2 (four- or eight-element FEDP at 4/8 or 16/32 threads), Table 1; [RB] §1–2 (per-thread MX metadata tiling, scale factors staged in TCU SRAM as hidden WMMA sources), §4 (ASAP7 synthesis of format-specific FEDP units)
-  - Cites: rout2026tenfouropensourcefuseddot, rout2026roadblock
-  - Links: → table row Ten-Four; → rel-fourshadow (FourShadow's FEDP is Ten-Four, `para:datatypes-fedp`)
-- **[rel-fourshadow]** (closing, no head)
-  - Message: FourShadow supplies the tensor-core organization these works leave fixed: on Ten-Four's dot-product unit it builds warp-group MMA and 2:4 sparsity in both RTL and SimX, with threads per warp and issue width as build parameters.
-  - Floats: Table tab:related_work_comparison (FourShadow row)
-  - Numbers: —
-  - Cites: —
-  - Links: ← rel-virgo, rel-coopwarp, rel-datapath; → sec:design
+  - Sources: `sec:design_wgmma` (one tensor block per issue slot, RS/SS, shared B buffer, one B refill serves all IW blocks); `sec:design_sparse` (compressed A, metadata by `TCU_LD` into the per-block metadata SRAM, Sparse MUX Array, halved K steps); `para:datatypes-fedp` (FEDP = Ten-Four)
+  - Cites: — (FourShadow's own sections)
+  - Links: ← rel-prior; → sec:design_wgmma, sec:design_sparse
+- **[rel-fs-platform]** (closing, no head)
+  - Message: FourShadow is also the platform to measure these features: RTL and SimX, FPGA runs and ASAP7 area, and six build parameters, so the paper pairs one-parameter cycle sweeps with area and reports results no other row can produce (16-thread peak, issue-width optimum at 4, the shrinking halvable share of sparse warp-group MMA, FPGA end-to-end gains).
+  - Floats: Table tab:related_work_comparison (RTL, Cycle sim., Threads per warp columns); Table tab:config (parameters)
+  - Numbers (all printed in the evaluation, copied, not re-derived): per-lane WGMMA peak at 16 threads ← `sec:eval_threads`; 32 threads double the TCU area (2.00×) while the BF16 speedup falls by 21–38 % ← `sec:eval_asic`; IW 4 practical optimum, front end limits a wider warpgroup ← `sec:eval_asic`, `sec:eval_iw`; halvable share shrinks as the warp-group tile widens ← `sec:eval_sparse_wg`; Llama-3.2-1B prefill 10.18× (WGMMA) and 12.39× (+2:4) over the dense base TCU on the U55C ← `sec:eval_fpga`
+  - Sources: Virgo threads 8 ← [V] Table 2, cycles from RTL simulation ← [V] artifact appendix A; CoopWarp SimX only ← [CWR] (`tensor_rtl/` not referenced from `hw/rtl`) [source-derived]. CoopWarp also relates utilization to the GPU's parameters in SimX ([CW] abstract), so parameter sweeps are not claimed as exclusive; the contrast is sweeps paired with synthesized area.
+  - Cites: kim2025virgo, nada2025cooperative (contrast clauses)
+  - Links: ← rel-fs-organization; → sec:eval_threads, sec:eval_iw, sec:eval_asic, sec:eval_sparse_wg, sec:eval_fpga, sec:design
 
 ## Float map (Section III)
 | float | label | source | first-citing id | lands |
@@ -171,4 +165,4 @@ VEGETA, SIMD², Sparse TC) and the simulators stay in the Introduction only.
 ## Float map (Section IV)
 | float | label | source | first-citing id | lands |
 |---|---|---|---|---|
-| Table I, one-column `table` | tab:related_work_comparison | 2_5_related_work.tex (moved from 1_intro.tex) | rel-frame (the Introduction cites it first) | PDF p. 5 top of the left column (source placed before rel-fourshadow, off the page of the Fig. 1 figure*); Section IV starts p. 4 right |
+| Table I, one-column `table` | tab:related_work_comparison | 2_5_related_work.tex (moved from 1_intro.tex) | rel-frame (the Introduction cites it first) | PDF p. 5 top of the left column (source placed at the end of the section, after rel-fs-platform; placed before a paragraph that starts on p. 4 it floats above the IV heading onto the page of the Fig. 1 figure*); Section IV starts p. 4 right |
