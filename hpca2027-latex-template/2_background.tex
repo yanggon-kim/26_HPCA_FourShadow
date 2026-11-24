@@ -1,4 +1,4 @@
-\section{Background and Motivation}
+\section{Background}
 \label{sec:background}
 
 \subsection{SIMT Hierarchy and Threads per Warp}
@@ -7,5 +7,3 @@
 The base tensor core is built into Vortex~\cite{vortex}, an open-source RISC-V GPU. A Vortex processor is organized as clusters of cores; inside a cluster, a socket groups the cores that share first-level caches.
 
 Each core is a Single Instruction, Multiple Thread (SIMT) pipeline that runs $\mathit{NW}$ warps. A warp is a group of $\mathit{NT}$ threads that execute the same instruction on $\mathit{NT}$ lanes of the datapath, so the threads per warp ($\mathit{NT}$) set the width of every per-thread structure: the register file holds $\mathit{NT}$ entries per architectural register, and the load/store unit has $\mathit{NT}$ lanes. Both $\mathit{NW}$ and $\mathit{NT}$ are compile-time parameters.
-
-% TODO(ispass): motivation (SIMT-only workload analysis)
