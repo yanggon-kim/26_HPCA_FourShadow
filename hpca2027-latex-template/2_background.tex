@@ -3,7 +3,7 @@
 % Sources (read-only): 00_doc/ispass_direction/riscv_vs_nvidia/PRELIM_REPORT.md (sections 3.1-3.5, 5) and web_facts.md (main);
 % 00_doc/vortex-wgdxa2k/results/RISCV_VS_NVIDIA_VORTEX_SIDE.md (part4; SimX/LLVM on pinned d6426cca1);
 % 02_nvidia/runs/riscv-vs-nvidia-20261118/tables.md, table T1 (part1; RTX 5080 sm_120 measured, sm_90 compile-only);
-% 00_doc/ispass_direction/reference_repos.md (Virgo, CoopWarp); Vortex sources in 01_github/vortex-wgdxa2k (pinned) and the
+% Vortex sources in 01_github/vortex-wgdxa2k (pinned) and the
 % master README (7300bc849). Never state Vortex vs NVIDIA speed; never say NVIDIA has no scoreboard; never extend the
 % Turing/Ampere reverse engineering to Blackwell (PRELIM_REPORT.md section 5).
 
@@ -27,13 +27,18 @@ A Vortex processor is organized as clusters of sockets, and a socket groups the 
 \label{sec:bg_platform}
 
 % P:bg-platform
-Because every layer of Vortex is open, prior work uses it in three ways: as a base for new hardware units, as RTL to synthesize, and as a platform for design-space exploration. As a base, Gouk et al.\ embed the RTL of their CXL controller~\cite{gouk2024breaking} in Vortex so that the GPU reaches DRAM and SSD endpoints over CXL~\cite{gouk2025cxlgpu}; Virgo~\cite{kim2025virgo} places the Vortex SIMT core in a Chipyard system-on-chip and adds matrix units at the level of a core cluster; and Ten-Four~\cite{rout2026tenfouropensourcefuseddot} implements a mixed-precision fused dot-product unit for the tensor-core extension of Vortex. As RTL, Vortex scales to 32 cores on an Altera Stratix~10 FPGA~\cite{vortex}, Virgo synthesizes its system in a commercial 16\,nm process to measure power, and Ten-Four reaches a 4-cycle latency at 300\,MHz on an AMD Alveo U55C FPGA. For design-space exploration, CoopWarp~\cite{nada2025cooperative} integrates a tensor core into Vortex and relates its utilization to the GPU's architectural parameters before proposing cooperative warp execution, and Pu et al.~\cite{pu2025warplevel} implement warp-level features in Vortex both in hardware and in software and compare the two.
+Because every layer of Vortex is open, prior work uses it in three ways: as a base for new hardware units, as RTL to synthesize, and as a platform for design-space exploration. As a base, Gouk et al.\ embed the RTL of their CXL controller~\cite{gouk2024breaking} in Vortex so that the GPU reaches DRAM and SSD endpoints over CXL~\cite{gouk2025cxlgpu}, and Sarda et al.~\cite{sarda2025decoupled} add a hardware loop controller and memory streaming lanes that remove the branch and address instructions of regular loops, cutting the dynamic instruction count by 10$\times$ on average. As RTL, Vortex scales to 32 cores on an Altera Stratix~10 FPGA~\cite{vortex}; the METASAT platform~\cite{bonet2025metasat} places it beside a NOEL-V multicore in a system-on-chip for space missions, prototyped on a Xilinx VCU118 FPGA board; and e-GPU~\cite{machetti2025egpu} builds its compute units on the Vortex core and implements them in a 16\,nm process for ultra-low-power devices. For design-space exploration, Pu et al.~\cite{pu2025warplevel} implement warp-level features in Vortex both in hardware and in software and compare the two, Han et al.~\cite{han2021cuda} compile CUDA programs for Vortex through SPIR-V and OpenCL, and VortexSynth~\cite{pu2026vortexsynth} reconstructs GPU benchmarks as Vortex kernels that run on SimX. Tensor cores built on Vortex are compared in Section~\ref{sec:related}.
 % Sources: Gouk et al. HotStorage'24 abstract (CXL root ports, controller integrated at the RTL level); Vortex embedding read in the
 % CXL-GPU article (arXiv 2506.15601v1, "Integration with the GPU was achieved using Vortex ... where our controller's RTL design was
-% embedded"; published in IEEE Micro 45(6)). Virgo arXiv 2408.12073 sections 3, 3.2 (vx_core in Chipyard), 1 and 5 (commercial 16nm,
-% active power). Ten-Four arXiv 2512.00053 abstract. Vortex MICRO'21 abstract (32 cores, Stratix 10). CoopWarp HPCA'25 abstract.
-% Pu et al. arXiv 2505.03102 abstract (DATE 2025 workshop W05.4.1). Skybox (ASPLOS'23) omitted: its Vortex basis was not readable
-% in a primary source.
+% embedded"; published in IEEE Micro 45(6)). Sarda et al. arXiv 2512.00032 abstract ("a hardware CF manager to accelerate branching and
+% predication in regular loop execution", "decoupled memory streaming lanes"; "8x faster execution, 10x reduction in dynamic instruction
+% count"), section VI-2 ("on average 8x speedup, 10x dynamic instruction reduction"); author "Nimish Shah" per the arXiv metadata (the
+% PDF prints "Saha"). Vortex MICRO'21 abstract (32 cores, Stratix 10). METASAT arXiv 2502.21027 (OSSMPIC 2025 workshop) abstract
+% (NOEL-V multicore, SPARROW, "connected to a GPU, Vortex") and section II (VCU118; one compute unit, 4 warps, 4 threads). e-GPU arXiv
+% 2505.08421v3 abstract (TSMC 16 nm SVT, 300 MHz) and section III-A ("The compute unit is based on the Vortex core"). Pu et al. arXiv
+% 2505.03102 abstract (DATE 2025 workshop W05.4.1). Han et al. arXiv 2109.00673 section 1 (CUDA -> NVVM IR -> SPIR-V -> POCL ->
+% RISC-V binary) and Table 2 (Vortex v0.2.2). VortexSynth arXiv 2610.12661 abstract and section 3 (Vortex candidates run on SimX).
+% Skybox (ASPLOS'23) omitted: no readable primary source states its Vortex basis. Virgo, CoopWarp, Ten-Four and RoadBlock: sec:related.
 
 \subsection{Vortex and NVIDIA GPUs}
 \label{sec:bg_nvidia}

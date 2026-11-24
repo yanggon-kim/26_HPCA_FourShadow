@@ -1,5 +1,5 @@
 # FourShadow (ISPASS 2027): outline
-Synced with: the commit that rewrites Section II Background (Vortex, research platform, Vortex and NVIDIA GPUs); captured so far: Sections II and III.
+Synced with: the commit that fills Section IV Related Work and moves Table I into it (II-B without tensor-core work); captured so far: Sections II, III and IV.
 The other sections carry no `% P:` anchors yet and are to be captured before their next structural change.
 Check: `main.tex` inputs files relative to the repo root, so run the check on a copy of `main.tex` placed at the repo root
 (e.g. in a scratch copy of the repo): `python3 <skill-dir>/scripts/check_outline.py outline.md main_check.tex`.
@@ -34,12 +34,12 @@ Turing/Ampere reverse engineering extended to Blackwell.
   - Cites: —
   - Links: → sec:bg_issue (issue slots), bg-nv-config
 - **[bg-platform]** (II-B "Vortex as a Research Platform", `sec:bg_platform`)
-  - Message: Prior work uses the open Vortex stack in three ways, as a base for new hardware units, as RTL to synthesize, and as a platform for design-space exploration.
+  - Message: Prior work uses the open Vortex stack in three ways, as a base for new hardware units, as RTL to synthesize, and as a platform for design-space exploration; tensor-core work on Vortex is left to Section IV.
   - Floats: —
-  - Numbers: 32 cores on Stratix 10 ← vortex (MICRO'21 abstract); 16 nm commercial process ← Virgo arXiv 2408.12073 §1/§5; 4-cycle, 300 MHz, Alveo U55C ← Ten-Four arXiv 2512.00053 abstract
-  - Sources: Gouk et al.: HotStorage'24 abstract (CXL root ports, controller at RTL level) + CXL-GPU (arXiv 2506.15601v1 = IEEE Micro 45(6)) "our controller's RTL design was embedded" in Vortex; Virgo §3 "we use Vortex", §3.2 vx_core in Chipyard; CoopWarp HPCA'25 abstract; Pu et al. arXiv 2505.03102 abstract
-  - Cites: gouk2024breaking, gouk2025cxlgpu, kim2025virgo, rout2026tenfouropensourcefuseddot, vortex, nada2025cooperative, pu2025warplevel
-  - Links: ← bg-vortex-stack
+  - Numbers: 10× fewer dynamic instructions on average ← Sarda et al. arXiv 2512.00032 abstract + §VI-2; 32 cores on Stratix 10 ← vortex (MICRO'21 abstract); 16 nm ← e-GPU arXiv 2505.08421 abstract
+  - Sources: Gouk et al.: HotStorage'24 abstract (CXL root ports, controller at RTL level) + CXL-GPU (arXiv 2506.15601v1 = IEEE Micro 45(6)) "our controller's RTL design was embedded" in Vortex; Sarda et al. arXiv 2512.00032 abstract, §VI-1 (extensions in the cycle-accurate model and the RTL), §VI-4 (Vortex RTL ported to ASIC); METASAT arXiv 2502.21027 abstract + §II (VCU118, one compute unit, 4 warps, 4 threads), OSSMPIC 2025 workshop; e-GPU arXiv 2505.08421 abstract + §III-A ("The compute unit is based on the Vortex core"); Pu et al. arXiv 2505.03102 abstract; Han et al. arXiv 2109.00673 §1 (CUDA → NVVM → SPIR-V → POCL → RISC-V GPU), Table 2 (Vortex v0.2.2); VortexSynth arXiv 2610.12661 abstract + §3 (Vortex candidates run on SimX). Skybox (ASPLOS'23) still omitted: no readable primary source states its Vortex basis (par.nsf.gov 10518427 is the Vortex MICRO'21 paper; web.archive.org unreachable)
+  - Cites: gouk2024breaking, gouk2025cxlgpu, sarda2025decoupled, vortex, bonet2025metasat, machetti2025egpu, pu2025warplevel, han2021cuda, pu2026vortexsynth
+  - Links: ← bg-vortex-stack; → sec:related (tensor-core work on Vortex: Virgo, CoopWarp, Ten-Four, RoadBlock moved there)
 - **[bg-nv-frame]** (II-C "Vortex and NVIDIA GPUs", `sec:bg_nvidia`; opener, no head)
   - Message: Vortex adopts the SIMT programming model of NVIDIA GPUs but not the machine beneath it, which differs in ISA, registers per thread and configurability.
   - Floats: —
@@ -121,7 +121,54 @@ Selection rule: only inefficiencies a SIMT design cannot tune away are points; t
   - Cites: —
   - Links: ← mot-work-per-instr, mot-load-granularity, mot-register-reads, mot-gemv-bytes; → sec:design, sec:eval_threads, sec:eval_iw, sec:bg_smem, sec:eval_delay_a, sec:eval_nrc, sec:eval_sparse (gaps: plan §4)
 
+## IV. Related Work  (hpca2027-latex-template/2_5_related_work.tex)
+Sources (primary, read 2026-11-24): Virgo arXiv 2408.12073v2 (= ASPLOS'25) [V]; CoopWarp HPCA'25 abstract (imec repository; full text
+behind "request a copy", not read) [CW] and its authors' artifact repository `01_github/coopwarp-vortex` @ `4f9134cb` [CWR] (read-only clone,
+`00_doc/ispass_direction/reference_repos.md` §2); Ten-Four arXiv 2512.00053v4 [TF]; RoadBlock arXiv 2611.08526v1 (PACT'26, 2 pages) [RB].
+Rules (user via main, 2026-11-24): only tensor-core work built on Vortex, distinguished from FourShadow; all are open source; only
+FourShadow has warp-group MMA, 2:4 sparsity, and both RTL and SimX; FourShadow named once, last. Non-Vortex tensor cores (RM-STC,
+VEGETA, SIMD², Sparse TC) and the simulators stay in the Introduction only.
+
+- **[rel-frame]** (section opener, no head)
+  - Message: Tensor-core work on Vortex extends one level of the GPU, the cluster, the warp or the dot-product datapath, and Table I compares it with FourShadow.
+  - Floats: Table tab:related_work_comparison (first cite in this section; the Introduction points here)
+  - Numbers: —
+  - Cites: —
+  - Links: ← intro (platform sentence); → rel-virgo, rel-coopwarp, rel-datapath
+- **[rel-virgo]**
+  - Message: Cluster-level matrix units trade flexibility on small matrices for larger operations: Virgo moves a systolic array out of the SIMT core into the cluster and cuts active power, but has neither warp-group MMA nor sparsity and is evaluated in RTL simulation only.
+  - Floats: —
+  - Numbers: 67.3 % and 24.2 % lower active power than the Ampere-style and Hopper-style core-coupled designs ← [V] abstract, §6.1.2; 8 warps of 8 lanes per core ← [V] Table 2; commercial 16 nm ← [V] §1
+  - Sources: [V] §3 (Vortex SIMT core, Gemmini array at cluster level), §4 (threadblock-level atom; "sacrifices flexibility for workloads that use smaller matrix dimensions"), §5.1.3 (Hopper-style baseline: one warp initiates an asynchronous MMA with shared-memory operands, then waits), artifact appendix A (cycles from RTL simulation, VCS); no sparsity in [V] or its RTL (reference_repos.md §1)
+  - Cites: kim2025virgo
+  - Links: → table row Virgo
+- **[rel-coopwarp]**
+  - Message: CoopWarp couples a tensor core to the Vortex core in SimX, relates its utilization to the GPU's parameters and lets the warps of a group accumulate into one shared tile buffer, but each warp still issues its own MMA and the tensor core exists only in the simulator.
+  - Floats: —
+  - Numbers: 3× over its baseline tensor core at best ← [CW] abstract ("up to 3x"); thread counts 4, 8, 16, 32 ← [CWR] `tests/regression/tensor_core/experiments.zip` (th4/th8/th16/th32)
+  - Sources: [CW] abstract (integrated in Vortex, intrinsics, under-utilization finding, cooperative warp execution); [CWR] `sim/simx/tensor_core.cpp:42-75` (FP16 in, FP32 accumulate), `cooperative_kernel.cpp:80-91` (per-warp `tc_mma_acc_buf`, `vx_barrier`, `tc_flush_wg`), `tensor_rtl/` standalone, not referenced from `hw/rtl` [source-derived]
+  - Cites: nada2025cooperative
+  - Links: → table row CoopWarp
+- **[rel-datapath]**
+  - Message: Datapath work changes how the tensor core computes a dot product, not how it is organized: Ten-Four is a fused mixed-precision dot-product unit for the Vortex tensor-core extension, and RoadBlock extends that unit to custom microscaling formats.
+  - Floats: —
+  - Numbers: 4-cycle latency at 300 MHz on an Alveo U55C; 2.7–7.9× faster than HardFloat and FPnew at less than 60 % of their area ← [TF] abstract
+  - Sources: [TF] abstract, §3.2 (four- or eight-element FEDP at 4/8 or 16/32 threads), Table 1; [RB] §1–2 (per-thread MX metadata tiling, scale factors staged in TCU SRAM as hidden WMMA sources), §4 (ASAP7 synthesis of format-specific FEDP units)
+  - Cites: rout2026tenfouropensourcefuseddot, rout2026roadblock
+  - Links: → table row Ten-Four; → rel-fourshadow (FourShadow's FEDP is Ten-Four, `para:datatypes-fedp`)
+- **[rel-fourshadow]** (closing, no head)
+  - Message: FourShadow supplies the tensor-core organization these works leave fixed: on Ten-Four's dot-product unit it builds warp-group MMA and 2:4 sparsity in both RTL and SimX, with threads per warp and issue width as build parameters.
+  - Floats: Table tab:related_work_comparison (FourShadow row)
+  - Numbers: —
+  - Cites: —
+  - Links: ← rel-virgo, rel-coopwarp, rel-datapath; → sec:design
+
 ## Float map (Section III)
 | float | label | source | first-citing id | lands |
 |---|---|---|---|---|
 | Fig. 1, figure*, (a)(b)(c) in one row, `fig/motiv_simt3.pdf` (script `fig/src/motiv_simt3.py`) | fig:motiv_simt | 2_3_motivation.tex | mot-tuned-baseline ((b) mot-work-per-instr, (c) mot-load-granularity, then mot-register-reads) | PDF p. 4 top, both columns (section starts p. 3 right, after the one-page Background) |
+
+## Float map (Section IV)
+| float | label | source | first-citing id | lands |
+|---|---|---|---|---|
+| Table I, one-column `table` | tab:related_work_comparison | 2_5_related_work.tex (moved from 1_intro.tex) | rel-frame (the Introduction cites it first) | PDF p. 5 top of the left column (source placed before rel-fourshadow, off the page of the Fig. 1 figure*); Section IV starts p. 4 right |

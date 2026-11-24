@@ -1,4 +1,71 @@
 \section{Related Work}
 \label{sec:related}
+% Sources (primary, read 2026-11-24): Virgo arXiv 2408.12073v2 (ASPLOS'25); CoopWarp HPCA'25 abstract (imec repository; the full
+% text is behind "request a copy" and was not read) and the authors' artifact repository BakrN/vortex @ 4f9134cb, read-only clone
+% 01_github/coopwarp-vortex (00_doc/ispass_direction/reference_repos.md section 2) [source-derived]; Ten-Four arXiv 2512.00053v4;
+% RoadBlock arXiv 2611.08526v1 (PACT'26, 2 pages). Only tensor-core work built on Vortex is compared here (user, 2026-11-24);
+% non-Vortex tensor cores and simulators stay in the Introduction.
 
-% TODO(ispass): related work
+% P:rel-frame
+Tensor cores built on Vortex each extend one level of the GPU: the core cluster, the SIMT core, or the dot-product datapath inside the tensor core. Table~\ref{tab:related_work_comparison} compares them by the threads per warp they support, by whether they exist as RTL and in a cycle-level simulator, and by whether they provide warp-group MMA and 2:4 sparsity.
+
+% P:rel-virgo
+Cluster-level matrix units trade flexibility on small matrices for larger operations. Virgo~\cite{kim2025virgo} keeps the Vortex SIMT cores for general computation and adds a Gemmini systolic array to each core cluster, where it reads its operands from shared memory and accumulates in its own memory, so one operation covers the tile of a thread block. Synthesized in a commercial 16\,nm process, Virgo lowers active power by 67.3\% and 24.2\% against Ampere-style and Hopper-style tensor cores coupled to the core, which it also builds in RTL; its Hopper-style tensor core runs an asynchronous MMA that one warp initiates. Virgo evaluates warps of 8 threads, has no sparsity, and takes its cycle counts from RTL simulation rather than from a cycle-level simulator.
+% Sources: abstract and section 6.1.2 (67.3% and 24.2% lower active power than the Ampere-style and Hopper-style core-coupled designs);
+% section 3 (Vortex SIMT core, Gemmini at the cluster); section 4 ("the indivisible atom of computation is a threadblock- or
+% workgroup-level matrix multiplication ... this approach sacrifices flexibility for workloads that use smaller matrix dimensions");
+% section 5.1.3 (a warp kicks off the matrix unit via an initiate instruction and later waits); Table 2; artifact appendix A.
+
+% P:rel-coopwarp
+A tensor core coupled to the SIMT core receives its operands through the register file, whose capacity and bandwidth limit the size of each operation~\cite{kim2025virgo}. CoopWarp~\cite{nada2025cooperative} integrates such a tensor core into Vortex, relates its utilization to the GPU's architectural parameters, and finds it severely underutilized in many configurations. Its cooperative warp execution lets the warps of a group split the $K$ dimension of a tile and accumulate into one shared tile buffer, which reduces the memory a GEMM needs and reaches 3$\times$ the performance of its baseline tensor core in the best case. Each warp still issues its own MMA, the tensor core takes FP16 inputs and has no sparsity, and it is modeled in SimX only: the repository's standalone tensor-core RTL is not part of the Vortex RTL.
+% Sources: HPCA'25 abstract (imec record: integration into Vortex, intrinsics for GEMM kernels, "the tensor core is severely
+% under-utilized in many cases", cooperative warp execution "to reduce GEMM memory requirements", "up to 3x" over the baseline tensor
+% core). Repository [source-derived]: cooperative_kernel.cpp:80-91 (per-warp tc_mma_acc_buf, vx_barrier, tc_flush_wg),
+% sim/simx/tensor_core.cpp:42-75 (FP16 in, FP32 accumulate; other formats throw), K split by WARP_GROUP_SIZE (reference_repos.md),
+% tensor_rtl/ standalone (no reference from hw/rtl). Family limit: Virgo section 1 ("restricting operation size due to register file
+% capacity and bandwidth constraints").
+
+% P:rel-datapath
+Datapath designs improve the arithmetic inside the tensor core. Ten-Four~\cite{rout2026tenfouropensourcefuseddot} is a fused mixed-precision dot-product unit for the tensor-core extension of Vortex: one pipeline multiplies TF32, FP16, BF16, FP8, BF8, INT8, INT4 and microscaling inputs and accumulates in FP32 or INT32. It reaches a 4-cycle latency at 300\,MHz on an AMD Alveo U55C FPGA and runs 2.7$\times$ to 7.9$\times$ faster than units built from the HardFloat and FPnew libraries, at less than 60\% of their area. RoadBlock~\cite{rout2026roadblock} extends Ten-Four to custom microscaling formats and stages their scale factors in a tensor-core SRAM, so that a warp-level MMA can use them without an extra source operand.
+% Sources: Ten-Four abstract (formats, OCP MX, 4-cycle latency at 300 MHz on the U55C, "2.7x-7.9x speedup over Berkeley HardFloat and
+% FPnew at less than 60% the area cost"), section 3.2; RoadBlock sections 1-2 ("Since Vortex TCU WMMA instructions only expose three
+% source operands, MX metadata cannot be supplied as an additional explicit source. RoadBlock instead duplicates registers f8,f9 into
+% a lightweight TCU-SRAM").
+
+% float placed late: Table I (moved from the Introduction) renders at the top of the left column of page 5, off the page of Fig. 1
+\begin{table}[t]
+\centering
+\caption{Tensor cores built on the Vortex GPU, all open source.}
+\label{tab:related_work_comparison}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{0.95}
+\newcommand{\ty}{\ding{51}}
+\newcommand{\tn}{\ding{55}}
+\begin{tabular}{@{}l l c c c c c@{}}
+\toprule
+\textbf{Work} & \textbf{Level} & \makecell{\textbf{Threads}\\\textbf{per warp}} & \textbf{RTL} & \makecell{\textbf{Cycle}\\\textbf{sim.}} & \makecell{\textbf{Warp-}\\\textbf{group}\\\textbf{MMA}} & \makecell{\textbf{2:4}\\\textbf{sparsity}} \\
+\midrule
+Virgo~\cite{kim2025virgo} & Cluster & 8 & \ty & \tn & \tn & \tn \\
+CoopWarp~\cite{nada2025cooperative} & Core & 4--32 & \tn & \ty & \tn & \tn \\
+Ten-Four~\cite{rout2026tenfouropensourcefuseddot} & Datapath & 4--32 & \ty & -- & -- & -- \\
+\rowcolor{blue!8}
+\textbf{FourShadow (Ours)} & Core & 4--32 & \ty & \ty & \ty & \ty \\
+\bottomrule
+\multicolumn{7}{@{}l}{\scriptsize --: not applicable to a dot-product unit.}
+\end{tabular}
+\end{table}
+% Cells. Virgo: Level = matrix unit at the core cluster (section 3); threads = Table 2 "8 warps/core, 8 lanes/warp" (the Volta-style
+% core in its RTL needs a multiple of 8, reference_repos.md section 1); RTL = synthesizable RTL in Chipyard, 16 nm (sections 1, 5.2);
+% cycle sim = none: cycles come from RTL simulation (artifact appendix A; its Vortex SimX has no tensor-core model, reference_repos.md);
+% warp-group MMA = none: its Hopper-style baseline is initiated by one warp (section 5.1.3); sparsity = none.
+% CoopWarp: Level = core-coupled tensor core in SimX (abstract; sim/simx/tensor_core.cpp); threads = experiments.zip th4/th8/th16/th32;
+% RTL = none in the Vortex RTL (tensor_rtl/ is standalone, not referenced from hw/rtl); warp-group MMA = none: each warp issues its own
+% MMA into a shared accumulator buffer (cooperative_kernel.cpp:80-91); sparsity = none (grep). [source-derived]
+% Ten-Four: Level = fused dot-product unit (title, abstract); threads = four-element FEDP at 4/8 and eight-element at 16/32 threads
+% per warp (section 3.2, Table 4 notes); RTL = SystemVerilog, U55C FPGA and ASAP7 (sections 4.5, 4.6); "--" for the tensor-core
+% columns: its own sparsity is sparse-lane clock gating (section 3.5), and the 2:4 sparsity and warp-group MMA micro-ops it mentions
+% belong to the tensor core it is part of.
+
+% P:rel-fourshadow
+FourShadow builds the tensor-core organization around this datapath, and Ten-Four is its dot-product unit (Section~\ref{sec:bg_tcu}). It adds warp-group MMA with register and shared-memory operand staging and 2:4 structured sparsity for both warp-level and warp-group MMA, implements them in the RTL and in SimX, and keeps the threads per warp and the issue width as build parameters (Table~\ref{tab:related_work_comparison}).
