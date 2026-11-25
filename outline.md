@@ -1,5 +1,5 @@
 # FourShadow (ISPASS 2027): outline
-Synced with: the commit that shortens the prior-work part of Section IV to one paragraph and widens the FourShadow distinction to two; captured so far: Sections II, III and IV.
+Synced with: the commit that rewrites Section IV as prior work and its limitations, without FourShadow's design; captured so far: Sections II, III and IV.
 The other sections carry no `% P:` anchors yet and are to be captured before their next structural change.
 Check: `main.tex` inputs files relative to the repo root, so run the check on a copy of `main.tex` placed at the repo root
 (e.g. in a scratch copy of the repo): `python3 <skill-dir>/scripts/check_outline.py outline.md main_check.tex`.
@@ -129,33 +129,43 @@ Rules (user via main, 2026-11-24): only tensor-core work built on Vortex, distin
 FourShadow has warp-group MMA, 2:4 sparsity, and both RTL and SimX; FourShadow named only after the prior work. Non-Vortex tensor cores (RM-STC,
 VEGETA, SIMD², Sparse TC) and the simulators stay in the Introduction only.
 
-Rules (user, 2026-11-24, second pass): describe the prior work briefly, one or two sentences per work (mechanism and the limit FourShadow
-changes); spend the words on the distinction; superiority as capabilities and as results this paper measures (printed numbers only, with
-section pointers), never a head-to-head with Virgo/CoopWarp/Ten-Four. Ten-Four v4 overlap is open (user): the distinction does not rest on
-FEDP-2K; "Ten-Four is the dot-product unit" carries a `% TODO(user)`. RTL–SimX agreement is not printed (no printed evidence; the A fetch
-differs, `TODO(ispass)` at `sec:eval_delay_a`).
+Rules (user, 2026-11-24, third pass; supersedes the second pass): Related Work never describes FourShadow's design (no mechanisms,
+no RS/SS, no parameter lists, no evaluation results). It describes each prior work briefly (what it built), then lists the limitations of the
+prior work, organized by limitation, each naming the works it applies to, and closes with one or two sentences saying this paper addresses
+them (FourShadow named once, last). The second pass's rel-fs-organization and rel-fs-platform are removed; every result they printed
+(16-thread peak, 32 threads double the TCU area and lose 21–38 % BF16 speedup, IW 4 practical optimum, the halvable share falling as the tile
+widens, Llama-3.2-1B prefill 10.18× / 12.39×) remains printed in Sections I and VII (promise check). Ten-Four v4 overlap stays open (user):
+`% TODO(user)` at the Ten-Four citation. Not claimed: that Ten-Four lacks warp-group MMA or 2:4 sparsity (its v4 mentions WGMMA micro-ops
+and 2:4 rows of the tensor core it belongs to), and anything about CoopWarp beyond its abstract and its artifact repository.
 
-- **[rel-prior]** (section opener, no head; merges the former rel-frame, rel-virgo, rel-coopwarp and rel-datapath)
-  - Message: Each prior tensor core on Vortex extends one level of the GPU: Virgo moves the matrix unit to the cluster (trading flexibility on small matrices for larger operations), CoopWarp's warps share an accumulator buffer but issue one MMA each, and Ten-Four and RoadBlock change the dot-product arithmetic.
+- **[rel-prior]** (section opener, no head)
+  - Message: Three lines of work have built matrix units on Vortex: Virgo a cluster-level Gemmini array, CoopWarp a tensor core in the SIMT core (SimX) whose warps share an accumulator buffer, and Ten-Four (extended by RoadBlock) a fused dot-product unit for the Vortex tensor core.
   - Floats: Table tab:related_work_comparison (first cite in this section; the Introduction points here)
-  - Numbers: — (the power, speedup, area and clock figures of the works were dropped by the user's request; no other section uses them)
-  - Sources: [V] §3 (Vortex SIMT core, Gemmini array at cluster level), §4 (threadblock-level atom; "sacrifices flexibility for workloads that use smaller matrix dimensions"); [V] §1 for the core-coupled family limit ("restricting operation size due to register file capacity and bandwidth constraints"); [CW] abstract (integration in Vortex, cooperative warp execution); [CWR] `cooperative_kernel.cpp:80-91` (per-warp `tc_mma_acc_buf`, `vx_barrier`, `tc_flush_wg`) [source-derived]; [TF] abstract, §3.2; [RB] §1–2
-  - Cites: kim2025virgo, nada2025cooperative, rout2026tenfouropensourcefuseddot, rout2026roadblock
-  - Links: ← intro (platform sentence); → table rows Virgo, CoopWarp, Ten-Four; → rel-fs-organization
-- **[rel-fs-organization]** (no head)
-  - Message: FourShadow changes the organization itself, with the two features no other row of Table I has: a warp-group MMA that is one instruction for the warps of a warpgroup, with B (and A in SS mode) from shared memory and one B fetch shared by all tensor blocks, and 2:4 sparsity on both warp-level and warp-group MMA.
-  - Floats: Table tab:related_work_comparison (Warp-group MMA and 2:4 sparsity columns)
   - Numbers: —
-  - Sources: `sec:design_wgmma` (one tensor block per issue slot, RS/SS, shared B buffer, one B refill serves all IW blocks); `sec:design_sparse` (compressed A, metadata by `TCU_LD` into the per-block metadata SRAM, Sparse MUX Array, halved K steps); `para:datatypes-fedp` (FEDP = Ten-Four)
-  - Cites: — (FourShadow's own sections)
-  - Links: ← rel-prior; → sec:design_wgmma, sec:design_sparse
-- **[rel-fs-platform]** (closing, no head)
-  - Message: FourShadow is also the platform to measure these features: RTL and SimX, FPGA runs and ASAP7 area, and six build parameters, so the paper pairs one-parameter cycle sweeps with area and reports results no other row can produce (16-thread peak, issue-width optimum at 4, the shrinking halvable share of sparse warp-group MMA, FPGA end-to-end gains).
-  - Floats: Table tab:related_work_comparison (RTL, Cycle sim., Threads per warp columns); Table tab:config (parameters)
-  - Numbers (all printed in the evaluation, copied, not re-derived): per-lane WGMMA peak at 16 threads ← `sec:eval_threads`; 32 threads double the TCU area (2.00×) while the BF16 speedup falls by 21–38 % ← `sec:eval_asic`; IW 4 practical optimum, front end limits a wider warpgroup ← `sec:eval_asic`, `sec:eval_iw`; halvable share shrinks as the warp-group tile widens ← `sec:eval_sparse_wg`; Llama-3.2-1B prefill 10.18× (WGMMA) and 12.39× (+2:4) over the dense base TCU on the U55C ← `sec:eval_fpga`
-  - Sources: Virgo threads 8 ← [V] Table 2, cycles from RTL simulation ← [V] artifact appendix A; CoopWarp SimX only ← [CWR] (`tensor_rtl/` not referenced from `hw/rtl`) [source-derived]. CoopWarp also relates utilization to the GPU's parameters in SimX ([CW] abstract), so parameter sweeps are not claimed as exclusive; the contrast is sweeps paired with synthesized area.
-  - Cites: kim2025virgo, nada2025cooperative (contrast clauses)
-  - Links: ← rel-fs-organization; → sec:eval_threads, sec:eval_iw, sec:eval_asic, sec:eval_sparse_wg, sec:eval_fpga, sec:design
+  - Sources: [V] §3 (Gemmini at the cluster, outside the SIMT cores), §4 (threadblock-level atom); [CW] abstract (tensor core integrated in Vortex, cooperative warp execution); [CWR] `cooperative_kernel.cpp:80-91`, `sim/simx/tensor_core.cpp` [source-derived]; [TF] abstract, §3.2; [RB] abstract, §1–2
+  - Cites: kim2025virgo, nada2025cooperative, rout2026tenfouropensourcefuseddot, rout2026roadblock
+  - Links: ← intro (platform sentence); → table rows Virgo, CoopWarp, Ten-Four; → rel-limit-motivation
+- **[rel-limit-motivation]** (no head; first limitation)
+  - Message: None of the works derives its unit from a characterization of why the SIMT-only Vortex core runs GEMM inefficiently: Virgo motivates its unit from NVIDIA GPUs (tensor-core scaling from Volta to Hopper, register usage of CUTLASS GEMM kernels), Ten-Four and RoadBlock from arithmetic (discrete floating-point units; custom microscaling formats evaluated as standalone MAC units), and CoopWarp analyzes the utilization of the tensor core it adds.
+  - Floats: —
+  - Numbers: —
+  - Sources: [V] §1, §2.2–2.3, Table 1 (V100/A100/H100 scaling and CUTLASS register usage and occupancy); [TF] §1, §2.2 (discrete arithmetic libraries: latency, rounding, utilization; Llama 3.1 8B on B200 >80 % GEMM); [RB] §1 (MX formats evaluated as standalone MAC units); [CW] abstract ("the tensor core is severely under-utilized in many cases", analysis relating GPU parameters to tensor-core configuration) — CoopWarp from the abstract only (full text unread)
+  - Cites: kim2025virgo, rout2026tenfouropensourcefuseddot, rout2026roadblock, nada2025cooperative (at each name)
+  - Links: ← rel-prior; → rel-close (sec:motivation)
+- **[rel-limit-implementation]** (no head; second limitation)
+  - Message: The tensor-core implementations are incomplete: neither Virgo nor CoopWarp has a warp-group MMA or 2:4 sparsity; Virgo's matrix unit sits at the cluster, outside the SIMT core pipeline, is evaluated with 8-thread warps only, and has no cycle-level simulator model; CoopWarp's tensor core is in the pipeline only in SimX, and its RTL is a standalone unit outside the Vortex RTL.
+  - Floats: Table tab:related_work_comparison (Level, Threads per warp, RTL, Cycle sim., Warp-group MMA, 2:4 sparsity columns)
+  - Numbers: 8 threads per warp ← [V] Table 2
+  - Sources: [V] §5.1.3 (Hopper-style baseline initiated by one warp), §3 (cluster level), Table 2, artifact appendix A (RTL simulation; its SimX has no tensor-core model, reference_repos.md §1); [CWR] each warp issues its own MMA into a shared accumulator buffer (`cooperative_kernel.cpp:80-91`), no sparsity (grep), `tensor_rtl/` not referenced from `hw/rtl` (reference_repos.md §2) [source-derived]
+  - Cites: kim2025virgo, nada2025cooperative
+  - Links: ← rel-limit-motivation; → rel-close
+- **[rel-close]** (closing, no head)
+  - Message: This paper addresses both limitations: FourShadow derives its tensor core from the characterization of the SIMT-only core in Section III and extends the platform with warp-group MMA and 2:4 sparsity in the core pipeline, in both RTL and SimX.
+  - Floats: Table tab:related_work_comparison (FourShadow row)
+  - Numbers: —
+  - Sources: sec:motivation; Table I FourShadow row (Level Core, RTL ✓, Cycle sim. ✓, Warp-group MMA ✓, 2:4 ✓)
+  - Cites: —
+  - Links: ← rel-limit-motivation, rel-limit-implementation; → sec:motivation, sec:design
 
 ## Float map (Section III)
 | float | label | source | first-citing id | lands |
@@ -165,4 +175,4 @@ differs, `TODO(ispass)` at `sec:eval_delay_a`).
 ## Float map (Section IV)
 | float | label | source | first-citing id | lands |
 |---|---|---|---|---|
-| Table I, one-column `table` | tab:related_work_comparison | 2_5_related_work.tex (moved from 1_intro.tex) | rel-frame (the Introduction cites it first) | PDF p. 5 top of the left column (source placed at the end of the section, after rel-fs-platform; placed before a paragraph that starts on p. 4 it floats above the IV heading onto the page of the Fig. 1 figure*); Section IV starts p. 4 right |
+| Table I, one-column `table`, placement `[b]` | tab:related_work_comparison | 2_5_related_work.tex (moved from 1_intro.tex) | rel-prior (the Introduction cites it first) | PDF p. 4 bottom of the right column, below the end of Section IV (source at the end of the section, after rel-close). Section IV now fits in p. 4 right, so a `[t]` table floats above the IV heading onto the top of that column; `[b]` keeps it after the section text |
